@@ -1,0 +1,12 @@
+'use strict';
+let state='menu',diffName='normal',D=DIFF.normal;
+let units=[],builds=[],projs=[],parts=[],planes=[],piles=[],rocks=[];
+let blocked=new Uint8Array(MAPW*MAPH),vis=new Uint8Array(MAPW*MAPH);
+let money=[4000,4000],powerP=[0,0],powerU=[0,0],lowPow=[false,false];
+let sel=[],placing=null;
+let strikeCdMax=110,strikeBombs=3;
+let cam={x:WW/2,y:WH/2,z:1},dpr=1,vw=0,vh=0;
+let ids=1,gtime=0,fogT=0,powT=0,uiT=0,winT=1,aiT=0,sepT=0,miniT=0;
+let underAttackCd=0,readyCd=0,hintStage=0,hintT=0,shake=0;
+let ai=null,groundCv=null,fogCv=null,fogImg=null;
+const keys={};

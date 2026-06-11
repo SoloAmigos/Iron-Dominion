@@ -1,0 +1,162 @@
+'use strict';
+/* ================= CONFIG ================= */
+const TILE=40, MAPW=60, MAPH=40, WW=MAPW*TILE, WH=MAPH*TILE;
+let TEAMC=['#4da3ff','#ff5147'], TEAMD=['#244a6e','#6e2424'];
+
+/* ================= FACTIONS ================= */
+const FACTIONS={
+  vanguard:{key:'vanguard',name:'Vanguard Coalition',c:'#4da3ff',d:'#24496e',
+    tag:'High-tech precision strikes',
+    desc:'+10% weapon damage · Airstrike drops 4 bombs, 80s cooldown · Signatures: Paladin laser tank & Falcon drone · units cost +10%',
+    dmg:1.10,ucost:1.10,bcost:1,uhp:1,bhp:1,spd:1,noPower:false,turretDmg:1,cheap:[],
+    strikeCd:80,bombs:4,sigs:[{unit:'paladin',at:'factory'},{unit:'drone',at:'factory'}],h:140,sat:9,
+    names:{dozer:'Pioneer',truck:'Hauler',ranger:'Trooper',rocket:'Javelin Team',tank:'Crusader',arty:'Thunderer',
+      command:'Field HQ',power:'Fusion Plant',supply:'Logistics Center',barracks:'Training Camp',factory:'Assembly Bay',
+      turret:'Sentry Gun',market:'Supply Pad',tech:'Strategy Lab',silo:'Orbital Uplink'}},
+  crimson:{key:'crimson',name:'Crimson Legion',c:'#ff5147',d:'#6e2424',
+    tag:'Overwhelm with numbers',
+    desc:'Tanks & infantry cost −15% · tanks +10% HP · Signatures: Dominator heavy tank & Inferno flame trooper',
+    dmg:1,ucost:1,bcost:1,uhp:1,bhp:1,spd:1,noPower:false,turretDmg:1,cheap:['tank','ranger','rocket','inferno'],tankHp:1.10,
+    strikeCd:110,bombs:3,sigs:[{unit:'dominator',at:'factory'},{unit:'inferno',at:'barracks'}],h:8,sat:15,
+    names:{dozer:'Worker Rig',truck:'Ox Hauler',ranger:'Conscript',rocket:'Tank Hunter',tank:'Warlord',arty:'Dragonfire',
+      command:'War Council',power:'Coal Plant',supply:'Quartermaster Depot',barracks:'Red Garrison',factory:'Iron Works',
+      turret:'Bunker Gun',market:'State Foundry',tech:'Doctrine Bureau',silo:'Hellstorm Silo'}},
+  scorpion:{key:'scorpion',name:'Scorpion Cartel',c:'#ffb02e',d:'#7a5210',
+    tag:'Scavengers of the wastes',
+    desc:'Needs NO power at all · buildings cost −10% · Signatures: Technical raider & Scarab bomb kart · units −10% HP',
+    dmg:1,ucost:1,bcost:.9,uhp:.9,bhp:1,spd:1.05,noPower:true,turretDmg:1,cheap:[],
+    strikeCd:110,bombs:3,sigs:[{unit:'technical',at:'factory'},{unit:'scarab',at:'factory'}],h:45,sat:20,
+    names:{dozer:'Scrap Rig',truck:'Smuggler Van',ranger:'Raider',rocket:'Stinger Cell',tank:'Marauder',arty:'Junk Lobber',
+      command:'Warlord Den',power:'Generator Shack',supply:'Stash House',barracks:'Recruit Tents',factory:'Chop Shop',
+      turret:'Gun Nest',market:'Black Market',tech:'Smuggler Guild',silo:'Rocket Pit'}},
+  northwind:{key:'northwind',name:'Northwind Pact',c:'#3fe0c8',d:'#176358',
+    tag:'The unbreakable wall',
+    desc:'Buildings +25% HP · turrets +25% damage · units +15% HP but −10% speed · Signatures: Guardian trooper & Mortar team',
+    dmg:1,ucost:1,bcost:1,uhp:1.15,bhp:1.25,spd:.9,noPower:false,turretDmg:1.25,cheap:[],
+    strikeCd:110,bombs:3,sigs:[{unit:'guardian',at:'barracks'},{unit:'mortar',at:'barracks'}],h:200,sat:13,
+    names:{dozer:'Drift Dozer',truck:'Ice Hauler',ranger:'Watchman',rocket:'Pike Team',tank:'Glacier',arty:'Avalanche',
+      command:'Citadel',power:'Geothermal Plant',supply:'Stockpile',barracks:'Garrison Hall',factory:'Forge Hall',
+      turret:'Bastion Gun',market:'Trade Hub',tech:'Polar Institute',silo:'Aurora Battery'}},
+};
+const FACKEYS=['vanguard','crimson','scorpion','northwind'];
+let fac=['vanguard','crimson'];
+const FAC=t=>FACTIONS[fac[t]];
+function dispName(kind,type,team){
+  const f=FAC(team);
+  return (f.names&&f.names[type])||(kind==='u'?UT[type].name:BT[type].name);
+}
+function costOf(kind,type,team){
+  const f=FAC(team);
+  let c=kind==='u'?UT[type].cost:BT[type].cost;
+  if(kind==='u'){c*=f.ucost;if(f.cheap.includes(type))c*=.85}
+  else c*=f.bcost;
+  return Math.round(c/25)*25;
+}
+
+const WPN={
+  rifle:   {dmg:9,  rel:.6, rng:150, kind:'hit',                 splash:0,  mult:{inf:1,  veh:.3, bld:.18}},
+  mg:      {dmg:26, rel:.85,rng:230, kind:'hit',                 splash:0,  mult:{inf:.9, veh:.65,bld:.3}},
+  rocket:  {dmg:42, rel:2.4,rng:195, kind:'rocket', spd:300,     splash:22, mult:{inf:.55,veh:1,  bld:1}},
+  cannon:  {dmg:46, rel:2.1,rng:185, kind:'shell',  spd:470,     splash:18, mult:{inf:.6, veh:1,  bld:.75}},
+  howitzer:{dmg:80, rel:4.8,rng:330, kind:'arc',    spd:250, minRng:100, splash:50, mult:{inf:1,veh:.8,bld:1}},
+  bomb:    {dmg:135,rel:1,  rng:1,   kind:'arc',    spd:300,     splash:72, mult:{inf:1,  veh:1,  bld:1}},
+  laser:   {dmg:34, rel:1.0,rng:215, kind:'hit',  laser:true,   splash:0,  mult:{inf:.5, veh:1.15,bld:.6}},
+  twin:    {dmg:36, rel:1.25,rng:185,kind:'shell', spd:470, twin:true, splash:14, mult:{inf:.6,veh:1, bld:.8}},
+  mgT:     {dmg:20, rel:.5, rng:200, kind:'hit',                 splash:0,  mult:{inf:1,  veh:.5, bld:.25}},
+  gmg:     {dmg:16, rel:.55,rng:175, kind:'hit',                 splash:0,  mult:{inf:1.1,veh:.45,bld:.3}},
+  dgun:    {dmg:12, rel:.4, rng:190, kind:'hit',                 splash:0,  mult:{inf:.9, veh:.5, bld:.2}},
+  flame:   {dmg:24, rel:.4, rng:115, kind:'hit',  flame:true,   splash:0,  mult:{inf:1.35,veh:.5, bld:.95}},
+  mortar:  {dmg:55, rel:3.6,rng:280, kind:'arc',   spd:240, minRng:80, splash:36, mult:{inf:1.1,veh:.6,bld:.9}},
+  boomkart:{dmg:260,rel:1,  rng:1,   kind:'hit',                 splash:60, mult:{inf:1,  veh:1,  bld:1.1}},
+  nuke:    {dmg:1500,rel:1,  rng:1,   kind:'arc',   spd:300,     splash:165,mult:{inf:1,  veh:1,  bld:1}},
+};
+const UT={
+  dozer:{name:'Dozer',       ic:'🚜', cost:1000,bt:8, hp:300,spd:74, r:13,sight:5,cat:'veh', desc:'Constructs buildings'},
+  truck:{name:'Supply Truck',ic:'🚚', cost:600, bt:6, hp:260,spd:102,r:13,sight:5,cat:'veh', desc:'Hauls supplies — auto'},
+  ranger:{name:'Ranger',     ic:'🪖', cost:200, bt:4, hp:95, spd:62, r:7, sight:6,cat:'inf', wpn:'rifle',  desc:'Anti-infantry'},
+  rocket:{name:'Rocket Trp', ic:'🎯', cost:300, bt:5, hp:85, spd:56, r:7, sight:6,cat:'inf', wpn:'rocket', desc:'Anti-armor'},
+  tank: {name:'Brawler Tank',ic:'🦏', cost:800, bt:9, hp:330,spd:88, r:14,sight:6,cat:'veh', wpn:'cannon', desc:'Main battle tank'},
+  arty: {name:'Howitzer',    ic:'💣', cost:1100,bt:12,hp:190,spd:64, r:14,sight:7,cat:'veh', wpn:'howitzer',desc:'Long-range siege'},
+  paladin:  {name:'Paladin',  ic:'🔷', cost:1000,bt:10,hp:300,spd:92, r:14,sight:7,cat:'veh', wpn:'laser', desc:'Laser tank — melts armor',sig:true},
+  dominator:{name:'Dominator',ic:'🐗', cost:1200,bt:13,hp:520,spd:64, r:15,sight:6,cat:'veh', wpn:'twin',  desc:'Heavy twin-cannon tank',sig:true},
+  technical:{name:'Technical',ic:'🛻', cost:450, bt:5, hp:200,spd:130,r:13,sight:6,cat:'veh', wpn:'mgT',   desc:'Fast raider gun-truck',sig:true},
+  guardian: {name:'Guardian', ic:'🛡', cost:450, bt:6, hp:230,spd:54, r:8, sight:6,cat:'inf', wpn:'gmg',   desc:'Shielded heavy trooper',sig:true},
+  drone:    {name:'Falcon Drone',ic:'🛸',cost:500,bt:6, hp:130,spd:142,r:11,sight:8,cat:'veh', wpn:'dgun', desc:'Fast recon gun-drone',sig:true},
+  inferno:  {name:'Inferno Trooper',ic:'🔥',cost:350,bt:5,hp:100,spd:58,r:7,sight:6,cat:'inf', wpn:'flame',desc:'Close-range flamethrower',sig:true},
+  scarab:   {name:'Scarab Kart',ic:'💥',cost:400,bt:5, hp:110,spd:150,r:11,sight:6,cat:'veh', suicide:'boomkart',desc:'Rams & explodes!',sig:true},
+  mortar:   {name:'Mortar Team',ic:'🎇',cost:500,bt:6, hp:90, spd:52, r:8, sight:7,cat:'inf', wpn:'mortar',desc:'Long-range mortar',sig:true},
+};
+const BT={
+  command: {name:'Command Center',ic:'🏢', cost:2000,bt:20,hp:2600,w:4,h:4,pow:2,  trains:['dozer'],          desc:'HQ — trains Dozers'},
+  power:   {name:'Power Plant',   ic:'⚡', cost:600, bt:8, hp:650, w:2,h:2,pow:-10,                            desc:'+10 power'},
+  supply:  {name:'Supply Center', ic:'📦', cost:1400,bt:10,hp:1300,w:3,h:3,pow:2,  trains:['truck'],          desc:'Drop-off + free truck'},
+  barracks:{name:'Barracks',      ic:'🪖', cost:500, bt:8, hp:1100,w:3,h:2,pow:1,  trains:['ranger','rocket'],desc:'Trains infantry'},
+  factory: {name:'War Factory',   ic:'🏭', cost:2000,bt:14,hp:1600,w:4,h:3,pow:3,  trains:['tank','arty'],    desc:'Builds vehicles'},
+  turret:  {name:'Guard Turret',  ic:'🗼', cost:900, bt:8, hp:950, w:2,h:2,pow:2,  wpn:'mg',                  desc:'Base defense — needs power'},
+  market:  {name:'Market',        ic:'💰', cost:1500,bt:10,hp:900, w:2,h:2,pow:2,  income:40,                 desc:'+$40 every 5s — endless'},
+  tech:    {name:'Tech Lab',      ic:'🔬', cost:1500,bt:12,hp:1000,w:3,h:2,pow:3,  lab:true,                  desc:'Unlocks army upgrades'},
+  silo:    {name:'Missile Silo',  ic:'☢️', cost:4000,bt:22,hp:1500,w:3,h:3,pow:6,  silo:true,                 desc:'Superweapon — charges 150s'},
+};
+const BUILD_ORDER_UI=['power','supply','barracks','factory','turret','market','tech','silo','command'];
+const COMBAT=['ranger','rocket','tank','arty','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar'];
+const DIFF={
+  easy:  {trickle:3, wave:120,first:220,cap:12,label:'EASY',silo:false},
+  normal:{trickle:9, wave:95, first:160,cap:20,label:'NORMAL',silo:true},
+  hard:  {trickle:18,wave:75, first:125,cap:28,label:'HARD',silo:true},
+};
+const UPGS={
+  w1:{nm:'Weapons I', ic:'⚔️',cost:1200,need:null, f:'w',lv:1,desc:'+12% damage'},
+  a1:{nm:'Armor I',   ic:'🛡️',cost:1200,need:null, f:'a',lv:1,desc:'+12% unit HP'},
+  w2:{nm:'Weapons II',ic:'⚔️',cost:2000,need:'w1',f:'w',lv:2,desc:'+24% damage total'},
+  a2:{nm:'Armor II',  ic:'🛡️',cost:2000,need:'a1',f:'a',lv:2,desc:'+24% unit HP total'},
+};
+let upg=[{w:0,a:0},{w:0,a:0}];
+const upDmg=t=>1+.12*upg[t].w;
+const upArm=t=>1+.12*upg[t].a;
+
+const POWERS={
+  repair:{ic:'🔧',nm:'REPAIR',cd:70, rank:1, need:null,      hint:'Tap an area — repairs nearby friendly units & buildings'},
+  drop:  {ic:'🪂',nm:'DROP',  cd:100,rank:2, need:'barracks',hint:'Tap an area — paradrops 3 infantry'},
+  strike:{ic:'✈️',nm:'STRIKE',cd:110,rank:3, need:'factory', hint:'Tap anywhere on the map to call the strike'},
+  nuke:  {ic:'☢️',nm:'LAUNCH',cd:0,  rank:0, need:'silo',    hint:'Tap the target — missile away!'},
+};
+let pw=null,targetPower=null;
+function resetPowers(){
+  pw={repair:{unl:false,on:true, cd:0},
+      drop:  {unl:false,on:false,cd:0},
+      strike:{unl:false,on:false,cd:0},
+      nuke:  {unl:true, on:false,cd:0}};
+  targetPower=null;
+}
+resetPowers();
+
+const XPL=[0,500,1200,2200,3600,5400];
+const MAXRANK=XPL.length;
+let xp=[0,0],rank=[1,1],skp=[1,1];
+function xpGain(team,amt){
+  if(rank[team]>=MAXRANK){xp[team]+=amt;return}
+  xp[team]+=amt;
+  while(rank[team]<MAXRANK&&xp[team]>=XPL[rank[team]]){
+    rank[team]++;skp[team]++;
+    if(team===0){
+      toast('⭐ Promotion! General rank '+rank[team]+' — skill point earned');
+      SFX.done();
+      if(typeof refreshPowers==='function')refreshPowers();
+      if(typeof updateRankBtn==='function')updateRankBtn();
+    }
+  }
+}
+function unlockPower(team,k){
+  const P=POWERS[k];
+  if(!P||pw[k].unl)return false;
+  if(P.rank>rank[team])return false;
+  if(skp[team]<1)return false;
+  skp[team]--;pw[k].unl=true;
+  if(team===0){
+    toast(P.ic+' '+P.nm+' unlocked!');SFX.done();
+    pw[k].cd=Math.min(pw[k].cd||0,15);
+    if(typeof refreshPowers==='function')refreshPowers();
+    if(typeof updateRankBtn==='function')updateRankBtn();
+  }
+  return true;
+}

@@ -2444,11 +2444,11 @@ function confirmPlace(){
 let pts=new Map(),pinch=null,panMode=false,downAt=null,boxStart=null;
 let lastTapT=0,lastTapId=0;
 function screenToWorld(px,py){return{x:(px-vw/2)/cam.z+cam.x,y:(py-vh/2)/cam.z+cam.y}}
-const CAMPAD=180;
+const CAMPADX=180,CAMPADY=280;
 function clampCam(){
   const hx=vw/2/cam.z,hy=vh/2/cam.z;
-  cam.x=clamp(cam.x,Math.min(hx,WW/2)-CAMPAD,Math.max(WW-hx,WW/2)+CAMPAD);
-  cam.y=clamp(cam.y,Math.min(hy,WH/2)-CAMPAD,Math.max(WH-hy,WH/2)+CAMPAD);
+  cam.x=clamp(cam.x,Math.min(hx,WW/2)-CAMPADX,Math.max(WW-hx,WW/2)+CAMPADX);
+  cam.y=clamp(cam.y,Math.min(hy,WH/2)-CAMPADY,Math.max(WH-hy,WH/2)+CAMPADY);
 }
 function hitTest(wx,wy){
   let best=null,bd=1e9;

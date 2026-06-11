@@ -89,8 +89,8 @@ function init(name){
   fac=[chosenFac,others[Math.random()*others.length|0]];
   TEAMC=[FAC(0).c,FAC(1).c];TEAMD=[FAC(0).d,FAC(1).d];
   strikeCdMax=FAC(0).strikeCd;strikeBombs=FAC(0).bombs;
-  units=[];builds=[];projs=[];parts=[];planes=[];sel=[];placing=null;
-  resetPowers();upg=[{w:0,a:0},{w:0,a:0}];shake=0;
+  units=[];builds=[];projs=[];parts=[];planes=[];sel=[];placing=null;scraps=[];
+  resetPowers();upg=[{w:0,a:0,mk:0,cp:0},{w:0,a:0,mk:0,cp:0}];shake=0;
   xp=[0,0];rank=[1,1];skp=[1,1];genOpen=false;
   money=[4000,4000];powerP=[0,0];powerU=[0,0];lowPow=[false,false];
   ids=1;gtime=0;fogT=0;powT=0;uiT=0;winT=3;aiT=1.5;miniT=0;sepT=0;
@@ -119,11 +119,17 @@ function frame(ts){
   const dt=Math.min(.05,(ts-lastT)/1000||0);lastT=ts;
   if(state==='play'){
     gtime+=dt;
+    // Rebuild spatial hash for this frame
+    shClear();
+    for(const u of units)if(!u.dead)shInsert(u);
+    for(const b of builds)if(!b.dead)shInsert(b);
     for(const u of units)updateUnit(u,dt);
     if(units.some(u=>u.dead))units=units.filter(u=>!u.dead);
     for(const b of builds)updateBuilding(b,dt);
     if(builds.some(b=>b.dead))builds=builds.filter(b=>!b.dead);
     updateProjs(dt);updateParts(dt);updatePlanes(dt);
+    // Expire scrap tokens
+    for(let i=scraps.length-1;i>=0;i--){scraps[i].life-=dt;if(scraps[i].life<=0)scraps.splice(i,1)}
     separation();
     fogT-=dt;if(fogT<=0){fogT=.25;updateFog()}
     powT-=dt;if(powT<=0){powT=.5;recomputePower()}
@@ -139,7 +145,7 @@ function frame(ts){
     if(winT<=0){
       winT=1;
       let pl=0,en=0;
-      for(const b of builds){if(b.team===0)pl++;else en++}
+      for(const b of builds){if(b.team===0)pl++;else if(b.team===1)en++}
       if(en===0)endGame(true);
       else if(pl===0)endGame(false);
     }

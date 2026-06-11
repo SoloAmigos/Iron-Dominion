@@ -1,12 +1,13 @@
 'use strict';
 /* ================= BUILDINGS ================= */
 function placeBuilding(type,team,tx,ty,instant){
-  const t=BT[type],f=FAC(team);
+  const t=BT[type],f=team>=0?FAC(team):{bhp:1,dmg:1,turretDmg:1};
   const mhp=Math.round(t.hp*f.bhp);
   const b={kind:'b',id:ids++,type,team,tx,ty,x:(tx+t.w/2)*TILE,y:(ty+t.h/2)*TILE,
     hp:instant?mhp:mhp*.1,maxhp:mhp,t,cat:'bld',built:!!instant,prog:instant?1:0,
     dmgMul:f.dmg*(type==='turret'?f.turretDmg:1),
     queue:[],rally:{x:(tx+t.w/2)*TILE,y:(ty+t.h+1.2)*TILE},cd:0,ta:0,scan:Math.random()*.4,attackTarget:null,flash:0,dead:false};
+  if(t.garrison)b.garrison=[];
   builds.push(b);
   blockRect(tx,ty,t.w,t.h,1);
   for(const u of units)if(!u.dead&&u.x>tx*TILE-8&&u.x<(tx+t.w)*TILE+8&&u.y>ty*TILE-8&&u.y<(ty+t.h)*TILE+8){
@@ -55,11 +56,13 @@ function updateBuilding(b,dt){
       if(b.team===0&&readyCd<=0){readyCd=1.4;toast(UT[it.type].ic+' '+dispName('u',it.type,0)+' ready');SFX.done()}
     }
   }
-  if(b.t.income){
+  if(b.t.income&&b.team>=0){
     b.mkT=(b.mkT||0)+dt*(lowPow[b.team]?.5:1);
     if(b.mkT>=5){
-      b.mkT-=5;money[b.team]+=b.t.income;
-      if(b.team===0)parts.push({k:'txt',txt:'+$'+b.t.income,x:b.x,y:b.y-26,vy:-22,life:.9,max:.9});
+      b.mkT-=5;
+      const inc=Math.round(b.t.income*upMk(b.team));
+      money[b.team]+=inc;
+      if(b.team===0)parts.push({k:'txt',txt:'+$'+inc,x:b.x,y:b.y-26,vy:-22,life:.9,max:.9});
     }
   }
   if(b.t.silo){

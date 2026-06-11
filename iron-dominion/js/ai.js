@@ -70,7 +70,7 @@ function aiTick(tick){
   ai.upT-=tick;
   if(ai.upT<=0){
     ai.upT=6;
-    if(money[1]>1800)for(const id of['w1','a1','w2','a2'])if(buyUpgrade(1,id))break;
+    if(money[1]>1800)for(const id of['w1','a1','w2','a2','mkt','cap'])if(buyUpgrade(1,id))break;
   }
   if(!piles.some(p=>p.amt>0)&&aiCountBuild('market')<3&&money[1]>=costOf('b','market',1)&&!sites.some(s2=>s2.type==='market'))
     aiBuildAt('market',[rand(-7,7)|0,rand(-2,11)|0]);

@@ -18,6 +18,21 @@ function genWorld(){
       tx+=Math.round(rand(-1,1));ty+=Math.round(rand(-1,1));
     }
   }
+  // Neutral structures: civil buildings (garrison) and oil derricks (capture)
+  const neutralDefs=[
+    {type:'civil', tx:20,ty:26},{type:'civil', tx:36,ty:16},
+    {type:'oilrig',tx:22,ty:8 },{type:'oilrig',tx:44,ty:28}
+  ];
+  for(const nd of neutralDefs){
+    const t=BT[nd.type];let ok=true;
+    for(let ny=nd.ty;ny<nd.ty+t.h&&ok;ny++)
+      for(let nx=nd.tx;nx<nd.tx+t.w&&ok;nx++)
+        if(!inB(nx,ny)||blocked[idx(nx,ny)])ok=false;
+    const cx=nd.tx+t.w/2,cy=nd.ty+t.h/2;
+    if(Math.hypot(cx-6,cy-33)<8||Math.hypot(cx-53,cy-6)<8)ok=false;
+    for(const p of piles)if(Math.abs(cx-p.tx-1)<4&&Math.abs(cy-p.ty-1)<4)ok=false;
+    if(ok)placeBuilding(nd.type,-1,nd.tx,nd.ty,true);
+  }
 }
 function blockRect(tx,ty,w,h,v){
   for(let y=ty;y<ty+h;y++)for(let x=tx;x<tx+w;x++)if(inB(x,y))blocked[idx(x,y)]=v;

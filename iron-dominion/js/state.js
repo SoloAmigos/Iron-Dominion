@@ -1,6 +1,6 @@
 'use strict';
 let state='menu',diffName='normal',D=DIFF.normal;
-let units=[],builds=[],projs=[],parts=[],planes=[],piles=[],rocks=[];
+let units=[],builds=[],projs=[],parts=[],planes=[],piles=[],rocks=[],scraps=[];
 let blocked=new Uint8Array(MAPW*MAPH),vis=new Uint8Array(MAPW*MAPH);
 let money=[4000,4000],powerP=[0,0],powerU=[0,0],lowPow=[false,false];
 let sel=[],placing=null;

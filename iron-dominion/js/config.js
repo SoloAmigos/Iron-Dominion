@@ -23,7 +23,7 @@ const FACTIONS={
       turret:'Bunker Gun',market:'State Foundry',tech:'Doctrine Bureau',silo:'Hellstorm Silo'}},
   scorpion:{key:'scorpion',name:'Scorpion Cartel',c:'#ffb02e',d:'#7a5210',
     tag:'Scavengers of the wastes',
-    desc:'Needs NO power at all · buildings cost −10% · Signatures: Technical raider & Scarab bomb kart · units −10% HP',
+    desc:'Needs NO power at all · buildings cost −10% · Signatures: Technical raider & Scarab bomb kart · units −10% HP · Vehicles scavenge wreck scraps for bonus damage',
     dmg:1,ucost:1,bcost:.9,uhp:.9,bhp:1,spd:1.05,noPower:true,turretDmg:1,cheap:[],
     strikeCd:110,bombs:3,sigs:[{unit:'technical',at:'factory'},{unit:'scarab',at:'factory'}],h:45,sat:20,
     names:{dozer:'Scrap Rig',truck:'Smuggler Van',ranger:'Raider',rocket:'Stinger Cell',tank:'Marauder',arty:'Junk Lobber',
@@ -42,10 +42,12 @@ const FACKEYS=['vanguard','crimson','scorpion','northwind'];
 let fac=['vanguard','crimson'];
 const FAC=t=>FACTIONS[fac[t]];
 function dispName(kind,type,team){
+  if(team<0)return kind==='b'?BT[type].name:UT[type].name;
   const f=FAC(team);
   return (f.names&&f.names[type])||(kind==='u'?UT[type].name:BT[type].name);
 }
 function costOf(kind,type,team){
+  if(team<0)return 0;
   const f=FAC(team);
   let c=kind==='u'?UT[type].cost:BT[type].cost;
   if(kind==='u'){c*=f.ucost;if(f.cheap.includes(type))c*=.85}
@@ -93,9 +95,11 @@ const BT={
   barracks:{name:'Barracks',      ic:'🪖', cost:500, bt:8, hp:1100,w:3,h:2,pow:1,  trains:['ranger','rocket'],desc:'Trains infantry'},
   factory: {name:'War Factory',   ic:'🏭', cost:2000,bt:14,hp:1600,w:4,h:3,pow:3,  trains:['tank','arty'],    desc:'Builds vehicles'},
   turret:  {name:'Guard Turret',  ic:'🗼', cost:900, bt:8, hp:950, w:2,h:2,pow:2,  wpn:'mg',                  desc:'Base defense — needs power'},
-  market:  {name:'Market',        ic:'💰', cost:1500,bt:10,hp:900, w:2,h:2,pow:2,  income:40,                 desc:'+$40 every 5s — endless'},
+  market:  {name:'Market',        ic:'💰', cost:1500,bt:10,hp:900, w:2,h:2,pow:2,  income:80,                 desc:'+$80 every 5s — endless income'},
   tech:    {name:'Tech Lab',      ic:'🔬', cost:1500,bt:12,hp:1000,w:3,h:2,pow:3,  lab:true,                  desc:'Unlocks army upgrades'},
   silo:    {name:'Missile Silo',  ic:'☢️', cost:4000,bt:22,hp:1500,w:3,h:3,pow:6,  silo:true,                 desc:'Superweapon — charges 150s'},
+  civil:   {name:'Civil Structure',ic:'🏠',cost:0,   bt:0, hp:350, w:2,h:2,pow:0,  garrison:true,garrisonMax:4,desc:'Infantry can garrison inside'},
+  oilrig:  {name:'Oil Derrick',   ic:'⛽', cost:0,   bt:0, hp:500, w:2,h:2,pow:0,  capturable:true,income:60, desc:'Capture with infantry for $60 every 5s'},
 };
 const BUILD_ORDER_UI=['power','supply','barracks','factory','turret','market','tech','silo','command'];
 const COMBAT=['ranger','rocket','tank','arty','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar'];
@@ -104,15 +108,25 @@ const DIFF={
   normal:{trickle:9, wave:95, first:160,cap:20,label:'NORMAL',silo:true},
   hard:  {trickle:18,wave:75, first:125,cap:28,label:'HARD',silo:true},
 };
+
+/* ===== Veterancy XP thresholds (unit-level ranks) ===== */
+const VXPT=[200,600,1400]; // rank 1,2,3 unlock thresholds
+
+/* ===== Scrap damage multipliers for Scorpion faction ===== */
+const SCRAP_DMG=[1,1.15,1.3]; // level 0,1,2
+
 const UPGS={
-  w1:{nm:'Weapons I', ic:'⚔️',cost:1200,need:null, f:'w',lv:1,desc:'+12% damage'},
-  a1:{nm:'Armor I',   ic:'🛡️',cost:1200,need:null, f:'a',lv:1,desc:'+12% unit HP'},
-  w2:{nm:'Weapons II',ic:'⚔️',cost:2000,need:'w1',f:'w',lv:2,desc:'+24% damage total'},
-  a2:{nm:'Armor II',  ic:'🛡️',cost:2000,need:'a1',f:'a',lv:2,desc:'+24% unit HP total'},
+  w1: {nm:'Weapons I',    ic:'⚔️', cost:1200,need:null, f:'w', lv:1,desc:'+12% damage'},
+  a1: {nm:'Armor I',      ic:'🛡️', cost:1200,need:null, f:'a', lv:1,desc:'+12% unit HP'},
+  w2: {nm:'Weapons II',   ic:'⚔️', cost:2000,need:'w1', f:'w', lv:2,desc:'+24% damage total'},
+  a2: {nm:'Armor II',     ic:'🛡️', cost:2000,need:'a1', f:'a', lv:2,desc:'+24% unit HP total'},
+  mkt:{nm:'Black Market', ic:'💸', cost:1800,need:null, f:'mk',lv:1,desc:'+50% all passive market income'},
+  cap:{nm:'Capture Protocol',ic:'🚩',cost:800,need:null,f:'cp',lv:1,desc:'Infantry can capture neutral Oil Derricks'},
 };
-let upg=[{w:0,a:0},{w:0,a:0}];
+let upg=[{w:0,a:0,mk:0,cp:0},{w:0,a:0,mk:0,cp:0}];
 const upDmg=t=>1+.12*upg[t].w;
 const upArm=t=>1+.12*upg[t].a;
+const upMk=t=>upg[t].mk?1.5:1;
 
 const POWERS={
   repair:{ic:'🔧',nm:'REPAIR',cd:70, rank:1, need:null,      hint:'Tap an area — repairs nearby friendly units & buildings'},

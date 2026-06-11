@@ -165,6 +165,25 @@ function updateCard(){
     }else if(b.t.silo){
       const ch=Math.floor((b.charge||0)*100);
       cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+dispName('b',b.type,0)+'</b>'+(ch>=100?'☢️ MISSILE READY — use the LAUNCH button':'Charging… '+ch+'%'+(lowPow[0]?' (slowed: LOW POWER)':''))));
+    }else if(b.t.garrison){
+      const gn=b.garrison?b.garrison.length:0,gmax=b.t.garrisonMax;
+      const owner=b.team===0?'Friendly':b.team<0?'Neutral':'Enemy';
+      cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+b.t.name+'</b>'+owner+' · Garrison: '+gn+'/'+gmax+'<br>'+b.t.desc));
+      if(b.team===0&&gn>0){
+        cardEl.appendChild(mkBtn('🚪','Evacuate',0,'warn',()=>{
+          if(b.garrison)for(const gu of b.garrison.slice()){gu.hidden=false;gu.garrisonBuilding=null;gu.x=b.x+rand(-24,24);gu.y=b.y+rand(-24,24)}
+          b.garrison=[];b.team=-1;SFX.click();toast('Infantry evacuated');updateCard();
+        }));
+      }
+    }else if(b.t.capturable){
+      const owner=b.team===0?'Yours — earning $'+b.t.income+'/5s':b.team<0?'Neutral':'Enemy-held';
+      cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+b.t.name+'</b>'+owner+'<br>'+b.t.desc));
+      if(b.team!==0&&upg[0].cp)cardEl.appendChild(mkBtn('🚩','Capture',0,'confirm',()=>{
+        const inf=sel.filter(u=>u.kind==='u'&&!u.dead&&u.cat==='inf'&&u.team===0);
+        if(!inf.length){SFX.err();toast('Select infantry units first');return}
+        for(const u of inf){u.isCapturing=true;u.captureTarget=b;u.captureProgress=0;u.order=null;u.attackTarget=null;u.path=null}
+        SFX.click();toast('🚩 Infantry moving to capture');
+      }));
     }else{
       cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+dispName('b',b.type,0)+'</b>'+b.t.desc));
     }
@@ -237,7 +256,7 @@ function clampCam(){
 function hitTest(wx,wy){
   let best=null,bd=1e9;
   for(const u of units){
-    if(u.dead)continue;
+    if(u.dead||u.hidden)continue;
     if(u.team===1&&tileVisAt(u.x,u.y)!==2)continue;
     const d=Math.hypot(u.x-wx,u.y-wy);
     if(d<u.t.r+13&&d<bd){bd=d;best=u}
@@ -272,6 +291,28 @@ function commandTarget(hit){
     let n=0;
     for(const u of sel)if(u.kind==='u'&&u.type==='dozer'&&!u.dead){u.fix=hit;u.site=null;u.order=null;u.attackTarget=null;u.path=null;n++}
     if(n){SFX.click();toast('🔧 Dozer repairing '+dispName('b',hit.type,0));return true}
+  }
+  // Garrison: infantry into a civil structure (neutral or friendly)
+  if(hit.kind==='b'&&hit.t&&hit.t.garrison&&hit.team!==1){
+    const inf=sel.filter(u=>u.kind==='u'&&!u.dead&&u.cat==='inf'&&u.team===0);
+    if(inf.length){
+      for(const u of inf)orderGarrison(u,hit);
+      SFX.click();toast('🏠 Infantry moving to garrison');return true;
+    }
+  }
+  // Capture: infantry capture a neutral oil derrick
+  if(hit.kind==='b'&&hit.t&&hit.t.capturable&&hit.team!==0){
+    const inf=sel.filter(u=>u.kind==='u'&&!u.dead&&u.cat==='inf'&&u.team===0);
+    if(inf.length){
+      if(!upg[0].cp){SFX.err();toast('🔒 Research Capture Protocol at the Tech Lab first');return true}
+      for(const u of inf){
+        u.isCapturing=true;u.captureTarget=hit;u.captureProgress=0;
+        u.order=null;u.attackTarget=null;u.path=null;
+      }
+      SFX.click();toast('🚩 Infantry moving to capture Oil Derrick');return true;
+    }
+    if(upg[0].cp)toast('⛽ Select infantry to capture this derrick');
+    return false;
   }
   if(hit.kind==='p'){
     let n=0;
@@ -333,6 +374,10 @@ function tap(px,py,isCmd){
     }
     if(hit.team===0){
       if(hit.kind==='b'&&!hit.built&&sel.some(x=>x.kind==='u'&&x.type==='dozer'&&!x.dead)){resumeSite(hit);return}
+      selectEnt(hit);return;
+    }
+    if(hit.team<0){  // neutral building
+      if(commandTarget(hit))return;
       selectEnt(hit);return;
     }
     if(commandTarget(hit))return;

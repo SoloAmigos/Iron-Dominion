@@ -11,7 +11,10 @@ function spr(key,w,h,fn){
   if(!s){s=mkCv(Math.ceil(w*2),Math.ceil(h*2));const g=s.getContext('2d');g.scale(2,2);fn(g);s.lw=w;s.lh=h;SPR[key]=s}
   return s;
 }
-function facCol(fk){const F=FACTIONS[fk];return l=>'hsl('+F.h+','+F.sat+'%,'+l+'%)'}
+function facCol(fk){
+  if(fk==='neutral')return l=>'hsl(90,12%,'+l+'%)';
+  const F=FACTIONS[fk];return l=>'hsl('+F.h+','+F.sat+'%,'+l+'%)'
+}
 /* --- painter helpers --- */
 function pPanel(g,x,y,w,h,base,light,dark){
   g.fillStyle=base;g.fillRect(x,y,w,h);
@@ -51,7 +54,7 @@ function pFoundation(g,X,Y,W,H){
 function bSpr(type,fk){
   const t=BT[type],W=t.w*TILE,H=t.h*TILE;
   return spr('B'+type+'_'+fk,W+BM*2,H+BM*2,g=>{
-    const X=BM,Y=BM,F=FACTIONS[fk],ac=F.c,C=facCol(fk);
+    const X=BM,Y=BM,F=FACTIONS[fk]||{c:'#9aa48c',d:'#7a8470'},ac=F.c,C=facCol(fk);
     pShadow(g,X,Y,W,H);
     switch(type){
       case 'command':{
@@ -248,6 +251,58 @@ function bSpr(type,fk){
         pPanel(g,X+W-26,Y+6,20,16,C(28),C(35),C(12));
         pWindows(g,X+W-23,Y+10,2,true);
         g.fillStyle=ac;g.fillRect(X+6,Y+6,12,4);
+        break;}
+      case 'civil':{
+        pShadow(g,X,Y,W,H);
+        // walls
+        g.fillStyle='#5a5e52';g.fillRect(X,Y,W,H);
+        g.fillStyle='#686c5e';g.fillRect(X,Y,W,H*.45);
+        g.strokeStyle='#30342c';g.lineWidth=1.4;g.strokeRect(X,Y,W,H);
+        // pitched roof
+        g.fillStyle='#474b3e';g.beginPath();
+        g.moveTo(X-2,Y+H*.38);g.lineTo(X+W/2,Y+2);g.lineTo(X+W+2,Y+H*.38);g.closePath();g.fill();
+        g.strokeStyle='#272b22';g.lineWidth=1;g.stroke();
+        // windows
+        for(let i=0;i<3;i++){
+          g.fillStyle='#10150e';g.fillRect(X+7+i*17,Y+H*.5,12,10);
+          g.fillStyle='#8ab8c4';g.fillRect(X+8+i*17,Y+H*.5+1,10,8);
+          g.fillStyle='rgba(170,220,235,.35)';g.fillRect(X+8+i*17,Y+H*.5+1,10,4);
+        }
+        // door
+        g.fillStyle='#2e3228';g.fillRect(X+W/2-7,Y+H-16,14,14);
+        g.fillStyle='#4a5040';g.fillRect(X+W/2-6,Y+H-15,12,12);
+        g.fillStyle='#7a8d6e';g.fillRect(X+W/2-1,Y+H-9,2,8);
+        // garrison indicator
+        g.fillStyle='#9aa48c';g.font='bold 9px sans-serif';g.textAlign='center';g.textBaseline='bottom';
+        g.fillText('[INF]',X+W/2,Y+H+BM*.5);
+        break;}
+      case 'oilrig':{
+        pShadow(g,X,Y,W,H);
+        // base platform
+        g.fillStyle='#4a4438';g.fillRect(X,Y,W,H);
+        g.fillStyle='#5a5247';g.fillRect(X,Y,W,H*.4);
+        g.strokeStyle='#282320';g.lineWidth=1.4;g.strokeRect(X,Y,W,H);
+        // derrick frame
+        g.strokeStyle='#8a6b2e';g.lineWidth=2.8;
+        g.beginPath();
+        g.moveTo(X+W*.28,Y+H-6);g.lineTo(X+W/2,Y+5);
+        g.moveTo(X+W*.72,Y+H-6);g.lineTo(X+W/2,Y+5);
+        g.stroke();
+        g.strokeStyle='#a88238';g.lineWidth=1.6;
+        for(let i=0;i<3;i++){
+          const yt=Y+H-10-i*(H-20)/3,hw=W*.36*(1-i*.22);
+          g.beginPath();g.moveTo(X+W/2-hw,yt);g.lineTo(X+W/2+hw,yt);g.stroke();
+        }
+        // pump head
+        g.fillStyle='#c0984a';g.beginPath();g.ellipse(X+W*.62,Y+H*.52,9,6,0,0,7);g.fill();
+        g.strokeStyle='#8a6b2e';g.lineWidth=2;
+        g.beginPath();g.moveTo(X+W*.62,Y+H*.58);g.lineTo(X+W*.62,Y+H*.74);g.stroke();
+        // storage tank
+        g.fillStyle='#23291f';g.beginPath();g.ellipse(X+W*.28,Y+H*.72,11,9,0,0,7);g.fill();
+        g.fillStyle='#31382c';g.beginPath();g.ellipse(X+W*.27,Y+H*.71,9,7,0,0,7);g.fill();
+        // income label
+        g.fillStyle='#c9a23a';g.font='bold 10px sans-serif';g.textAlign='center';g.textBaseline='middle';
+        g.fillText('$',X+W/2,Y+H-6);
         break;}
       case 'turret':{
         // circular concrete pad
@@ -588,7 +643,8 @@ function drawHPBar(e,x,y,w){
 }
 function drawBuilding(b){
   const x0=b.tx*TILE,y0=b.ty*TILE,w=b.t.w*TILE,h=b.t.h*TILE;
-  const fk=fac[b.team],ac=TEAMC[b.team];
+  const fk=b.team>=0?fac[b.team]:'neutral';
+  const ac=b.team>=0?TEAMC[b.team]:'#9aa48c';
   if(!b.built){
     ctx.fillStyle='#231d12';ctx.fillRect(x0+2,y0+2,w-4,h-4);
     ctx.fillStyle='#2f2818';ctx.fillRect(x0+5,y0+5,w-10,h-10);
@@ -710,6 +766,20 @@ function drawBuilding(b){
       ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(r.x,r.y+1,5,2,0,0,7);ctx.fill();
     }
   }
+  // Garrison count badge
+  if(b.garrison&&b.garrison.length){
+    ctx.fillStyle='rgba(0,0,0,.75)';ctx.beginPath();ctx.arc(x0+w-8,y0+8,8,0,7);ctx.fill();
+    ctx.fillStyle='#c8d48e';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(b.garrison.length,x0+w-8,y0+8);
+  }
+  // Capture progress bar
+  const capUnit=units.find(uu=>!uu.dead&&uu.isCapturing&&uu.captureTarget===b);
+  if(capUnit){
+    ctx.fillStyle='#000b';ctx.fillRect(x0+4,y0-22,w-8,8);
+    ctx.fillStyle='#7ddcff';ctx.fillRect(x0+5,y0-21,(w-10)*clamp(capUnit.captureProgress,0,1),6);
+    ctx.fillStyle='rgba(125,220,255,.85)';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText('CAPTURING',x0+w/2,y0-22);
+  }
   drawHPBar(b,x0+4,y0-10,w-8);
 }
 function drawInf(u){
@@ -723,6 +793,8 @@ function drawInf(u){
   ctx.restore();
 }
 function drawUnit(u){
+  if(u.hidden)return;
+  if(u.team===1&&tileVisAt(u.x,u.y)!==2)return;
   if(sel.includes(u)){
     ctx.fillStyle='rgba(159,226,124,.10)';
     ctx.beginPath();ctx.arc(u.x,u.y,u.t.r+6,0,7);ctx.fill();
@@ -776,6 +848,32 @@ function drawUnit(u){
     ctx.beginPath();ctx.arc(u.x,u.y,u.t.r+3,0,7);ctx.fill();
   }
   drawHPBar(u,u.x-12,u.y-u.t.r-10,24);
+  // Veterancy chevrons
+  if(u.unitRank>0){
+    ctx.save();ctx.translate(u.x,u.y-u.t.r-16);
+    for(let i=0;i<u.unitRank;i++){
+      const cx=-(u.unitRank-1)*4+i*8;
+      ctx.fillStyle=u.unitRank>=3?'#ffd95e':(u.unitRank>=2?'#ffe05a':'#c8d48e');
+      ctx.beginPath();ctx.moveTo(cx-3.5,-1);ctx.lineTo(cx,4);ctx.lineTo(cx+3.5,-1);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,.45)';ctx.lineWidth=.7;ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // Scrap level indicator (Scorpion vehicles)
+  if(u.scrapLevel>0&&u.cat==='veh'){
+    ctx.save();ctx.translate(u.x+u.t.r+2,u.y-4);
+    ctx.fillStyle=u.scrapLevel>=2?'#ffd95e':'#c08040';
+    for(let i=0;i<u.scrapLevel;i++)ctx.fillRect(-2.5,i*5-u.scrapLevel*2.5,5,3);
+    ctx.restore();
+  }
+}
+function drawScrap(s){
+  ctx.save();ctx.translate(s.x,s.y);
+  ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(1,2,7,3.5,0,0,7);ctx.fill();
+  ctx.fillStyle='#6e4c22';ctx.fillRect(-5,-3,10,6);
+  ctx.fillStyle='#8a6030';ctx.fillRect(-5,-3,10,3);
+  ctx.fillStyle='rgba(200,150,70,.5)';ctx.fillRect(-3,-3,4,6);
+  ctx.restore();
 }
 function drawPile(p){
   if(p.amt<=0)return;
@@ -919,6 +1017,7 @@ function render(){
   ctx.drawImage(groundCv,0,0);
   for(const p of parts)if(p.k==='scorch')drawPart(p);
   for(const p of piles)drawPile(p);
+  for(const s of scraps)drawScrap(s);
   for(const b of builds)drawBuilding(b);
   for(const u of units)drawUnit(u);
   for(const p of projs)drawProj(p);
@@ -970,7 +1069,7 @@ function renderMini(){
   for(const b of builds){
     if(b.dead)continue;
     if(b.team===1&&vis[idx(b.tx,b.ty)]===0)continue;
-    mctx.fillStyle=TEAMC[b.team];
+    mctx.fillStyle=b.team>=0?TEAMC[b.team]:'#9aa48c';
     mctx.fillRect(b.tx*TILE*sx,b.ty*TILE*sy,Math.max(3,b.t.w*TILE*sx),Math.max(3,b.t.h*TILE*sy));
   }
   for(const u of units){

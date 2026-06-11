@@ -37,7 +37,7 @@ function buyUpgrade(team,id){
   if(U.f==='a'){
     const old=upArm(team);upg[team].a=U.lv;const nw=upArm(team);
     for(const u of units)if(!u.dead&&u.team===team){u.maxhp=Math.round(u.maxhp/old*nw);u.hp=Math.min(u.maxhp,Math.round(u.hp/old*nw))}
-  }else upg[team].w=U.lv;
+  }else upg[team][U.f]=U.lv;
   if(team===0){toast(U.ic+' '+U.nm+' research complete!');SFX.done();updateCard();updateHUD()}
   return true;
 }

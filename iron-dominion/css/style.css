@@ -87,3 +87,20 @@ h1 span{color:#ffd95e}
 .bigres{font-size:clamp(40px,10vw,64px);font-weight:900;letter-spacing:4px;margin:4px 0}
 .bigres.win{color:#9fe27c;text-shadow:0 0 30px #6fae5b66}
 .bigres.lose{color:#ff7a68;text-shadow:0 0 30px #ae3c2c66}
+@media (orientation:landscape) and (max-height:520px){
+  #topbar{padding-top:calc(3px + env(safe-area-inset-top));padding-bottom:3px;font-size:13px}
+  .ibtn{height:30px;min-width:36px;font-size:14px}
+  #powers{top:calc(40px + env(safe-area-inset-top));gap:5px}
+  .pbtn{width:44px;height:44px;font-size:15px;border-radius:11px}
+  #mini{width:120px;height:80px;bottom:calc(68px + env(safe-area-inset-bottom))}
+  #armyBtn{bottom:calc(72px + env(safe-area-inset-bottom));height:36px;font-size:12px;padding:0 12px}
+  #selBtn{bottom:calc(116px + env(safe-area-inset-bottom));width:40px;height:40px;border-radius:20px}
+  #dozBtn{bottom:calc(162px + env(safe-area-inset-bottom));width:40px;height:40px;border-radius:20px}
+  #card{min-height:58px;padding:4px 6px calc(4px + env(safe-area-inset-bottom))}
+  .cbtn{min-width:64px;max-width:96px;padding:4px 6px;border-radius:8px}
+  .cbtn .ic{font-size:19px}
+  .cbtn .nm{font-size:9px}
+  .cbtn .cost{font-size:9.5px}
+  .cbtn .icimg{width:28px;height:28px}
+  .cinfo{font-size:11px;max-width:38vw}
+}

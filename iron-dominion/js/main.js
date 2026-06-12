@@ -37,7 +37,7 @@ function genChips(fk){
   let s='<div style="margin:6px 0 2px;font-size:11px;opacity:.7">General:</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
   for(const g of gs){
     const sel=chosenGens[fk]===g.id;
-    s+='<button class="dbtn'+(sel?' sel':''+'" data-genfk="'+fk+'" data-genid="'+g.id+'" style="font-size:11px;padding:4px 8px" title="'+g.desc+'">'+g.nm+'</button>';
+    s+='<button class="dbtn'+(sel?' sel':'')+'" data-genfk="'+fk+'" data-genid="'+g.id+'" style="font-size:11px;padding:4px 8px" title="'+g.desc+'">'+g.nm+'</button>';
   }
   return s+'</div>';
 }
@@ -153,7 +153,7 @@ function showFactionSelect(){
   let s='<div class="fgrid2">';
   for(const k of FACKEYS){
     const F=FACTIONS[k];
-    s+='<div class="fcard2'+(k===chosenFac?' sel':''+'" data-f="'+k+'" style="--fc:'+F.c+'">'+
+    s+='<div class="fcard2'+(k===chosenFac?' sel':'')+'" data-f="'+k+'" style="--fc:'+F.c+'">'+
       '<div class="fname">'+F.name+'</div><div class="ftag">'+F.tag+'</div></div>';
   }
   s+='</div>';
@@ -205,12 +205,12 @@ function showLobby(){
 
   let mapS='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:4px 0 2px">';
   for(const k of Object.keys(MAPS))
-    mapS+='<button class="dbtn'+(chosenMapKey===k?' sel':''+'" data-map="'+k+'" style="font-size:12px;padding:5px 12px">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>';
+    mapS+='<button class="dbtn'+(chosenMapKey===k?' sel':'')+'" data-map="'+k+'" style="font-size:12px;padding:5px 12px">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>';
   mapS+='</div>';
 
   let sizeS='<div style="display:flex;gap:6px;justify-content:center;margin:2px 0 4px">';
   for(const[k,label]of _MAP_SIZES)
-    sizeS+='<button class="dbtn'+(chosenMapSize===k?' sel':''+'" data-sz="'+k+'" style="font-size:11px;padding:4px 10px">'+label+'</button>';
+    sizeS+='<button class="dbtn'+(chosenMapSize===k?' sel':'')+'" data-sz="'+k+'" style="font-size:11px;padding:4px 10px">'+label+'</button>';
   sizeS+='</div>';
 
   // Spawn selector — one button per available spawn position
@@ -219,7 +219,7 @@ function showLobby(){
   const _mw=_mapDef.w||60,_mh=_mapDef.h||40;
   for(let si=0;si<Math.min((_mapDef.spawns||[]).length,numSlots);si++){
     const lbl=_spawnLabel(_mapDef.spawns[si],_mw,_mh);
-    spawnS+='<button class="dbtn'+(chosenSpawnIdx===si?' sel':''+'" data-sp="'+si+'" style="font-size:10px;padding:3px 9px">'+lbl+'</button>';
+    spawnS+='<button class="dbtn'+(chosenSpawnIdx===si?' sel':'')+'" data-sp="'+si+'" style="font-size:10px;padding:3px 9px">'+lbl+'</button>';
   }
   spawnS+='</div>';
 

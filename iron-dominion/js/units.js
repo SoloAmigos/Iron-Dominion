@@ -68,10 +68,9 @@ function kill(e,src){
     return;
   }
   e.dead=true;
-  if(e.team===0||e.team===1){
-    const base=Math.round(e.t.cost/4);
-    xpGain(e.team===0?1:0,base);
-  }
+  const _killBase=Math.round((e.t&&e.t.cost||0)/4);
+  for(let _t=0;_t<numSlots;_t++)if(isEnemy(_t,e.team))xpGain(_t,_killBase);
+  if(isEnemy(0,e.team)){if(e.kind==='u')gameStats.kills++;else if(e.kind==='b'&&e.built)gameStats.bldgs++}
   // Veterancy: credit XP to the killing unit
   if(src&&src.kind==='u'&&!src.dead&&e.t&&e.t.cost){
     src.unitXp=(src.unitXp||0)+Math.round(e.t.cost*.4);

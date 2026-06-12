@@ -185,6 +185,7 @@ const WPN={
   orbitalLaser:{dmg:1800,rel:1,rng:1,kind:'arc',  spd:900,splash:90, mult:{inf:1, veh:1.3,bld:1.2},orbital:true},
   agm:     {dmg:90, rel:3.5,rng:280, kind:'rocket',spd:420,      splash:28, mult:{inf:.7, veh:1.2,bld:1},aa:false},
   sam:     {dmg:65, rel:2.8,rng:260, kind:'rocket',spd:500,      splash:15, mult:{inf:.3, veh:.8, bld:.4},aa:true,aaOnly:true},
+  bigbomb: {dmg:220,rel:6.5,rng:310, kind:'arc',   spd:260,      splash:185,mult:{inf:1.2,veh:1.1,bld:1.4},aa:false},
 };
 const UT={
   dozer:   {name:'Dozer',          ic:'🚜', cost:1000,bt:8, hp:300,spd:74, r:13,sight:5,cat:'veh', desc:'Constructs buildings',wc:2},
@@ -202,7 +203,8 @@ const UT={
   scarab:    {name:'Scarab Kart',   ic:'💥', cost:400, bt:5, hp:110,spd:150,r:11,sight:6,cat:'veh', suicide:'boomkart',desc:'Rams & explodes!',sig:true,wc:2},
   mortar:    {name:'Mortar Team',   ic:'🎇', cost:500, bt:6, hp:90, spd:52, r:8, sight:7,cat:'inf', wpn:'mortar',desc:'Long-range mortar',sig:true,wc:1},
   raptor:    {name:'Raptor',        ic:'✈️', cost:1400,bt:14,hp:220,spd:240,r:12,sight:9,cat:'air', wpn:'agm',   desc:'Jet fighter — RTB to rearm',sig:false,wc:2,ammo:4},
-  gunship:   {name:'Gunship',        ic:'🚁', cost:1800,bt:16,hp:420,spd:115,r:14,sight:9,cat:'air', wpn:'agm',   desc:'Attack helicopter — Air General only',sig:true,wc:3,ammo:6},
+  gunship:   {name:'Gunship',       ic:'🚁', cost:1800,bt:16,hp:420,spd:115,r:14,sight:9,cat:'air', wpn:'agm',   desc:'Attack helicopter — Air General only',sig:true,wc:3,ammo:6},
+  bomber:    {name:'Heavy Bomber',  ic:'🛩️', cost:2800,bt:22,hp:320,spd:62, r:20,sight:8,cat:'air', wpn:'bigbomb',desc:'Slow strategic bomber — devastating area payload',wc:4,ammo:3},
 };
 const BT={
   command:  {name:'Command Center', ic:'🏢', cost:2000,bt:20,hp:2600,w:4,h:4,pow:2,  trains:['dozer'],          desc:'HQ — trains Dozers'},
@@ -216,11 +218,12 @@ const BT={
   silo:     {name:'Missile Silo',   ic:'☢️', cost:4000,bt:22,hp:1500,w:3,h:3,pow:6,  silo:true,                 desc:'Superweapon — charges 150s'},
   civil:    {name:'Civil Structure',ic:'🏠', cost:0,   bt:0, hp:350, w:2,h:2,pow:0,  garrison:true,garrisonMax:4,desc:'Infantry can garrison inside'},
   oilrig:   {name:'Oil Derrick',    ic:'⛽', cost:0,   bt:0, hp:500, w:2,h:2,pow:0,  capturable:true,income:100,desc:'Capture with infantry for $100 every 5s'},
-  airfield: {name:'Airfield',       ic:'✈️', cost:2500,bt:18,hp:1800,w:5,h:4,pow:4,  trains:['raptor'],pads:[[-1,-1],[1,-1],[-1,1],[1,1]],desc:'Trains & launches Raptors'},
+  airfield: {name:'Airfield',       ic:'✈️', cost:2500,bt:18,hp:1800,w:5,h:4,pow:4,  trains:['raptor','bomber'],pads:[[-1,-1],[1,-1],[-1,1],[1,1]],desc:'Trains & launches Raptors and Bombers'},
   samsite:  {name:'SAM Site',       ic:'🚀', cost:1200,bt:10,hp:900, w:2,h:2,pow:3,  wpn:'sam',                 desc:'Anti-air defense'},
+  radar:    {name:'Radar Tower',    ic:'📡', cost:1100,bt:10,hp:700, w:2,h:2,pow:2,  sight:20,                  desc:'Wide-area sensors — reveals fog in a large radius'},
 };
-const BUILD_ORDER_UI=['power','supply','barracks','factory','turret','market','tech','airfield','samsite','silo','command'];
-const COMBAT=['ranger','rocket','tank','arty','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar','raptor'];
+const BUILD_ORDER_UI=['power','supply','barracks','factory','turret','market','tech','radar','airfield','samsite','silo','command'];
+const COMBAT=['ranger','rocket','tank','arty','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar','raptor','gunship','bomber'];
 const DIFF={
   easy:  {trickle:3, wave:120,first:220,cap:12,label:'EASY',silo:false},
   normal:{trickle:9, wave:95, first:160,cap:20,label:'NORMAL',silo:true},

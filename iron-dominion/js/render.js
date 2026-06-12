@@ -349,6 +349,22 @@ function bSpr(type,fk){
         pWindows(g,X+W*.62,Y+12,2,true);
         g.fillStyle=ac;g.fillRect(X+W*.6,Y+4,W*.22,3);
         break;}
+      case 'radar':{
+        pFoundation(g,X,Y,W,H);
+        // Equipment room
+        pPanel(g,X+W*.18,Y+H*.52,W*.64,H*.36,C(28),C(36),C(17));
+        // Mast
+        g.strokeStyle=C(38);g.lineWidth=3.4;g.lineCap='round';
+        g.beginPath();g.moveTo(X+W/2,Y+H*.5);g.lineTo(X+W/2,Y+12);g.stroke();g.lineCap='butt';
+        // Dish
+        g.fillStyle=C(22);g.beginPath();g.arc(X+W/2,Y+16,W*.3,Math.PI,0);g.closePath();g.fill();
+        g.strokeStyle=C(38);g.lineWidth=1.6;g.beginPath();g.arc(X+W/2,Y+16,W*.3,Math.PI,0);g.stroke();
+        g.fillStyle=C(32);g.beginPath();g.arc(X+W/2,Y+16,W*.2,Math.PI,0);g.closePath();g.fill();
+        // Sensor pulse
+        g.fillStyle='#9fe9ff';g.beginPath();g.arc(X+W/2,Y+15,2.6,0,7);g.fill();
+        g.fillStyle='rgba(159,233,255,.35)';g.beginPath();g.arc(X+W/2,Y+15,5.5,0,7);g.fill();
+        g.fillStyle=ac;g.fillRect(X+5,Y+H-7,12,4);
+        break;}
       case 'samsite':{
         pFoundation(g,X,Y,W,H);
         // SAM launcher base
@@ -890,6 +906,21 @@ function drawUnit(u){
       // Engine glow
       ctx.fillStyle='rgba(255,160,80,'+(0.4+0.3*Math.sin(gtime*30))+')';
       ctx.beginPath();ctx.arc(2,0,2.2,0,Math.PI*2);ctx.fill();
+    }else if(u.type==='bomber'){
+      // Heavy bomber — wide wings, twin engines
+      ctx.fillStyle=TEAMC[u.team];
+      ctx.beginPath();ctx.moveTo(18,0);ctx.lineTo(0,-6);ctx.lineTo(-14,-4);ctx.lineTo(-14,4);ctx.lineTo(0,6);ctx.closePath();ctx.fill();
+      ctx.fillStyle=TEAMD[u.team];
+      ctx.beginPath();ctx.moveTo(18,0);ctx.lineTo(0,-6);ctx.lineTo(0,0);ctx.closePath();ctx.fill();
+      // Wide swept wings
+      ctx.fillStyle=TEAMC[u.team];
+      ctx.beginPath();ctx.moveTo(2,-5);ctx.lineTo(-10,-24);ctx.lineTo(-15,-18);ctx.lineTo(-5,-5);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.moveTo(2,5);ctx.lineTo(-10,24);ctx.lineTo(-15,18);ctx.lineTo(-5,5);ctx.closePath();ctx.fill();
+      // Twin engine pods under wings
+      ctx.fillStyle=TEAMD[u.team];
+      for(const ey of[-15,15]){ctx.fillRect(-11,ey-2.5,9,5)}
+      ctx.fillStyle='rgba(255,140,60,'+(0.45+0.35*Math.sin(gtime*14))+')';
+      for(const ey of[-15,15]){ctx.beginPath();ctx.arc(-11,ey,2.4,0,Math.PI*2);ctx.fill()}
     }else{
       // Raptor swept-wing silhouette
       ctx.fillStyle=TEAMC[u.team];

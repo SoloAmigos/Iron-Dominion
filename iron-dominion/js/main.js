@@ -24,6 +24,7 @@ let chosenMapKey='desert';
 let chosenMapSize='s2';
 let chosenSpawnIdx=0;
 let chosenGens={vanguard:'std',crimson:'std',scorpion:'std',northwind:'std'};
+let slotFac=[]; // per-slot chosen faction, null/'rnd' = random
 
 /* ---------- screen helpers ---------- */
 function uiClick(){SFX.click()}
@@ -188,6 +189,11 @@ function showLobby(){
   }
   spawnS+='</div>';
 
+  while(slotFac.length<numSlots)slotFac.push('rnd');
+  slotFac.length=numSlots;
+  const _FAC_CYCLE=['rnd',...FACKEYS];
+  function _facLabel(f){return f==='rnd'?'❓ Rnd':FACTIONS[f].name.split(' ')[0]}
+
   let rows='<div class="lobby-slots">';
   for(let i=0;i<numSlots;i++){
     const col=ALL_TEAMC[i%8];
@@ -201,6 +207,8 @@ function showLobby(){
       (isHuman
         ?'<span class="lslot-you">👤 YOU</span>'
         :'<button class="dbtn lslot-type" data-si="'+i+'">'+_TYPE_LABELS[slotType[i]]+'</button>')+
+      (isHuman?''
+        :'<button class="dbtn lslot-fac" data-fi="'+i+'" style="font-size:10px;padding:3px 7px;min-width:54px">'+_facLabel(slotFac[i]||'rnd')+'</button>')+
       '</div>';
   }
   rows+='</div>';
@@ -208,20 +216,58 @@ function showLobby(){
   overlay.innerHTML=panel(
     eyebrow('ARCADE — STEP 2 OF 2')+
     '<h1 style="font-size:clamp(16px,5vw,26px);margin-bottom:4px">MATCH SETUP</h1>'+
-    mapS+sizeS+spawnS+
+    mapS+sizeS+
+    '<canvas id="mapPrev" width="240" height="120" style="display:block;margin:4px auto 4px;border:1px solid rgba(120,150,100,.25);border-radius:4px"></canvas>'+
+    spawnS+
     '<div style="display:flex;align-items:center;gap:10px;justify-content:center;margin:4px 0 4px">'+
     '<span style="font-size:11px;color:#8aaa80;letter-spacing:1px">PLAYERS</span>'+
     '<button class="dbtn" id="slotMinus" style="min-width:34px;padding:4px 8px;font-size:18px;line-height:1">−</button>'+
     '<span id="slotCount" style="font-size:20px;font-weight:800;min-width:22px;text-align:center">'+numSlots+'</span>'+
     '<button class="dbtn" id="slotPlus" style="min-width:34px;padding:4px 8px;font-size:18px;line-height:1">+</button>'+
     '</div>'+
-    '<div style="font-size:10px;color:#8aaa80;text-align:center;margin-bottom:5px">Tap team to reassign · tap bot to change difficulty</div>'+
+    '<div style="font-size:10px;color:#8aaa80;text-align:center;margin-bottom:5px">Tap team · tap bot · tap faction name to change</div>'+
     rows+
     '<div class="nav-row">'+
     '<button class="dbtn back-btn" id="backBtn">← BACK</button>'+
     '<button class="big-btn arcade" id="startBtn" style="flex:1;margin-bottom:0;padding:13px">⚔ START BATTLE</button>'+
     '</div>'
   );
+
+  // Draw map preview
+  const _pCv=document.getElementById('mapPrev');
+  if(_pCv){
+    const _pg=_pCv.getContext('2d');
+    const _mw=_mapDef.w,_mh=_mapDef.h;
+    const _scx=240/_mw,_scy=120/_mh;
+    _pg.fillStyle=_mapDef.deco==='sand'?'#c4a96a':_mapDef.deco==='urban'?'#4a4e48':'#2b3a25';
+    _pg.fillRect(0,0,240,120);
+    // Walls
+    _pg.strokeStyle='rgba(100,80,60,.6)';_pg.lineWidth=2;
+    for(const w of(_mapDef.walls||[])){
+      const[p1,p2]=w;_pg.beginPath();
+      _pg.moveTo((p1[0]+.5)*_scx,(p1[1]+.5)*_scy);_pg.lineTo((p2[0]+.5)*_scx,(p2[1]+.5)*_scy);_pg.stroke();
+    }
+    // Neutral buildings
+    _pg.fillStyle='rgba(150,160,140,.6)';
+    for(const nd of(_mapDef.neutrals||[])){
+      const t=BT[nd.type];_pg.fillRect(nd.tx*_scx,nd.ty*_scy,t.w*_scx,t.h*_scy);
+    }
+    // Gold piles
+    _pg.fillStyle='#ffd95e';
+    for(const[px,py]of(_mapDef.piles||[])){
+      _pg.fillRect((px+.3)*_scx,(py+.3)*_scy,1.4*_scx,1.4*_scy);
+    }
+    // Spawns
+    const _sp=(_mapDef.spawns||[]).slice(0,numSlots);
+    for(let si=0;si<_sp.length;si++){
+      const[sx,sy]=_sp[si];
+      _pg.fillStyle=si===chosenSpawnIdx?ALL_TEAMC[0]:ALL_TEAMC[Math.min(si,7)];
+      _pg.beginPath();_pg.arc((sx+2)*_scx,(sy+2)*_scy,si===chosenSpawnIdx?7:5,0,7);_pg.fill();
+      _pg.strokeStyle='rgba(0,0,0,.5)';_pg.lineWidth=1.5;_pg.stroke();
+      _pg.fillStyle='#fff';_pg.font='bold 8px sans-serif';_pg.textAlign='center';_pg.textBaseline='middle';
+      _pg.fillText(si===chosenSpawnIdx?'P':(si+1),(sx+2)*_scx,(sy+2)*_scy);
+    }
+  }
 
   for(const b of overlay.querySelectorAll('[data-map]'))b.onclick=()=>{
     chosenMapKey=b.dataset.map;chosenSpawnIdx=0;uiClick();showLobby();
@@ -235,11 +281,11 @@ function showLobby(){
   };
   document.getElementById('slotMinus').onclick=()=>{
     if(numSlots<=2)return;
-    numSlots--;slotType.length=numSlots;slotAlliance.length=numSlots;uiClick();showLobby();
+    numSlots--;slotType.length=numSlots;slotAlliance.length=numSlots;slotFac.length=numSlots;uiClick();showLobby();
   };
   document.getElementById('slotPlus').onclick=()=>{
     if(numSlots>=8)return;
-    numSlots++;slotType.push('medium');slotAlliance.push(numSlots-1);uiClick();showLobby();
+    numSlots++;slotType.push('medium');slotAlliance.push(numSlots-1);slotFac.push('rnd');uiClick();showLobby();
   };
   for(const b of overlay.querySelectorAll('[data-ti]'))b.onclick=()=>{
     const i=+b.dataset.ti;
@@ -250,6 +296,12 @@ function showLobby(){
     const i=+b.dataset.si;
     slotType[i]=_TYPES_CYCLE[(_TYPES_CYCLE.indexOf(slotType[i])+1)%3];
     b.textContent=_TYPE_LABELS[slotType[i]];uiClick();
+  };
+  for(const b of overlay.querySelectorAll('[data-fi]'))b.onclick=()=>{
+    const i=+b.dataset.fi;
+    const cur=slotFac[i]||'rnd';
+    slotFac[i]=_FAC_CYCLE[(_FAC_CYCLE.indexOf(cur)+1)%_FAC_CYCLE.length];
+    b.textContent=_facLabel(slotFac[i]);uiClick();
   };
   document.getElementById('backBtn').onclick=()=>{uiClick();showFactionSelect()};
   document.getElementById('startBtn').onclick=()=>{uiClick();init()};
@@ -270,15 +322,22 @@ function showPause(){
 function endGame(win){
   if(state!=='play')return;
   state=win?'win':'lose';
+  const _elapsed=Math.floor(gtime);
+  const _mm=Math.floor(_elapsed/60),_ss=_elapsed%60;
+  const _timeStr=_mm+'m '+(_ss<10?'0':'')+_ss+'s';
   SFX.boom(true);
   setTimeout(()=>{
     const enemyFac=fac.find((f,i)=>i>0&&isEnemy(0,i))||fac[1]||'crimson';
+    const enemyNames=fac.filter((f,i)=>i>0&&isEnemy(0,i)).map(f=>FACTIONS[f].name).join(', ');
     overlay.style.display='flex';
     overlay.innerHTML=panel(
       '<div class="eyebrow">'+(win?'VICTORY — THE REGION IS OURS':'BASE LOST')+'</div>'+
       '<div class="bigres '+(win?'win':'lose')+'">'+(win?'VICTORY':'DEFEAT')+'</div>'+
-      '<div class="sub">'+(win?'Every enemy structure lies in ruins.':'The '+FACTIONS[enemyFac].name+' overran your position.')+'</div>'+
-      '<div class="dbtns" style="margin-top:16px">'+
+      '<div class="sub">'+(win?'Every enemy structure lies in ruins.':'The '+(enemyNames||FACTIONS[enemyFac].name)+' overran your position.')+'</div>'+
+      '<div style="display:flex;justify-content:center;gap:18px;margin:12px 0 4px;font-size:13px;opacity:.85">'+
+      '<span>⏱ '+_timeStr+'</span><span>⚔️ '+gameStats.kills+' kills</span><span>🏚 '+gameStats.bldgs+' bldgs</span>'+
+      '</div>'+
+      '<div class="dbtns" style="margin-top:12px">'+
       '<button class="dbtn arcade" id="retryBtn">↺ REMATCH</button>'+
       '<button class="dbtn" id="menuBtn2">⌂ MAIN MENU</button>'+
       '</div>'
@@ -297,12 +356,15 @@ function init(name){
   if(!slotAlliance||slotAlliance.length!==numSlots){slotAlliance=[];for(let i=0;i<numSlots;i++)slotAlliance.push(i)}
   if(!slotType||slotType.length!==numSlots){slotType=['human'];for(let i=1;i<numSlots;i++)slotType.push('medium')}
 
-  // Build faction list: slot 0 = player, rest random AI
+  // Build faction list: slot 0 = player, rest random AI (unique where possible)
   matchSeed=Date.now()&0x7fffffff;setSeed(matchSeed);
   fac=[chosenFac];
+  const _usedFacs=new Set([chosenFac]);
   for(let i=1;i<numSlots;i++){
-    const others=FACKEYS.filter(k=>k!==fac[Math.max(0,i-1)]);
-    fac.push(others[Math.floor(srandom()*others.length)]);
+    const avail=FACKEYS.filter(k=>!_usedFacs.has(k));
+    const pool=avail.length?avail:FACKEYS.filter(k=>k!==fac[i-1]);
+    const picked=pool[Math.floor(srandom()*pool.length)];
+    fac.push(picked);_usedFacs.add(picked);
   }
   TEAMC=ALL_TEAMC.slice(0,numSlots);
   TEAMD=ALL_TEAMD.slice(0,numSlots);
@@ -316,6 +378,8 @@ function init(name){
   setMapDims(MAP.w,MAP.h);
 
   simFrame=0;simAcc=0;
+  gameStats={kills:0,bldgs:0};
+  gameSpeed=1;const _sb=document.getElementById('speedBtn');if(_sb)_sb.textContent='1×';
   units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];
   blocked=new Uint8Array(MAPW*MAPH);vis=new Uint8Array(MAPW*MAPH);
   resetPowers();
@@ -341,7 +405,7 @@ function init(name){
   const psi=Math.min(chosenSpawnIdx,allSpawns.length-1);
   const playerSpawn=allSpawns[psi];
   const aiSpawns=allSpawns.filter((_,i)=>i!==psi);
-  for(let si=aiSpawns.length-1;si>0;si--){const j=Math.floor(srandom()*(si+1));[aiSpawns[si],aiSpawns[j]]=[aiSpawns[j],aiSpawns[i]]}
+  for(let si=aiSpawns.length-1;si>0;si--){const j=Math.floor(srandom()*(si+1));[aiSpawns[si],aiSpawns[j]]=[aiSpawns[j],aiSpawns[si]]}
   const pc=placeBuilding('command',0,playerSpawn[0],playerSpawn[1],true);
   ais=[];
   for(let i=1;i<numSlots;i++){
@@ -442,10 +506,10 @@ function frame(ts){
   if(state!=='play'){render();return}
   const dtReal=Math.min((ts-(lastTs||ts))/1000,0.1);
   lastTs=ts;
-  simAcc+=dtReal;
-  let steps=0;
-  while(simAcc>=SIM_DT&&steps<6){simStep();simAcc-=SIM_DT;steps++}
-  if(steps>=6)simAcc=0;
+  simAcc+=dtReal*gameSpeed;
+  let steps=0,maxS=gameSpeed*5;
+  while(simAcc>=SIM_DT&&steps<maxS){simStep();simAcc-=SIM_DT;steps++}
+  if(steps>=maxS)simAcc=0;
   renderAlpha=simAcc/SIM_DT;
   render();
 }

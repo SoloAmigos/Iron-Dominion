@@ -21,3 +21,7 @@ const PROJ_CAP=500,PART_CAP=700;
 
 // Campaign
 let campaign=null;
+
+// Game speed and match stats
+let gameSpeed=1;
+let gameStats={kills:0,bldgs:0};

@@ -328,7 +328,7 @@ function stampVis(x,y,rt){
 function updateFog(){
   for(let i=0;i<vis.length;i++)if(vis[i]===2)vis[i]=1;
   for(const u of units)if(!u.dead&&u.team>=0&&!isEnemy(0,u.team))stampVis(u.x,u.y,u.t.sight);
-  for(const b of builds)if(!b.dead&&b.team>=0&&!isEnemy(0,b.team))stampVis(b.x,b.y,b.built?7:4);
+  for(const b of builds)if(!b.dead&&b.team>=0&&!isEnemy(0,b.team))stampVis(b.x,b.y,b.built?(b.t.sight||7):4);
   const d=fogImg.data;
   for(let i=0;i<vis.length;i++){
     const o=i*4;d[o]=0;d[o+1]=0;d[o+2]=0;

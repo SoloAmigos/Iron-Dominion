@@ -17,6 +17,7 @@ function makeAI(diff){
     {b:'market',o:[8,5]},
     {b:'turret',o:[-7,3]},
     {b:'power',o:[5,-1]},
+    {b:'radar',o:[-5,11]},
     {b:'samsite',o:[0,13]},
     {b:'airfield',o:[9,7]},
   ];
@@ -63,7 +64,7 @@ function aiTick(tick){
   ai.rebT-=tick;
   if(ai.rebT<=0){
     ai.rebT=6;
-    for(const k of['power','supply','barracks','factory']){
+    for(const k of['power','supply','barracks','factory','radar']){
       if(k==='power'&&FAC(t).noPower)continue;
       if(ai.builtTypes[k]&&aiCountBuild(k)===0&&money[t]>=costOf('b',k,t)){aiBuildAt(k,[rand(-6,4)|0,rand(0,10)|0]);break}
     }

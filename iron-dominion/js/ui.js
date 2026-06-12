@@ -533,6 +533,11 @@ document.getElementById('rankBtn').onclick=()=>{
   genOpen=!genOpen;if(genOpen)sel=[];
   SFX.click();updateCard();
 };
+document.getElementById('speedBtn').onclick=function(){
+  if(state!=='play')return;
+  gameSpeed=gameSpeed===1?2:gameSpeed===2?4:1;
+  this.textContent=gameSpeed+'×';SFX.click();
+};
 document.getElementById('muteBtn').onclick=function(){muted=!muted;this.textContent=muted?'🔇':'🔊'};
 document.getElementById('menuBtn').onclick=()=>{
   if(state==='play'){state='pause';showPause()}

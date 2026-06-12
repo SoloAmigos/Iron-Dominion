@@ -223,6 +223,12 @@ const BT={
   radar:    {name:'Radar Tower',    ic:'📡', cost:1100,bt:10,hp:700, w:2,h:2,pow:2,  sight:20,                  desc:'Wide-area sensors — reveals fog in a large radius'},
 };
 const BUILD_ORDER_UI=['power','supply','barracks','factory','turret','market','tech','radar','airfield','samsite','silo','command'];
+const BUILD_CATEGORIES=[
+  {label:'Combat',     items:['turret','samsite','radar','airfield','silo']},
+  {label:'Production', items:['barracks','factory','tech']},
+  {label:'Power',      items:['power']},
+  {label:'Economy',    items:['supply','market','command']},
+];
 const COMBAT=['ranger','rocket','tank','arty','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar','raptor','gunship','bomber'];
 const DIFF={
   easy:  {trickle:3, wave:120,first:220,cap:12,label:'EASY',silo:false},

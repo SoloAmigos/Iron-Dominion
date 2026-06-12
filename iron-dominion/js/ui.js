@@ -202,17 +202,22 @@ function updateCard(){
   if(dz){
     cardEl.appendChild(mkInfo('<b>🚜 '+dispName('u','dozer',0)+'</b>Pick a structure:'));
     const REQ={tech:'barracks',silo:'factory',airfield:'factory',samsite:'power'};
-    for(const bt of BUILD_ORDER_UI){
-      if(bt==='power'&&FAC(0).noPower)continue;
-      const t=BT[bt],bc=costOf('b',bt,0);
-      cardEl.appendChild(mkBtn(BT[bt].ic,dispName('b',bt,0),bc,t.silo?'sig':'',()=>{
-        if(REQ[bt]&&!hasB(REQ[bt])){SFX.err();toast('🔒 Requires a '+dispName('b',REQ[bt],0)+' first');return}
-        if(money[0]<bc){SFX.err();toast('💰 Need $'+bc);return}
-        const tx=clamp(TT(cam.x)-Math.floor(t.w/2),1,MAPW-t.w-1);
-        const ty=clamp(TT(cam.y)-Math.floor(t.h/2),1,MAPH-t.h-1);
-        placing={type:bt,tx,ty,ok:false};SFX.click();updateCard();
-        toast('Tap the map to position, then ✓ PLACE');
-      }));
+    for(const cat of BUILD_CATEGORIES){
+      const vis=cat.items.filter(bt=>!(bt==='power'&&FAC(0).noPower));
+      if(!vis.length)continue;
+      const sep=document.createElement('div');sep.className='ccat';sep.textContent=cat.label;
+      cardEl.appendChild(sep);
+      for(const bt of vis){
+        const t=BT[bt],bc=costOf('b',bt,0);
+        cardEl.appendChild(mkBtn(BT[bt].ic,dispName('b',bt,0),bc,t.silo?'sig':'',()=>{
+          if(REQ[bt]&&!hasB(REQ[bt])){SFX.err();toast('🔒 Requires a '+dispName('b',REQ[bt],0)+' first');return}
+          if(money[0]<bc){SFX.err();toast('💰 Need $'+bc);return}
+          const tx=clamp(TT(cam.x)-Math.floor(t.w/2),1,MAPW-t.w-1);
+          const ty=clamp(TT(cam.y)-Math.floor(t.h/2),1,MAPH-t.h-1);
+          placing={type:bt,tx,ty,ok:false};SFX.click();updateCard();
+          toast('Tap the map to position, then ✓ PLACE');
+        }));
+      }
     }
   }else{
     const names=myUnits.length===1?UT[myUnits[0].type].ic+' '+dispName('u',myUnits[0].type,0):'⚔ '+myUnits.length+' units';

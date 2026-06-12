@@ -547,7 +547,10 @@ function updateCapture(u,dt){
   if(u.captureProgress>=1){
     b.team=u.team;
     u.isCapturing=false;u.captureTarget=null;u.captureProgress=0;
-    if(u.team===0){toast('🚩 Oil Derrick captured — earning $'+b.t.income+' every 5s!');SFX.done()}
+    if(u.team===0){
+      const _cap=b.t.income?'— earning $'+b.t.income+' every 5s':b.t.repairAura?'— repairing nearby units':b.t.sight?'— fog of war revealed':'';
+      toast('🚩 '+dispName('b',b.type,0)+' captured '+_cap);SFX.done();
+    }
   }
 }
 const HEAL_AT={inf:['barracks'],veh:['factory','command']};

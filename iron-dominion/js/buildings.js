@@ -100,6 +100,18 @@ function updateBuilding(b,dt){
       if(b.team===0&&readyCd<=0){readyCd=1.4;toast(UT[it.type].ic+' '+dispName('u',it.type,b.team)+' ready');SFX.done()}
     }
   }
+  if(b.t.repairAura&&b.built&&b.team>=0){
+    b.repT=(b.repT||0)+dt;
+    if(b.repT>=2.5){
+      b.repT-=2.5;
+      const nearby=shQuery(b.x,b.y,180);
+      for(const u of nearby){
+        if(u.kind!=='u'||u.dead||u.team!==b.team||u.hp>=u.maxhp)continue;
+        u.hp=Math.min(u.maxhp,u.hp+u.maxhp*.07);
+        if(u.team===0)addPart({k:'txt',txt:'+HP',x:u.x,y:u.y-18,vy:-20,life:.75,max:.75});
+      }
+    }
+  }
   if(b.t.income&&b.team>=0){
     const gm2=GENMOD(b.team);
     b.mkT=(b.mkT||0)+dt*(lowPow[b.team]?.5:1);

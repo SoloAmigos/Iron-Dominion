@@ -42,9 +42,10 @@ PWA: `manifest.json` + `sw.js` (cache-first service worker — **bump the `CACHE
 
 ## Planned Improvements
 
-- [ ] Save/load game state (localStorage serializer)
-- [ ] More map generator presets (river, urban, islands)
-- [ ] More neutral capturables (repair bay, watchtower)
+- [x] Save/load game state (localStorage serializer — pause menu Save, main menu Continue)
+- [x] More map generator presets — `river` (horizontal river with bridge crossings) + `frontline` (S-shaped no-man's land)
+- [x] More neutral capturables — `repairbay` (heals nearby units every 2.5s) + `watchtower` (sight:14 fog reveal)
 - [ ] Campaign expansion
 - [ ] Multiplayer support
 - [ ] End-game stats graph (income/army value over time)
+- [ ] Sound polish round 2 (unit voice blips per category, low-power alarm loop)

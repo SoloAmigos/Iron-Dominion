@@ -726,7 +726,7 @@ function drawBuilding(b){
     ctx.fillStyle='#000b';ctx.fillRect(x0+4,y0-10,w-8,7);
     ctx.fillStyle='#ffd95e';ctx.fillRect(x0+5,y0-9,(w-10)*b.prog,5);
     if(sel.includes(b))drawBrackets(x0-2,y0-2,w+4,h+4);
-    drawHPBar(b,x0+4,y0-17,w-8);
+    if(tileVisAt(b.x,b.y)===2||!isEnemy(0,b.team))drawHPBar(b,x0+4,y0-17,w-8);
     return;
   }
   ctx.drawImage(bSpr(b.type,fk),x0-BM,y0-BM,w+BM*2,h+BM*2);
@@ -809,7 +809,7 @@ function drawBuilding(b){
   {const BICO={command:'🏢',power:'⚡',supply:'📦',market:'💰',barracks:'🪖',factory:'⚙️',tech:'🔬',silo:'☢️',airfield:'✈️',samsite:'🚀'};
   const bic=BICO[b.type];
   if(bic){ctx.save();const icx=x0+w/2,icy=y0+7;ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.ellipse(icx,icy,11,9,0,0,7);ctx.fill();ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(bic,icx,icy);ctx.restore()}}
-  if(b.hp<b.maxhp*.45&&state==='play'){
+  if(b.hp<b.maxhp*.45&&state==='play'&&(tileVisAt(b.x,b.y)===2||!isEnemy(0,b.team))){
     if(Math.random()<.08)addPart({k:'smoke',x:x0+vrand(8,w-8),y:y0+vrand(6,h*.5),vx:vrand(-5,5),vy:vrand(-26,-12),life:vrand(.7,1.2),max:vrand(.7,1.2),s:vrand(5,9)});
     if(b.hp<b.maxhp*.25&&Math.random()<.05)addPart({k:'fire',x:x0+vrand(10,w-10),y:y0+vrand(8,h-12),vx:0,vy:vrand(-14,-6),life:vrand(.2,.4),max:vrand(.2,.4),s:vrand(5,9)});
   }
@@ -838,7 +838,7 @@ function drawBuilding(b){
     ctx.fillStyle='rgba(125,220,255,.85)';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
     ctx.fillText('CAPTURING',x0+w/2,y0-22);
   }
-  drawHPBar(b,x0+4,y0-10,w-8);
+  if(tileVisAt(b.x,b.y)===2||!isEnemy(0,b.team))drawHPBar(b,x0+4,y0-10,w-8);
 }
 function drawInf(u){
   const R=u.t.r*1.3;

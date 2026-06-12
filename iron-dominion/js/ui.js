@@ -543,12 +543,30 @@ function miniJump(e){
 mcv.addEventListener('pointerdown',e=>{e.preventDefault();mcv.setPointerCapture(e.pointerId);miniJump(e)});
 mcv.addEventListener('pointermove',e=>{if(e.buttons)miniJump(e)});
 // keyboard
+const ctrlGroups={};
 addEventListener('keydown',e=>{
   keys[e.key.toLowerCase()]=true;
   if(e.key==='Escape'){
     if(placing)placing=null,updateCard();
     else if(targetPower)targetPower=null,updateHUD();
     else sel=[],updateCard();
+  }
+  // Control groups: Ctrl+1..5 assign, 1..5 recall
+  if(state==='play'&&/^[1-5]$/.test(e.key)){
+    if(e.ctrlKey){
+      e.preventDefault();
+      const g=sel.filter(s=>s.kind==='u'&&!s.dead&&s.team===0);
+      if(g.length){ctrlGroups[e.key]=g;toast('⌘ Group '+e.key+' assigned ('+g.length+' units)');SFX.click()}
+    }else{
+      const g=(ctrlGroups[e.key]||[]).filter(u=>!u.dead);
+      if(g.length){
+        sel=g;updateCard();SFX.sel();
+        // double-tap the key to also center the camera
+        const now=performance.now();
+        if(ctrlGroups['_t'+e.key]&&now-ctrlGroups['_t'+e.key]<400){cam.x=g[0].x;cam.y=g[0].y;clampCam()}
+        ctrlGroups['_t'+e.key]=now;
+      }
+    }
   }
 });
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
@@ -585,6 +603,7 @@ document.getElementById('speedBtn').onclick=function(){
   this.textContent=gameSpeed+'×';SFX.click();
 };
 document.getElementById('muteBtn').onclick=function(){muted=!muted;this.textContent=muted?'🔇':'🔊';applyMute()};
+document.getElementById('muteBtn').textContent=muted?'🔇':'🔊';
 document.getElementById('menuBtn').onclick=()=>{
   if(state==='play'){state='pause';showPause()}
   else if(state==='pause'){overlay.style.display='none';state='play'}

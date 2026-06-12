@@ -4,21 +4,81 @@ const TILE=40;
 let MAPW=60,MAPH=40,WW=MAPW*TILE,WH=MAPH*TILE;
 function setMapDims(w,h){MAPW=w;MAPH=h;WW=w*TILE;WH=h*TILE}
 
-const MAPS={
-  desert:{w:60,h:40,spawns:[[4,33],[55,5]],piles:[[18,28],[25,20],[38,14],[45,25]],
-    neutrals:[{type:'oilrig',tx:30,ty:20},{type:'civil',tx:12,ty:15},{type:'civil',tx:48,ty:25}],
-    rocks:[],walls:[],deco:'sand'},
-  urban:{w:60,h:40,spawns:[[4,33],[55,5]],piles:[[15,30],[22,22],[40,18],[50,28]],
-    neutrals:[{type:'oilrig',tx:22,ty:18},{type:'oilrig',tx:38,ty:22},{type:'civil',tx:10,ty:10},{type:'civil',tx:50,ty:30}],
-    rocks:[{tx:25,ty:25},{tx:35,ty:15},{tx:20,ty:10}],walls:[],deco:'urban'},
-  valley:{w:72,h:36,spawns:[[4,28],[67,6]],piles:[[20,24],[30,18],[42,14],[55,22]],
-    neutrals:[{type:'oilrig',tx:36,ty:18},{type:'civil',tx:15,ty:20},{type:'civil',tx:57,ty:14}],
-    rocks:[],walls:[[[24,10],[24,26]],[[48,10],[48,26]]],deco:'green'},
-};
-let MAP=MAPS.desert;
-let chosenMap='desert';
+/* 8-team colour palette */
+const ALL_TEAMC=['#4da3ff','#ff5147','#4dff80','#c966ff','#ff8c00','#00eeff','#ff66aa','#ffee00'];
+const ALL_TEAMD=['#244a6e','#6e2424','#1a5c30','#3d1a6e','#6e3a00','#006e6e','#6e1a44','#6e5c00'];
+let TEAMC=[...ALL_TEAMC], TEAMD=[...ALL_TEAMD];
 
-let TEAMC=['#4da3ff','#ff5147'], TEAMD=['#244a6e','#6e2424'];
+/* Game-mode definitions */
+const GAME_MODES={
+  '1v1': {slots:2, alliances:[0,1],                    label:'1v1',   desc:'You vs 1 AI enemy'},
+  '1v3': {slots:4, alliances:[0,1,1,1],                label:'1v3',   desc:'You vs 3 AI enemies'},
+  '1v7': {slots:8, alliances:[0,1,1,1,1,1,1,1],        label:'1v7',   desc:'You vs 7 AI enemies (horde)'},
+  '2v2': {slots:4, alliances:[0,1,0,1],                label:'2v2',   desc:'You + AI ally vs 2 enemies'},
+  '4v4': {slots:8, alliances:[0,1,0,1,0,1,0,1],        label:'4v4',   desc:'You + 3 allies vs 4 enemies'},
+  'ffa4':{slots:4, alliances:[0,1,2,3],                label:'FFA 4', desc:'4-way free-for-all'},
+  'ffa8':{slots:8, alliances:[0,1,2,3,4,5,6,7],        label:'FFA 8', desc:'8-way free-for-all'},
+};
+let gameMode='1v1', numSlots=2, slotAlliance=[0,1];
+function isEnemy(a,b){if(a===b||a<0||b<0)return false;if(!slotAlliance.length)return a!==b;return slotAlliance[a]!==slotAlliance[b]}
+
+const MAPS={
+  desert:{
+    s2:{w:60,h:40, spawns:[[4,33],[55,5]],
+      piles:[[18,28],[25,20],[38,14],[45,25]],
+      neutrals:[{type:'oilrig',tx:30,ty:20},{type:'civil',tx:12,ty:15},{type:'civil',tx:48,ty:25}],
+      rocks:[],walls:[],deco:'sand'},
+    s4:{w:88,h:56, spawns:[[4,48],[83,5],[83,48],[4,5]],
+      piles:[[20,40],[35,28],[55,28],[68,40],[20,15],[68,15],[44,48],[44,8]],
+      neutrals:[{type:'oilrig',tx:44,ty:28},{type:'oilrig',tx:22,ty:28},{type:'oilrig',tx:66,ty:28},
+        {type:'civil',tx:15,ty:22},{type:'civil',tx:70,ty:34},{type:'civil',tx:44,ty:40}],
+      rocks:[],walls:[],deco:'sand'},
+    s8:{w:120,h:76, spawns:[[4,68],[115,5],[115,68],[4,5],[59,68],[60,5],[4,36],[115,36]],
+      piles:[[20,58],[50,18],[70,18],[100,58],[20,18],[100,18],[60,68],[60,8],[40,38],[80,38],[15,38],[105,38],[40,58],[80,58]],
+      neutrals:[{type:'oilrig',tx:60,ty:38},{type:'oilrig',tx:30,ty:38},{type:'oilrig',tx:90,ty:38},
+        {type:'oilrig',tx:60,ty:20},{type:'oilrig',tx:60,ty:56},
+        {type:'civil',tx:20,ty:38},{type:'civil',tx:100,ty:38}],
+      rocks:[],walls:[],deco:'sand'},
+  },
+  urban:{
+    s2:{w:60,h:40, spawns:[[4,33],[55,5]],
+      piles:[[15,30],[22,22],[40,18],[50,28]],
+      neutrals:[{type:'oilrig',tx:22,ty:18},{type:'oilrig',tx:38,ty:22},{type:'civil',tx:10,ty:10},{type:'civil',tx:50,ty:30}],
+      rocks:[{tx:25,ty:25},{tx:35,ty:15},{tx:20,ty:10}],walls:[],deco:'urban'},
+    s4:{w:88,h:56, spawns:[[4,48],[83,5],[83,48],[4,5]],
+      piles:[[18,42],[30,28],[58,28],[70,42],[18,14],[70,14],[44,50],[44,6]],
+      neutrals:[{type:'oilrig',tx:44,ty:28},{type:'oilrig',tx:22,ty:28},{type:'oilrig',tx:66,ty:28},
+        {type:'civil',tx:12,ty:24},{type:'civil',tx:72,ty:32},{type:'civil',tx:44,ty:42}],
+      rocks:[{tx:30,ty:28},{tx:58,ty:28},{tx:44,ty:14},{tx:44,ty:42}],walls:[],deco:'urban'},
+    s8:{w:120,h:76, spawns:[[4,68],[115,5],[115,68],[4,5],[59,68],[60,5],[4,36],[115,36]],
+      piles:[[18,60],[50,20],[70,20],[102,60],[18,20],[102,20],[60,70],[60,8],[38,38],[82,38],[14,38],[106,38],[38,60],[82,60]],
+      neutrals:[{type:'oilrig',tx:60,ty:38},{type:'oilrig',tx:30,ty:38},{type:'oilrig',tx:90,ty:38},
+        {type:'oilrig',tx:60,ty:22},{type:'oilrig',tx:60,ty:54},
+        {type:'civil',tx:20,ty:38},{type:'civil',tx:100,ty:38}],
+      rocks:[{tx:40,ty:38},{tx:80,ty:38},{tx:60,ty:20},{tx:60,ty:56}],walls:[],deco:'urban'},
+  },
+  valley:{
+    s2:{w:72,h:36, spawns:[[4,28],[67,6]],
+      piles:[[20,24],[30,18],[42,14],[55,22]],
+      neutrals:[{type:'oilrig',tx:36,ty:18},{type:'civil',tx:15,ty:20},{type:'civil',tx:57,ty:14}],
+      rocks:[],walls:[[[24,10],[24,26]],[[48,10],[48,26]]],deco:'green'},
+    s4:{w:96,h:64, spawns:[[4,56],[91,5],[91,56],[4,5]],
+      piles:[[20,48],[38,32],[58,32],[76,48],[20,16],[76,16],[48,58],[48,6]],
+      neutrals:[{type:'oilrig',tx:48,ty:32},{type:'oilrig',tx:24,ty:32},{type:'oilrig',tx:72,ty:32},
+        {type:'civil',tx:16,ty:24},{type:'civil',tx:78,ty:40}],
+      rocks:[],walls:[[[28,16],[28,48]],[[68,16],[68,48]]],deco:'green'},
+    s8:{w:128,h:80, spawns:[[4,72],[123,5],[123,72],[4,5],[63,72],[64,5],[4,40],[123,40]],
+      piles:[[20,64],[48,22],[80,22],[108,64],[20,22],[108,22],[64,74],[64,6],[32,40],[96,40],[14,40],[114,40],[48,64],[80,64]],
+      neutrals:[{type:'oilrig',tx:64,ty:40},{type:'oilrig',tx:32,ty:40},{type:'oilrig',tx:96,ty:40},
+        {type:'oilrig',tx:64,ty:22},{type:'oilrig',tx:64,ty:58},
+        {type:'civil',tx:22,ty:40},{type:'civil',tx:104,ty:40}],
+      rocks:[],walls:[[[36,20],[36,60]],[[92,20],[92,60]]],deco:'green'},
+  },
+};
+let MAP=MAPS.desert.s2;
+let chosenMap='desert';
+function getMapVariant(mapKey,n){const m=MAPS[mapKey]||MAPS.desert;return n<=2?m.s2:n<=4?m.s4:m.s8}
+function mapSpawns(map,n){return map.spawns.slice(0,n)}
 
 /* ================= FACTIONS ================= */
 const FACTIONS={

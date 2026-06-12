@@ -1,7 +1,7 @@
 'use strict';
 /* ================= WORLD ================= */
-function genWorld(mapKey){
-  MAP=MAPS[mapKey||chosenMap||'desert'];
+function genWorld(mapKey,slots){
+  MAP=getMapVariant(mapKey||chosenMap||'desert',slots||numSlots||2);
   setMapDims(MAP.w,MAP.h);
   shInit();
   blocked=new Uint8Array(MAPW*MAPH);vis=new Uint8Array(MAPW*MAPH);

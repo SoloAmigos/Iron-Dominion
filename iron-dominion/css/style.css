@@ -87,6 +87,24 @@ h1 span{color:#ffd95e}
 .bigres{font-size:clamp(40px,10vw,64px);font-weight:900;letter-spacing:4px;margin:4px 0}
 .bigres.win{color:#9fe27c;text-shadow:0 0 30px #6fae5b66}
 .bigres.lose{color:#ff7a68;text-shadow:0 0 30px #ae3c2c66}
+/* Multi-screen menu */
+.scr-title{font-size:clamp(11px,3vw,14px);letter-spacing:3px;color:#8fae7e;font-weight:700;margin-bottom:4px}
+.big-btn{width:100%;padding:18px 16px;border-radius:14px;font-weight:800;font-size:18px;letter-spacing:1px;border:1px solid #4d6f52;background:#15261a;color:#d4ecc9;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px}
+.big-btn:active{background:#27422c}
+.big-btn.campaign{border-color:#c9a23a;background:#2a1e08;color:#ffd95e}
+.big-btn.arcade{border-color:#5a9fff;background:#0e1e2e;color:#c9e4ff}
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:10px}
+.back-btn{padding:10px 16px;font-size:13px;min-width:80px}
+.next-btn{padding:10px 20px;font-size:14px;font-weight:800;min-width:100px;background:#1c4a24;border-color:#5ec468;color:#c8f0cc}
+.fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 8px}
+.fcard2{border:2px solid #3d5942;border-radius:12px;padding:12px 10px;background:#13200f;text-align:left;cursor:pointer}
+.fcard2 .fname{font-weight:800;font-size:13px;color:var(--fc)}
+.fcard2 .ftag{font-size:10.5px;color:#9eb38f;margin-top:3px}
+.fcard2.sel{border-color:var(--fc);background:#1a2a14;box-shadow:0 0 14px color-mix(in srgb,var(--fc) 35%,transparent)}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.mode-card{padding:12px 10px;border-radius:12px;border:1px solid #4d6f52;background:#15261a;color:#d4ecc9;font-weight:700;font-size:14px;text-align:center;cursor:pointer}
+.mode-card.sel{border-color:#9fe27c;background:#1c3520;color:#d4f0c8;box-shadow:0 0 10px #6fae5b44}
+.mode-card .mdesc{font-size:10px;color:#8aaa80;font-weight:400;margin-top:4px}
 @media (orientation:landscape) and (max-height:520px){
   #topbar{padding-top:calc(3px + env(safe-area-inset-top));padding-bottom:3px;font-size:13px}
   .ibtn{height:30px;min-width:36px;font-size:14px}

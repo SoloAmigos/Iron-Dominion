@@ -77,7 +77,19 @@ function showMainMenu(){
   const hb=document.getElementById('howtoBtn');
   hb.onclick=()=>{const box=document.getElementById('howtoBox');if(box){box.classList.toggle('open');hb.textContent=box.classList.contains('open')?'✖ Close':'❓ How to Play'}};
   const ib=document.getElementById('installBtn');
-  if(ib){if(_installPrompt){ib.style.display='';ib.onclick=()=>{_installPrompt.prompt();_installPrompt.userChoice.then(()=>{_installPrompt=null;ib.style.display='none'})}}else ib.style.display='none'}
+  if(ib){
+    const standalone=matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone;
+    if(standalone)ib.style.display='none';
+    else ib.onclick=()=>{
+      uiClick();
+      if(_installPrompt){_installPrompt.prompt();_installPrompt.userChoice.then(()=>{_installPrompt=null;ib.style.display='none'});return}
+      // No native prompt available — show manual steps per platform
+      const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+      alert(isIOS
+        ?'To install on iOS:\n\n1. Tap the Share button (square with arrow)\n2. Scroll down, tap "Add to Home Screen"\n3. Tap "Add"'
+        :'To install:\n\nChrome (Android): tap ⋮ menu → "Add to Home screen" / "Install app"\n\nChrome (Desktop): click the install icon in the address bar, or ⋮ menu → "Cast, save and share" → "Install page as app"\n\nIf no install option appears, the app may already be installed, or try a hard refresh (the manifest was recently updated).');
+    };
+  }
 }
 
 /* ===== SCREEN 1b: SETTINGS ===== */

@@ -9,6 +9,14 @@
 let AC=null, muted=false;
 let _mG,_sG,_uG,_mxG,_rv,_rvOut;
 let musicVol=0.48, sfxVol=0.9;
+// Restore persisted audio prefs
+try{
+  const _s=JSON.parse(localStorage.getItem('id_audio')||'{}');
+  if(typeof _s.m==='number')musicVol=_s.m;
+  if(typeof _s.s==='number')sfxVol=_s.s;
+  muted=!!_s.mu;
+}catch(e){}
+function _saveAudio(){try{localStorage.setItem('id_audio',JSON.stringify({m:musicVol,s:sfxVol,mu:muted}))}catch(e){}}
 
 // ─── Engine init ────────────────────────────────────────────────
 function ac(){
@@ -339,13 +347,16 @@ function tone(f,du,type,vol,slide){
 function setMusicVol(v){
   musicVol=Math.max(0,Math.min(1,v));
   if(_mxG&&AC&&!muted) _mxG.gain.setTargetAtTime(musicVol,AC.currentTime,0.08);
+  _saveAudio();
 }
 function setSfxVol(v){
   sfxVol=Math.max(0,Math.min(1,v));
   if(_sG&&AC) _sG.gain.setTargetAtTime(sfxVol,AC.currentTime,0.05);
+  _saveAudio();
 }
 // Called by mute button — handles music fade in/out
 function applyMute(){
+  _saveAudio();
   if(!AC)return;
   if(muted){
     stopMusic();

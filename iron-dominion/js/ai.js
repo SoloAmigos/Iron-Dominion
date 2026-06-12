@@ -22,8 +22,17 @@ function makeAI(diff){
     {b:'airfield',o:[9,7]},
   ];
   if(aiD.silo)bo.push({b:'silo',o:[7,9]},{b:'power',o:[-2,13]});
-  return{bo,boi:0,builtTypes:{},waveT:aiD.first,rebT:6,defT:0,upT:25,nukeT:0,cc:null,D:aiD,team:1};
+  return{bo,boi:0,builtTypes:{},waveT:aiD.first,rebT:6,defT:0,upT:25,nukeT:0,cc:null,D:aiD,team:1,
+    waveN:0,regroup:null,lastWave:null};
 }
+/* Per-faction combat doctrine: production weights + wave cadence */
+const FACMIX={
+  vanguard: {fArty:.2, fAlt:'paladin',  bRocket:.35,cadence:1.0},  // armor spearheads
+  crimson:  {fArty:.5, fAlt:'arty',     bRocket:.55,cadence:1.15}, // artillery sieges
+  scorpion: {fArty:.15,fAlt:'technical',bRocket:.4, cadence:.8},   // cheap fast raids
+  northwind:{fArty:.3, fAlt:'guardian', bRocket:.45,cadence:1.0},  // combined arms
+};
+function aiMix(t){return FACMIX[fac[t]]||FACMIX.vanguard}
 function aiCountBuild(type){let n=0;for(const b of builds)if(!b.dead&&b.team===ai.team&&b.type===type)n++;return n}
 function aiBuildAt(type,off){
   const t=ai.team;
@@ -118,16 +127,17 @@ function aiTick(tick){
     const tc=costOf('u','truck',t);
     if(b.type==='supply'&&trucks<Math.min(3,supplies*2)&&money[t]>=tc){money[t]-=tc;b.queue.push({type:'truck',p:0});continue}
     if(army.length>=cap)continue;
-    const sigs=FAC(t).sigs;
+    const sigs=FAC(t).sigs,mix=aiMix(t);
     if(b.type==='factory'){
-      let pick=Math.random()<.3?'arty':'tank';
+      let pick=Math.random()<mix.fArty?'arty':'tank';
+      if(Math.random()<.22&&UT[mix.fAlt]&&!isLocked(mix.fAlt,t))pick=mix.fAlt;
       if(isLocked(pick,t))pick='arty';
       if(isLocked(pick,t))pick=null;
       const fs=[...sigs.filter(g=>g.at==='factory'),...(GENMOD(t).sigs||[]).filter(g=>g.at==='factory')];
       if(fs.length&&Math.random()<.35){const cand=fs[Math.floor(Math.random()*fs.length)].unit;if(!isLocked(cand,t)&&UT[cand]&&UT[cand].cat!=='air')pick=cand}
       if(pick&&UT[pick]&&UT[pick].cat!=='air'){const c=costOf('u',pick,t);if(money[t]>=c){money[t]-=c;b.queue.push({type:pick,p:0})}}
     }else if(b.type==='barracks'){
-      let pick=Math.random()<.45?'rocket':'ranger';
+      let pick=Math.random()<mix.bRocket?'rocket':'ranger';
       if(isLocked(pick,t))pick='ranger';
       const bs2=[...sigs.filter(g=>g.at==='barracks'),...(GENMOD(t).sigs||[]).filter(g=>g.at==='barracks')];
       if(bs2.length&&Math.random()<.4){const cand=bs2[Math.floor(Math.random()*bs2.length)].unit;if(!isLocked(cand,t))pick=cand}
@@ -146,23 +156,61 @@ function aiTick(tick){
     }
     if(threat)for(const u of army)if(!u.attackTarget&&dist2(u,threat)<700)orderMove(u,threat.x,threat.y,'am');
   }
+  // Staged flank: units regroup at waypoint, then strike the real target together
+  if(ai.regroup){
+    ai.regroup.t-=tick;
+    if(ai.regroup.t<=0){
+      const rg=ai.regroup;ai.regroup=null;
+      if(rg.tgt&&!rg.tgt.dead){
+        let i=0;
+        for(const u of rg.units)if(!u.dead){const[ox,oy]=formOff(i++);orderMove(u,rg.tgt.x+ox,rg.tgt.y+oy,'am')}
+      }
+    }
+  }
+  // Retreat: if the committed wave lost 60%+ of its force, pull survivors home
+  if(ai.lastWave){
+    const alive=ai.lastWave.units.filter(u=>!u.dead);
+    if(alive.length===0)ai.lastWave=null;
+    else if(alive.length<ai.lastWave.size*.4){
+      const home=ai.cc&&!ai.cc.dead?ai.cc:{x:WW/2,y:WH/2};
+      let i=0;
+      for(const u of alive){const[ox,oy]=formOff(i++);orderMove(u,home.x+ox,home.y+oy+TILE*4,'am')}
+      ai.lastWave=null;
+    }
+  }
   ai.waveT-=tick;
   if(ai.waveT<=0){
-    ai.waveT=aiD.wave;
+    ai.waveT=aiD.wave*aiMix(t).cadence;
     if(army.length>=5){
-      let tgt=null,bd=1e9;
+      ai.waveN++;
       const ref=ai.cc&&!ai.cc.dead?ai.cc:{x:WW/2,y:WH/2};
+      const strat=ai.waveN%4; // 1=flank-left 2=econ-raid 3=flank-right 0=direct
+      let tgt=null,bd=1e9;
       for(const b of builds){
         if(b.dead||!isEnemy(t,b.team))continue;
-        const d=dist2(b,ref)*(b.isHole?.2:1);
+        let d=dist2(b,ref)*(b.isHole?.2:1);
+        // Econ raid: heavily prefer supply depots and markets
+        if(strat===2&&(b.type==='supply'||b.type==='market'))d*=.15;
         if(d<bd){bd=d;tgt=b}
       }
       if(tgt){
         const sorted=army.slice().sort((a,b2)=>dist2(a,ref)-dist2(b2,ref));
         const guards=Math.ceil(sorted.length*.22);
-        for(let i=guards;i<sorted.length;i++){
-          const[ox,oy]=formOff(i-guards);
-          orderMove(sorted[i],tgt.x+ox,tgt.y+oy,'am');
+        const strike=sorted.slice(guards);
+        ai.lastWave={units:strike.slice(),size:strike.length};
+        if(strat===1||strat===3){
+          // Flank: stage at a waypoint perpendicular to the attack axis
+          const mx=(ref.x+tgt.x)/2,my=(ref.y+tgt.y)/2;
+          const dx=tgt.x-ref.x,dy=tgt.y-ref.y,len=Math.hypot(dx,dy)||1;
+          const side=strat===1?1:-1;
+          const wx=clamp(mx-dy/len*420*side,TILE*2,WW-TILE*2);
+          const wy=clamp(my+dx/len*420*side,TILE*2,WH-TILE*2);
+          let i=0;
+          for(const u of strike){const[ox,oy]=formOff(i++);orderMove(u,wx+ox,wy+oy,'am')}
+          ai.regroup={units:strike.slice(),tgt,t:11};
+        }else{
+          let i=0;
+          for(const u of strike){const[ox,oy]=formOff(i++);orderMove(u,tgt.x+ox,tgt.y+oy,'am')}
         }
       }
     }

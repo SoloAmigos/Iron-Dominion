@@ -126,7 +126,9 @@ function updateBuilding(b,dt){
   }
 }
 function recomputePower(){
-  for(let t=0;t<2;t++){
+  const n=fac.length;
+  for(let t=0;t<n;t++){
+    if(!FAC(t)){continue}
     if(FAC(t).noPower){powerP[t]=99;powerU[t]=0;lowPow[t]=false;continue}
     let p=0,u=0;
     for(const b of builds)if(!b.dead&&b.built&&b.team===t&&!b.isHole){

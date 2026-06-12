@@ -14,28 +14,25 @@ function checkHints(){
   else if(hintStage===1&&hasB('power')){toast('📦 Step 2 — build a Supply Center near the gold crates');hintStage=2}
   else if(hintStage===2&&hasB('supply')){toast('🪖 Step 3 — build a Barracks and train troops');hintStage=3}
   else if(hintStage===3&&hasB('barracks')){toast('🏭 Step 4 — a War Factory unlocks tanks + Airstrike');hintStage=4}
-  else if(hintStage===4&&hasB('factory')){toast('⚔️ Destroy ALL enemy buildings to the north-east!');hintStage=5}
+  else if(hintStage===4&&hasB('factory')){toast('⚔️ Destroy ALL enemy buildings!');hintStage=5}
 }
 
-/* ---------- overlays ---------- */
-function diffBtns(){
-  return '<div class="dbtns">'+
-    '<button class="dbtn easy" data-d="easy">EASY</button>'+
-    '<button class="dbtn" data-d="normal">NORMAL</button>'+
-    '<button class="dbtn hard" data-d="hard">HARD</button></div>';
-}
-function wireDiff(){
-  for(const b of overlay.querySelectorAll('[data-d]'))b.onclick=()=>{ac();init(b.dataset.d)};
-}
+/* ---------- menu state ---------- */
 let chosenFac='vanguard';
 let chosenGenId='std';
 let chosenMapKey='desert';
 let chosenGens={vanguard:'std',crimson:'std',scorpion:'std',northwind:'std'};
+let _lobbyInited=false;
+
+/* ---------- screen helpers ---------- */
+function ac(){SFX.click()}
+function panel(inner){return '<div class="panel">'+inner+'</div>'}
+function eyebrow(t){return '<div class="scr-title">'+t+'</div>'}
 
 function genChips(fk){
   const gs=GENERALS[fk]||[];
   if(!gs||gs.length<=1)return '';
-  let s='<div style="margin:4px 0 2px;font-size:11px;opacity:.7">General:</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
+  let s='<div style="margin:6px 0 2px;font-size:11px;opacity:.7">General:</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
   for(const g of gs){
     const sel=chosenGens[fk]===g.id;
     s+='<button class="dbtn'+(sel?' sel':'')+'" data-genfk="'+fk+'" data-genid="'+g.id+'" style="font-size:11px;padding:4px 8px" title="'+g.desc+'">'+g.nm+'</button>';
@@ -45,142 +42,299 @@ function genChips(fk){
 function wireGens(){
   for(const b of overlay.querySelectorAll('[data-genid]'))b.onclick=()=>{
     const fk=b.dataset.genfk,id=b.dataset.genid;
-    chosenGens[fk]=id;SFX.click();
+    chosenGens[fk]=id;ac();
     for(const x of overlay.querySelectorAll('[data-genfk="'+fk+'"]'))x.classList.toggle('sel',x.dataset.genid===id);
-    const d=document.getElementById('fdesc');if(d)d.textContent=FACTIONS[chosenFac].desc+' | General: '+GENERALS[fk].find(g=>g.id===id).desc;
+    const d=document.getElementById('fdesc');if(d)d.textContent=FACTIONS[chosenFac].desc+' | '+GENERALS[fk].find(g=>g.id===id).desc;
   };
 }
 
-function mapChips(){
-  let s='<div style="margin:8px 0 2px;font-size:11px;opacity:.7">Map:</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
-  for(const k of Object.keys(MAPS)){
-    const sel=chosenMapKey===k;
-    s+='<button class="dbtn'+(sel?' sel':'')+'" data-map="'+k+'" style="font-size:11px;padding:4px 10px">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>';
-  }
-  return s+'</div>';
-}
-function wireMaps(){
-  for(const b of overlay.querySelectorAll('[data-map]'))b.onclick=()=>{
-    chosenMapKey=b.dataset.map;SFX.click();
-    for(const x of overlay.querySelectorAll('[data-map]'))x.classList.toggle('sel',x.dataset.map===chosenMapKey);
-  };
-}
-
-function facCards(){
-  let s='<div class="fgrid">';
-  for(const k of FACKEYS){
-    const F=FACTIONS[k];
-    s+='<div class="fcard'+(k===chosenFac?' sel':'')+'" data-f="'+k+'" style="--fc:'+F.c+'">'+
-      '<div class="fname">'+F.name+'</div><div class="ftag">'+F.tag+'</div></div>';
-  }
-  return s+'</div><div class="fdesc" id="fdesc">'+FACTIONS[chosenFac].desc+'</div>';
-}
-function wireFac(){
-  for(const c of overlay.querySelectorAll('[data-f]'))c.onclick=()=>{
-    chosenFac=c.dataset.f;SFX.click();
-    for(const x of overlay.querySelectorAll('[data-f]'))x.classList.toggle('sel',x.dataset.f===chosenFac);
-    const d=document.getElementById('fdesc');if(d)d.textContent=FACTIONS[chosenFac].desc;
-    // Update gen chips for selected faction
-    const gc=document.getElementById('genChipsArea');
-    if(gc)gc.innerHTML=genChips(chosenFac);
-    wireGens();
-  };
-}
-function showMenu(){
+/* ===== SCREEN 1: MAIN MENU ===== */
+function showMenu(){showMainMenu()}
+function showMainMenu(){
   state='menu';overlay.style.display='flex';
-  overlay.innerHTML='<div class="panel">'+
-    '<div class="eyebrow">REAL-TIME STRATEGY</div>'+
+  overlay.innerHTML=panel(
+    eyebrow('REAL-TIME STRATEGY')+
     '<h1>IRON <span>DOMINION</span></h1>'+
-    '<div class="sub" style="margin-bottom:6px">Choose your faction, Commander:</div>'+
-    facCards()+
-    '<div id="genChipsArea">'+genChips(chosenFac)+'</div>'+
-    mapChips()+
-    diffBtns()+
-    '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:0">'+
-    '<button class="dbtn" id="campaignBtn" style="background:#4a3800;border-color:#c9a23a;color:#ffd95e;min-width:140px">📋 CAMPAIGN</button>'+
-    '<button class="dbtn install" id="installBtn">📲 Install App</button>'+
-    '<button class="dbtn" id="howtoBtn" style="min-width:120px;font-size:13px">❓ How to Play</button>'+
-    '</div>'+
+    '<div class="sub" style="margin-bottom:20px">Command. Conquer. Dominate.</div>'+
+    '<button class="big-btn arcade" id="playBtn">▶ PLAY</button>'+
+    '<button class="big-btn" id="settingsBtn" style="font-size:14px;padding:12px">⚙ SETTINGS</button>'+
+    '<button class="dbtn install" id="installBtn" style="width:100%;margin-top:8px">📲 Install App</button>'+
+    '<button class="dbtn" id="howtoBtn" style="width:100%;margin-top:8px;font-size:13px">❓ How to Play</button>'+
     '<div class="howto" id="howtoBox">'+
     '<b>🚜 Dozer</b> builds structures · <b>📦 Supply Center</b> earns cash via trucks<br>'+
     '<b>⚡ Power</b> keeps production fast and turrets online<br>'+
     '<b>Tap</b> select / command · <b>Drag</b> pan · <b>Pinch</b> zoom · minimap to jump<br>'+
-    '<b>Hold finger</b> (or ⬚ button) then drag = box-select multiple units<br>'+
-    '<b>🚜 button</b> jumps to your Dozers · <b>⚔ ARMY</b> selects all troops<br>'+
-    '<b>💰 Market</b> = endless income · <b>🔬 Tech Lab</b> = upgrades · <b>☢️ Silo</b> = superweapon<br>'+
-    '<b>⭐ Rank up</b> by destroying enemies — skill points unlock General powers<br>'+
-    '<b>Powers</b>: 🔧 Repair · 🪂 Drop · ✈️ Strike · ☢️ Launch · Dozers can repair buildings<br>'+
-    '<b>PC:</b> left-drag box select · right-click command · wheel zoom · WASD pan<br>'+
-    '<b>🏆 Win:</b> destroy every enemy structure</div></div>';
-  wireDiff();wireFac();wireGens();wireMaps();
-  const cb=document.getElementById('campaignBtn');
-  if(cb)cb.onclick=()=>{if(typeof showCampaignMenu==='function')showCampaignMenu();else toast('Campaign not available')};
+    '<b>Hold finger</b> then drag = box-select · <b>🚜</b> cycles dozers · <b>⚔ ARMY</b> selects all<br>'+
+    '<b>💰 Market</b> = passive income · <b>🔬 Tech Lab</b> = upgrades · <b>☢️ Silo</b> = superweapon<br>'+
+    '<b>⭐ Rank up</b> → skill points → unlock General powers (Repair/Drop/Strike/Nuke)<br>'+
+    '<b>🏆 Win:</b> destroy every enemy structure</div>'+
+    '</div>'
+  );
+  document.getElementById('playBtn').onclick=()=>{ac();showModeTypeSelect()};
+  document.getElementById('settingsBtn').onclick=()=>{ac();showSettings()};
   const hb=document.getElementById('howtoBtn');
-  if(hb)hb.onclick=()=>{const box=document.getElementById('howtoBox');if(box){box.classList.toggle('open');hb.textContent=box.classList.contains('open')?'✖ Close':'❓ How to Play'}};
+  hb.onclick=()=>{const box=document.getElementById('howtoBox');if(box){box.classList.toggle('open');hb.textContent=box.classList.contains('open')?'✖ Close':'❓ How to Play'}};
   const ib=document.getElementById('installBtn');
-  if(ib){
-    if(_installPrompt){ib.style.display='';ib.onclick=()=>{_installPrompt.prompt();_installPrompt.userChoice.then(()=>{_installPrompt=null;ib.style.display='none'})}}
-    else ib.style.display='none';
-  }
+  if(ib){if(_installPrompt){ib.style.display='';ib.onclick=()=>{_installPrompt.prompt();_installPrompt.userChoice.then(()=>{_installPrompt=null;ib.style.display='none'})}}else ib.style.display='none'}
 }
+
+/* ===== SCREEN 1b: SETTINGS ===== */
+function showSettings(){
+  overlay.innerHTML=panel(
+    eyebrow('IRON DOMINION')+
+    '<h1 style="font-size:clamp(22px,6vw,36px)">SETTINGS</h1>'+
+    '<div class="dbtns" style="flex-direction:column;gap:10px">'+
+    '<button class="dbtn" id="muteSet" style="width:100%">'+(window._muted?'🔇 Sound: OFF':'🔊 Sound: ON')+'</button>'+
+    '</div>'+
+    '<div class="nav-row"><button class="dbtn back-btn" id="backBtn">← BACK</button></div>'
+  );
+  document.getElementById('backBtn').onclick=()=>{ac();showMainMenu()};
+  document.getElementById('muteSet').onclick=()=>{
+    ac();window._muted=!window._muted;
+    document.getElementById('muteSet').textContent=window._muted?'🔇 Sound: OFF':'🔊 Sound: ON';
+    const mb=document.getElementById('muteBtn');if(mb)mb.textContent=window._muted?'🔇':'🔊';
+  };
+}
+
+/* ===== SCREEN 2: ARCADE or CAMPAIGN ===== */
+function showModeTypeSelect(){
+  overlay.innerHTML=panel(
+    eyebrow('IRON DOMINION')+
+    '<h1 style="font-size:clamp(22px,6vw,36px)">PLAY</h1>'+
+    '<div style="margin-top:16px">'+
+    '<button class="big-btn arcade" id="arcadeBtn">🎮 ARCADE<br><span style="font-size:12px;font-weight:400;opacity:.8">Skirmish vs AI — choose your rules</span></button>'+
+    '<button class="big-btn campaign" id="campBtn">📋 CAMPAIGN<br><span style="font-size:12px;font-weight:400;opacity:.8">Story missions with objectives</span></button>'+
+    '</div>'+
+    '<div class="nav-row"><button class="dbtn back-btn" id="backBtn">← BACK</button></div>'
+  );
+  document.getElementById('arcadeBtn').onclick=()=>{ac();showFactionSelect()};
+  document.getElementById('campBtn').onclick=()=>{ac();if(typeof showCampaignMenu==='function')showCampaignMenu()};
+  document.getElementById('backBtn').onclick=()=>{ac();showMainMenu()};
+}
+
+/* ===== SCREEN 3: FACTION SELECT ===== */
+function showFactionSelect(){
+  let s='<div class="fgrid2">';
+  for(const k of FACKEYS){
+    const F=FACTIONS[k];
+    s+='<div class="fcard2'+(k===chosenFac?' sel':'')+'" data-f="'+k+'" style="--fc:'+F.c+'">'+
+      '<div class="fname">'+F.name+'</div><div class="ftag">'+F.tag+'</div></div>';
+  }
+  s+='</div>';
+  overlay.innerHTML=panel(
+    eyebrow('ARCADE — STEP 1 OF 3')+
+    '<h1 style="font-size:clamp(18px,5vw,30px)">CHOOSE FACTION</h1>'+
+    s+
+    '<div class="fdesc" id="fdesc">'+FACTIONS[chosenFac].desc+'</div>'+
+    '<div id="genChipsArea" style="margin-top:6px">'+genChips(chosenFac)+'</div>'+
+    '<div class="nav-row">'+
+    '<button class="dbtn back-btn" id="backBtn">← BACK</button>'+
+    '<button class="dbtn next-btn" id="nextBtn">NEXT →</button>'+
+    '</div>'
+  );
+  for(const c of overlay.querySelectorAll('[data-f]'))c.onclick=()=>{
+    chosenFac=c.dataset.f;ac();
+    for(const x of overlay.querySelectorAll('[data-f]'))x.classList.toggle('sel',x.dataset.f===chosenFac);
+    const d=document.getElementById('fdesc');if(d)d.textContent=FACTIONS[chosenFac].desc;
+    const gc=document.getElementById('genChipsArea');if(gc){gc.innerHTML=genChips(chosenFac);wireGens()}
+  };
+  wireGens();
+  document.getElementById('backBtn').onclick=()=>{ac();showModeTypeSelect()};
+  document.getElementById('nextBtn').onclick=()=>{ac();showGameModeSelect()};
+}
+
+/* ===== SCREEN 4: GAME MODE ===== */
+function showGameModeSelect(){
+  const modes=Object.entries(GAME_MODES);
+  let s='<div class="mode-grid">';
+  for(const[k,m]of modes){
+    s+='<div class="mode-card'+(gameMode===k?' sel':'')+'" data-mode="'+k+'">'+
+      m.label+'<div class="mdesc">'+m.desc+'</div></div>';
+  }
+  s+='</div>';
+  overlay.innerHTML=panel(
+    eyebrow('ARCADE — STEP 2 OF 3')+
+    '<h1 style="font-size:clamp(18px,5vw,30px)">GAME MODE</h1>'+
+    s+
+    '<div class="nav-row">'+
+    '<button class="dbtn back-btn" id="backBtn">← BACK</button>'+
+    '<button class="dbtn next-btn" id="nextBtn">NEXT →</button>'+
+    '</div>'
+  );
+  for(const c of overlay.querySelectorAll('[data-mode]'))c.onclick=()=>{
+    gameMode=c.dataset.mode;ac();
+    for(const x of overlay.querySelectorAll('[data-mode]'))x.classList.toggle('sel',x.dataset.mode===gameMode);
+  };
+  document.getElementById('backBtn').onclick=()=>{ac();showFactionSelect()};
+  document.getElementById('nextBtn').onclick=()=>{ac();_lobbyInited=false;showLobby()};
+}
+
+/* ===== SCREEN 5: LOBBY (MAP + SLOT CONFIG) ===== */
+const _TEAM_LETTERS='ABCDEFGH';
+const _TYPE_LABELS={easy:'🤖 Easy',medium:'🤖 Med',hard:'🤖 Hard'};
+const _TYPES_CYCLE=['easy','medium','hard'];
+
+function showLobby(){
+  const mode=GAME_MODES[gameMode]||GAME_MODES['1v1'];
+  const ns=mode.slots;
+  // Init lobby slot state when entering fresh or when slot count changed
+  if(!_lobbyInited||slotType.length!==ns){
+    slotType=['human'];
+    for(let i=1;i<ns;i++)slotType.push('medium');
+    slotAlliance=mode.alliances.slice(0,ns);
+    _lobbyInited=true;
+  }
+
+  let mapS='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0">';
+  for(const k of Object.keys(MAPS))
+    mapS+='<button class="dbtn'+(chosenMapKey===k?' sel':'')+'" data-map="'+k+'" style="font-size:12px;padding:5px 12px">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>';
+  mapS+='</div>';
+
+  let rows='<div class="lobby-slots">';
+  for(let i=0;i<ns;i++){
+    const col=ALL_TEAMC[i];
+    const letter=_TEAM_LETTERS[slotAlliance[i]||0];
+    const isHuman=slotType[i]==='human';
+    rows+='<div class="lslot">'+
+      '<span class="lslot-dot" style="background:'+col+';color:'+(i<2?'#000':'#000')+'">'+( i+1)+'</span>'+
+      (isHuman
+        ? '<span class="lslot-team-fixed">Team '+letter+'</span>'
+        : '<button class="dbtn lslot-team" data-ti="'+i+'">Team '+letter+'</button>')+
+      (isHuman
+        ? '<span class="lslot-you">👤 YOU</span>'
+        : '<button class="dbtn lslot-type" data-si="'+i+'">'+_TYPE_LABELS[slotType[i]]+'</button>')+
+      '</div>';
+  }
+  rows+='</div>';
+
+  overlay.innerHTML=panel(
+    eyebrow('ARCADE — STEP 3 OF 3')+
+    '<h1 style="font-size:clamp(16px,5vw,26px);margin-bottom:4px">MATCH SETUP</h1>'+
+    mapS+
+    '<div style="font-size:10px;color:#8aaa80;text-align:center;margin-bottom:6px">Tap team badge to cycle · tap bot label to change difficulty</div>'+
+    rows+
+    '<div class="nav-row">'+
+    '<button class="dbtn back-btn" id="backBtn">← BACK</button>'+
+    '<button class="big-btn arcade" id="startBtn" style="flex:1;margin-bottom:0;padding:13px">⚔ START BATTLE</button>'+
+    '</div>'
+  );
+
+  for(const b of overlay.querySelectorAll('[data-map]'))b.onclick=()=>{
+    chosenMapKey=b.dataset.map;ac();
+    for(const x of overlay.querySelectorAll('[data-map]'))x.classList.toggle('sel',x.dataset.map===chosenMapKey);
+  };
+  for(const b of overlay.querySelectorAll('[data-ti]'))b.onclick=()=>{
+    const i=+b.dataset.ti;
+    slotAlliance[i]=(slotAlliance[i]+1)%ns;
+    b.textContent='Team '+_TEAM_LETTERS[slotAlliance[i]];ac();
+  };
+  for(const b of overlay.querySelectorAll('[data-si]'))b.onclick=()=>{
+    const i=+b.dataset.si;
+    slotType[i]=_TYPES_CYCLE[(_TYPES_CYCLE.indexOf(slotType[i])+1)%3];
+    b.textContent=_TYPE_LABELS[slotType[i]];ac();
+  };
+  document.getElementById('backBtn').onclick=()=>{ac();showGameModeSelect()};
+  document.getElementById('startBtn').onclick=()=>{ac();init()};
+}
+
 function showPause(){
   overlay.style.display='flex';
-  overlay.innerHTML='<div class="panel"><div class="eyebrow">PAUSED</div><h1>IRON <span>DOMINION</span></h1>'+
+  overlay.innerHTML=panel(
+    eyebrow('PAUSED')+
+    '<h1 style="font-size:clamp(26px,7vw,44px)">IRON <span>DOMINION</span></h1>'+
     '<div class="dbtns"><button class="dbtn" id="resBtn">▶ RESUME</button>'+
-    '<button class="dbtn hard" id="quitBtn">MAIN MENU</button></div></div>';
+    '<button class="dbtn hard" id="quitBtn">MAIN MENU</button></div>'
+  );
   document.getElementById('resBtn').onclick=()=>{overlay.style.display='none';state='play'};
   document.getElementById('quitBtn').onclick=showMenu;
 }
+
 function endGame(win){
   if(state!=='play')return;
   state=win?'win':'lose';
   SFX.boom(true);
   setTimeout(()=>{
+    const enemyFac=fac.find((f,i)=>i>0&&isEnemy(0,i))||fac[1]||'crimson';
     overlay.style.display='flex';
-    overlay.innerHTML='<div class="panel"><div class="eyebrow">'+(win?'THE REGION IS OURS':'BASE LOST')+'</div>'+
+    overlay.innerHTML=panel(
+      '<div class="eyebrow">'+(win?'VICTORY — THE REGION IS OURS':'BASE LOST')+'</div>'+
       '<div class="bigres '+(win?'win':'lose')+'">'+(win?'VICTORY':'DEFEAT')+'</div>'+
-      '<div class="sub">'+(win?'Every enemy structure lies in ruins, Commander.':'The '+FAC(1).name+' overran our position. Regroup and try again.')+'</div>'+
-      '<div class="sub" style="margin-top:6px">Play again:</div>'+facCards()+diffBtns()+'</div>';
-    wireDiff();wireFac();
+      '<div class="sub">'+(win?'Every enemy structure lies in ruins.':'The '+FACTIONS[enemyFac].name+' overran your position.')+'</div>'+
+      '<div class="dbtns" style="margin-top:16px">'+
+      '<button class="dbtn arcade" id="retryBtn">↺ REMATCH</button>'+
+      '<button class="dbtn" id="menuBtn2">⌂ MAIN MENU</button>'+
+      '</div>'
+    );
+    document.getElementById('retryBtn').onclick=()=>{ac();init()};
+    document.getElementById('menuBtn2').onclick=()=>{ac();showMenu()};
   },win?900:1400);
 }
 
-/* ---------- init / loop ---------- */
+/* ---------- init ---------- */
 function init(name){
-  diffName=name;D=DIFF[name];
-  const others=FACKEYS.filter(k=>k!==chosenFac);
-  fac=[chosenFac,others[Math.random()*others.length|0]];
-  TEAMC=[FAC(0).c,FAC(1).c];TEAMD=[FAC(0).d,FAC(1).d];
+  // name is optional (used by campaign); arcade uses slotType/slotAlliance from lobby
+  diffName=name||'normal';D=DIFF[diffName]||DIFF.normal;
+  const mode=GAME_MODES[gameMode]||GAME_MODES['1v1'];
+  numSlots=mode.slots;
+  // Ensure slot arrays are sized correctly (may not be set if called from campaign)
+  if(!slotAlliance||slotAlliance.length!==numSlots)slotAlliance=mode.alliances.slice(0,numSlots);
+  if(!slotType||slotType.length!==numSlots){slotType=['human'];for(let i=1;i<numSlots;i++)slotType.push('medium')}
+
+  // Build faction list: slot 0 = player, rest random AI
+  matchSeed=Date.now()&0x7fffffff;setSeed(matchSeed);
+  fac=[chosenFac];
+  for(let i=1;i<numSlots;i++){
+    const others=FACKEYS.filter(k=>k!==fac[Math.max(0,i-1)]);
+    fac.push(others[Math.floor(srandom()*others.length)]);
+  }
+  TEAMC=ALL_TEAMC.slice(0,numSlots);
+  TEAMD=ALL_TEAMD.slice(0,numSlots);
   strikeCdMax=FAC(0).strikeCd;strikeBombs=FAC(0).bombs;
-  // Apply chosen generals
-  gens=[chosenGens[chosenFac]||'std','std'];
-  // Set up map
+  gens=[chosenGens[chosenFac]||'std'];
+  for(let i=1;i<numSlots;i++)gens.push('std');
+
+  // Map setup
   chosenMap=chosenMapKey;
-  MAP=MAPS[chosenMap];
+  MAP=getMapVariant(chosenMap,numSlots);
   setMapDims(MAP.w,MAP.h);
 
-  // Seed RNG
-  matchSeed=Date.now()&0x7fffffff;setSeed(matchSeed);simFrame=0;simAcc=0;
-
+  simFrame=0;simAcc=0;
   units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];
-  // Re-allocate typed arrays for new map size
   blocked=new Uint8Array(MAPW*MAPH);vis=new Uint8Array(MAPW*MAPH);
-  resetPowers();upg=[{w:0,a:0,mk:0,cp:0},{w:0,a:0,mk:0,cp:0}];shake=0;
-  xp=[0,0];rank=[1,1];skp=[1,1];genOpen=false;
-  money=[4000,4000];powerP=[0,0];powerU=[0,0];lowPow=[false,false];
+  resetPowers();
+  upg=Array.from({length:numSlots},()=>({w:0,a:0,mk:0,cp:0}));
+  shake=0;
+  xp=new Array(numSlots).fill(0);
+  rank=new Array(numSlots).fill(1);
+  skp=new Array(numSlots).fill(1);
+  genOpen=false;
+  money=new Array(numSlots).fill(4000);
+  powerP=new Array(numSlots).fill(0);
+  powerU=new Array(numSlots).fill(0);
+  lowPow=new Array(numSlots).fill(false);
   ids=1;gtime=0;fogT=0;powT=0;uiT=0;winT=3;aiT=1.5;miniT=0;sepT=0;
   underAttackCd=0;readyCd=0;hintStage=0;boxSel=null;boxStart=null;panMode=false;pinch=null;pts.clear();
   setSelMode(false);clearLP();dozI=-1;lastTapT=0;lastTapId=0;
-  // Init object pools
+
   initPools();
   shInit();
-  genWorld(chosenMap);buildGround();
-  const sp0=MAP.spawns[0],sp1=MAP.spawns[1];
-  const pc=placeBuilding('command',0,sp0[0],sp0[1],true);
-  const ec=placeBuilding('command',1,sp1[0],sp1[1],true);
-  ai=makeAI();ai.cc=ec;ai.builtTypes.command=true;
+  genWorld(chosenMap,numSlots);buildGround();
+
+  const spawns=MAP.spawns.slice(0,numSlots);
+  const pc=placeBuilding('command',0,spawns[0][0],spawns[0][1],true);
+  ais=[];
+  for(let i=1;i<numSlots;i++){
+    const sp=spawns[i]||spawns[spawns.length-1];
+    const ec=placeBuilding('command',i,sp[0],sp[1],true);
+    const diff=slotType[i]||'medium';
+    const a=makeAI(diff);a.team=i;a.cc=ec;a.builtTypes.command=true;
+    money[i]=SLOT_DIFFS[diff].trickle*60+2000;
+    ais.push(a);
+    spawnUnit('dozer',i,ec.x,(ec.ty+BT.command.h)*TILE+34);
+  }
+  ai=ais[0]||null; // backward compat
+
   const dz=spawnUnit('dozer',0,pc.x,(pc.ty+pc.t.h)*TILE+34);
-  spawnUnit('dozer',1,ec.x,(ec.ty+ec.t.h)*TILE+34);
   cam.x=pc.x;cam.y=pc.y;cam.z=clamp(Math.min(vw,vh)/620,.55,1);
   clampCam();
   sel=[dz];
@@ -188,23 +342,22 @@ function init(name){
   overlay.style.display='none';
   state='play';
   refreshPowers();updateRankBtn();updateHUD();updateCard();
-  toast('🚜 '+dispName('u','dozer',0)+' ready — use the build menu below');
-  toast('⚔ Enemy: '+FAC(1).name);
-  toast('⭐ Tap the star — spend your first skill point on a General power');
+  toast('🚜 '+dispName('u','dozer',0)+' ready — build menu below');
+  const modeLabel=mode.label;
+  toast('⚔ Mode: '+modeLabel+' · Enemy: '+FACTIONS[fac[1]].name+(numSlots>2?' +more':''));
+  toast('⭐ Spend your skill point — tap the star button');
   toast('⚔️ '+GENMOD(0).nm+' doctrine active');
 }
 
 /* ---------- fixed-timestep sim ---------- */
 function simStep(){
   drainInputs();
-  // Snapshot positions for render interpolation
   for(const u of units)if(!u.dead){u.px=u.x;u.py=u.y}
   for(const b of builds)if(!b.dead){b.px=b.x;b.py=b.y}
 
   const dt=SIM_DT;
   gtime+=dt;
 
-  // Rebuild spatial hash
   shClear();
   for(const u of units)if(!u.dead)shInsert(u);
   for(const b of builds)if(!b.dead)shInsert(b);
@@ -214,12 +367,20 @@ function simStep(){
   for(const b of builds)updateBuilding(b,dt);
   if(builds.some(b=>b.dead))builds=builds.filter(b=>!b.dead);
   updateProjs(dt);updateParts(dt);updatePlanes(dt);
-  // Expire scrap tokens
   for(let i=scraps.length-1;i>=0;i--){scraps[i].life-=dt;if(scraps[i].life<=0)scraps.splice(i,1)}
   separation(dt);
   fogT-=dt;if(fogT<=0){fogT=.25;updateFog()}
   powT-=dt;if(powT<=0){powT=.5;recomputePower()}
-  aiT-=dt;if(aiT<=0){aiT=1;aiTick(1)}
+  // Tick all AIs
+  aiT-=dt;
+  if(aiT<=0){
+    aiT=1;
+    for(let i=0;i<ais.length;i++){
+      const prev=ai;ai=ais[i];
+      aiTick(1);
+      ai=prev;
+    }
+  }
   for(const k in pw){
     const P=pw[k];
     if(k!=='nuke'&&P.on&&P.cd>0){P.cd-=dt;if(P.cd<=0){P.cd=0;toast(POWERS[k].ic+' '+POWERS[k].nm+' ready');SFX.done()}}
@@ -230,10 +391,17 @@ function simStep(){
   winT-=dt;
   if(winT<=0){
     winT=1;
-    let pl=0,en=0;
-    for(const b of builds){if(b.team===0)pl++;else if(b.team===1)en++}
-    if(en===0&&!campaign)endGame(true);
-    else if(pl===0)endGame(false);
+    const pa=slotAlliance[0]||0;
+    let playerAlive=false,enemyAlive=false;
+    for(const b of builds){
+      if(b.dead||b.team<0)continue;
+      if((slotAlliance[b.team]||b.team)===pa)playerAlive=true;
+      else enemyAlive=true;
+    }
+    if(!campaign){
+      if(!playerAlive)endGame(false);
+      else if(!enemyAlive)endGame(true);
+    }
   }
   uiT-=dt;if(uiT<=0){uiT=.3;updateHUD();refreshCard();checkHints()}
   miniT-=dt;if(miniT<=0){miniT=.35;renderMini()}
@@ -243,7 +411,6 @@ function simStep(){
   if(keys['a']||keys['arrowleft'])kx-=1;
   if(keys['d']||keys['arrowright'])kx+=1;
   if(kx||ky){cam.x+=kx*ps;cam.y+=ky*ps;clampCam()}
-  // Campaign update
   if(campaign&&typeof updateCampaign==='function')updateCampaign();
   simFrame++;
 }
@@ -257,7 +424,7 @@ function frame(ts){
   simAcc+=dtReal;
   let steps=0;
   while(simAcc>=SIM_DT&&steps<6){simStep();simAcc-=SIM_DT;steps++}
-  if(steps>=6)simAcc=0; // spiral of death protection
+  if(steps>=6)simAcc=0;
   renderAlpha=simAcc/SIM_DT;
   render();
 }

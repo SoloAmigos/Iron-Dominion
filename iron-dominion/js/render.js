@@ -805,6 +805,10 @@ function drawBuilding(b){
       }
       break;}
   }
+  // Building type icon badge
+  {const BICO={command:'🏢',power:'⚡',supply:'📦',market:'💰',barracks:'🪖',factory:'⚙️',tech:'🔬',silo:'☢️',airfield:'✈️',samsite:'🚀'};
+  const bic=BICO[b.type];
+  if(bic){ctx.save();const icx=x0+w/2,icy=y0+7;ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.ellipse(icx,icy,11,9,0,0,7);ctx.fill();ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(bic,icx,icy);ctx.restore()}}
   if(b.hp<b.maxhp*.45&&state==='play'){
     if(Math.random()<.08)addPart({k:'smoke',x:x0+vrand(8,w-8),y:y0+vrand(6,h*.5),vx:vrand(-5,5),vy:vrand(-26,-12),life:vrand(.7,1.2),max:vrand(.7,1.2),s:vrand(5,9)});
     if(b.hp<b.maxhp*.25&&Math.random()<.05)addPart({k:'fire',x:x0+vrand(10,w-10),y:y0+vrand(8,h-12),vx:0,vy:vrand(-14,-6),life:vrand(.2,.4),max:vrand(.2,.4),s:vrand(5,9)});

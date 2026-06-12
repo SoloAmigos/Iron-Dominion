@@ -8,7 +8,7 @@ let strikeCdMax=110,strikeBombs=3;
 let cam={x:WW/2,y:WH/2,z:1},dpr=1,vw=0,vh=0;
 let ids=1,gtime=0,fogT=0,powT=0,uiT=0,winT=1,aiT=0,sepT=0,miniT=0;
 let underAttackCd=0,readyCd=0,hintStage=0,hintT=0,shake=0;
-let ai=null,groundCv=null,fogCv=null,fogImg=null;
+let ai=null,ais=[],groundCv=null,fogCv=null,fogImg=null;
 const keys={};
 
 // Fixed timestep

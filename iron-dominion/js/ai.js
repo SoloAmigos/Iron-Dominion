@@ -123,8 +123,8 @@ function aiTick(tick){
       if(isLocked(pick,t))pick='arty';
       if(isLocked(pick,t))pick=null;
       const fs=[...sigs.filter(g=>g.at==='factory'),...(GENMOD(t).sigs||[]).filter(g=>g.at==='factory')];
-      if(fs.length&&Math.random()<.35){const cand=fs[Math.floor(Math.random()*fs.length)].unit;if(!isLocked(cand,t))pick=cand}
-      if(pick){const c=costOf('u',pick,t);if(money[t]>=c){money[t]-=c;b.queue.push({type:pick,p:0})}}
+      if(fs.length&&Math.random()<.35){const cand=fs[Math.floor(Math.random()*fs.length)].unit;if(!isLocked(cand,t)&&UT[cand]&&UT[cand].cat!=='air')pick=cand}
+      if(pick&&UT[pick]&&UT[pick].cat!=='air'){const c=costOf('u',pick,t);if(money[t]>=c){money[t]-=c;b.queue.push({type:pick,p:0})}}
     }else if(b.type==='barracks'){
       let pick=Math.random()<.45?'rocket':'ranger';
       if(isLocked(pick,t))pick='ranger';

@@ -136,6 +136,9 @@ function updateCard(){
       for(const sg of gmSigs)if(sg.at===b.type&&!roster.includes(sg.unit))roster.push(sg.unit);
       for(const ut of roster){
         if(isLocked(ut,0))continue;
+        const ucat=UT[ut]&&UT[ut].cat;
+        if(b.type==='airfield'&&ucat!=='air')continue;
+        if(b.type!=='airfield'&&ucat==='air')continue;
         const t=UT[ut],c=costOf('u',ut,0);
         cardEl.appendChild(mkBtn(iconURL('u',ut,0),dispName('u',ut,0),c,t.sig?'sig':'',()=>{
           if(money[0]<c){SFX.err();toast('💰 Not enough funds');return}

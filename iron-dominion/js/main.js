@@ -25,7 +25,7 @@ let chosenGens={vanguard:'std',crimson:'std',scorpion:'std',northwind:'std'};
 let _lobbyInited=false;
 
 /* ---------- screen helpers ---------- */
-function ac(){SFX.click()}
+function uiClick(){SFX.click()}
 function panel(inner){return '<div class="panel">'+inner+'</div>'}
 function eyebrow(t){return '<div class="scr-title">'+t+'</div>'}
 
@@ -42,7 +42,7 @@ function genChips(fk){
 function wireGens(){
   for(const b of overlay.querySelectorAll('[data-genid]'))b.onclick=()=>{
     const fk=b.dataset.genfk,id=b.dataset.genid;
-    chosenGens[fk]=id;ac();
+    chosenGens[fk]=id;uiClick();
     for(const x of overlay.querySelectorAll('[data-genfk="'+fk+'"]'))x.classList.toggle('sel',x.dataset.genid===id);
     const d=document.getElementById('fdesc');if(d)d.textContent=FACTIONS[chosenFac].desc+' | '+GENERALS[fk].find(g=>g.id===id).desc;
   };
@@ -70,8 +70,8 @@ function showMainMenu(){
     '<b>🏆 Win:</b> destroy every enemy structure</div>'+
     '</div>'
   );
-  document.getElementById('playBtn').onclick=()=>{ac();showModeTypeSelect()};
-  document.getElementById('settingsBtn').onclick=()=>{ac();showSettings()};
+  document.getElementById('playBtn').onclick=()=>{uiClick();showModeTypeSelect()};
+  document.getElementById('settingsBtn').onclick=()=>{uiClick();showSettings()};
   const hb=document.getElementById('howtoBtn');
   hb.onclick=()=>{const box=document.getElementById('howtoBox');if(box){box.classList.toggle('open');hb.textContent=box.classList.contains('open')?'✖ Close':'❓ How to Play'}};
   const ib=document.getElementById('installBtn');
@@ -88,9 +88,9 @@ function showSettings(){
     '</div>'+
     '<div class="nav-row"><button class="dbtn back-btn" id="backBtn">← BACK</button></div>'
   );
-  document.getElementById('backBtn').onclick=()=>{ac();showMainMenu()};
+  document.getElementById('backBtn').onclick=()=>{uiClick();showMainMenu()};
   document.getElementById('muteSet').onclick=()=>{
-    ac();window._muted=!window._muted;
+    uiClick();window._muted=!window._muted;
     document.getElementById('muteSet').textContent=window._muted?'🔇 Sound: OFF':'🔊 Sound: ON';
     const mb=document.getElementById('muteBtn');if(mb)mb.textContent=window._muted?'🔇':'🔊';
   };
@@ -107,9 +107,9 @@ function showModeTypeSelect(){
     '</div>'+
     '<div class="nav-row"><button class="dbtn back-btn" id="backBtn">← BACK</button></div>'
   );
-  document.getElementById('arcadeBtn').onclick=()=>{ac();showFactionSelect()};
-  document.getElementById('campBtn').onclick=()=>{ac();if(typeof showCampaignMenu==='function')showCampaignMenu()};
-  document.getElementById('backBtn').onclick=()=>{ac();showMainMenu()};
+  document.getElementById('arcadeBtn').onclick=()=>{uiClick();showFactionSelect()};
+  document.getElementById('campBtn').onclick=()=>{uiClick();if(typeof showCampaignMenu==='function')showCampaignMenu()};
+  document.getElementById('backBtn').onclick=()=>{uiClick();showMainMenu()};
 }
 
 /* ===== SCREEN 3: FACTION SELECT ===== */
@@ -133,14 +133,14 @@ function showFactionSelect(){
     '</div>'
   );
   for(const c of overlay.querySelectorAll('[data-f]'))c.onclick=()=>{
-    chosenFac=c.dataset.f;ac();
+    chosenFac=c.dataset.f;uiClick();
     for(const x of overlay.querySelectorAll('[data-f]'))x.classList.toggle('sel',x.dataset.f===chosenFac);
     const d=document.getElementById('fdesc');if(d)d.textContent=FACTIONS[chosenFac].desc;
     const gc=document.getElementById('genChipsArea');if(gc){gc.innerHTML=genChips(chosenFac);wireGens()}
   };
   wireGens();
-  document.getElementById('backBtn').onclick=()=>{ac();showModeTypeSelect()};
-  document.getElementById('nextBtn').onclick=()=>{ac();showGameModeSelect()};
+  document.getElementById('backBtn').onclick=()=>{uiClick();showModeTypeSelect()};
+  document.getElementById('nextBtn').onclick=()=>{uiClick();showGameModeSelect()};
 }
 
 /* ===== SCREEN 4: GAME MODE ===== */
@@ -162,11 +162,11 @@ function showGameModeSelect(){
     '</div>'
   );
   for(const c of overlay.querySelectorAll('[data-mode]'))c.onclick=()=>{
-    gameMode=c.dataset.mode;ac();
+    gameMode=c.dataset.mode;uiClick();
     for(const x of overlay.querySelectorAll('[data-mode]'))x.classList.toggle('sel',x.dataset.mode===gameMode);
   };
-  document.getElementById('backBtn').onclick=()=>{ac();showFactionSelect()};
-  document.getElementById('nextBtn').onclick=()=>{ac();_lobbyInited=false;showLobby()};
+  document.getElementById('backBtn').onclick=()=>{uiClick();showFactionSelect()};
+  document.getElementById('nextBtn').onclick=()=>{uiClick();_lobbyInited=false;showLobby()};
 }
 
 /* ===== SCREEN 5: LOBBY (MAP + SLOT CONFIG) ===== */
@@ -220,21 +220,21 @@ function showLobby(){
   );
 
   for(const b of overlay.querySelectorAll('[data-map]'))b.onclick=()=>{
-    chosenMapKey=b.dataset.map;ac();
+    chosenMapKey=b.dataset.map;uiClick();
     for(const x of overlay.querySelectorAll('[data-map]'))x.classList.toggle('sel',x.dataset.map===chosenMapKey);
   };
   for(const b of overlay.querySelectorAll('[data-ti]'))b.onclick=()=>{
     const i=+b.dataset.ti;
     slotAlliance[i]=(slotAlliance[i]+1)%ns;
-    b.textContent='Team '+_TEAM_LETTERS[slotAlliance[i]];ac();
+    b.textContent='Team '+_TEAM_LETTERS[slotAlliance[i]];uiClick();
   };
   for(const b of overlay.querySelectorAll('[data-si]'))b.onclick=()=>{
     const i=+b.dataset.si;
     slotType[i]=_TYPES_CYCLE[(_TYPES_CYCLE.indexOf(slotType[i])+1)%3];
-    b.textContent=_TYPE_LABELS[slotType[i]];ac();
+    b.textContent=_TYPE_LABELS[slotType[i]];uiClick();
   };
-  document.getElementById('backBtn').onclick=()=>{ac();showGameModeSelect()};
-  document.getElementById('startBtn').onclick=()=>{ac();init()};
+  document.getElementById('backBtn').onclick=()=>{uiClick();showGameModeSelect()};
+  document.getElementById('startBtn').onclick=()=>{uiClick();init()};
 }
 
 function showPause(){
@@ -265,8 +265,8 @@ function endGame(win){
       '<button class="dbtn" id="menuBtn2">⌂ MAIN MENU</button>'+
       '</div>'
     );
-    document.getElementById('retryBtn').onclick=()=>{ac();init()};
-    document.getElementById('menuBtn2').onclick=()=>{ac();showMenu()};
+    document.getElementById('retryBtn').onclick=()=>{uiClick();init()};
+    document.getElementById('menuBtn2').onclick=()=>{uiClick();showMenu()};
   },win?900:1400);
 }
 

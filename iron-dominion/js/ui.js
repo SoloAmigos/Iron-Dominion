@@ -149,9 +149,26 @@ function updateCard(){
       }
       if(b.queue.length){
         const d=document.createElement('div');d.className='cinfo';
-        let s='<div class="qrow">';
-        for(let i=0;i<b.queue.length;i++)s+='<span class="qchip"><img class="qimg" src="'+iconURL('u',b.queue[i].type,0)+'">'+(i===0?' <span id="qp"></span>':'')+'</span>';
-        d.innerHTML=s+'</div><span style="font-size:11px">Queue '+b.queue.length+'/5</span>';
+        const qrow=document.createElement('div');qrow.className='qrow';
+        for(let i=0;i<b.queue.length;i++){
+          const it=b.queue[i];
+          const chip=document.createElement('button');chip.className='qchip';chip.title='Tap to cancel';
+          const img=document.createElement('img');img.className='qimg';img.src=iconURL('u',it.type,0);
+          chip.appendChild(img);
+          if(i===0){const sp=document.createElement('span');sp.id='qp';chip.appendChild(sp)}
+          const _i=i; // capture index
+          chip.onclick=()=>{
+            const cost=costOf('u',it.type,0);
+            const refund=_i===0?Math.floor(cost*(1-Math.min(1,it.p/(UT[it.type].bt||1)))):cost;
+            b.queue.splice(_i,1);money[0]+=refund;
+            SFX.click();toast('↩ '+dispName('u',it.type,0)+' cancelled — refunded $'+refund);
+            updateHUD();updateCard();
+          };
+          qrow.appendChild(chip);
+        }
+        d.appendChild(qrow);
+        const lbl=document.createElement('span');lbl.style.fontSize='11px';lbl.textContent='Queue '+b.queue.length+'/5 · tap to cancel';
+        d.appendChild(lbl);
         cardEl.appendChild(d);cardQ={b,el:null};
       }
     }else if(b.t.lab){
@@ -201,6 +218,12 @@ function updateCard(){
   const myUnits=sel.filter(s=>s.kind==='u');
   const dz=myUnits.find(u=>u.type==='dozer');
   if(dz){
+    // Show active assignment with a cancel shortcut so the player doesn't need to find the site
+    if(dz.site&&!dz.site.dead){
+      const s=dz.site;
+      cardEl.appendChild(mkInfo('<b>🔧 Building:</b> '+s.t.ic+' '+dispName('b',s.type,0)+' — '+Math.floor(s.prog*100)+'%'));
+      cardEl.appendChild(mkBtn('🗑','Cancel build',0,'warn',()=>cancelSite(s)));
+    }
     cardEl.appendChild(mkInfo('<b>🚜 '+dispName('u','dozer',0)+'</b>Pick a structure:'));
     const REQ={tech:'barracks',silo:'factory',airfield:'factory',samsite:'power',market:'tech',command:'tech'};
     const _bldBtn=bt=>{
@@ -535,10 +558,12 @@ document.getElementById('selBtn').onclick=()=>{
 };
 document.getElementById('dozBtn').onclick=()=>{
   if(state!=='play')return;
-  const dz=units.filter(x=>!x.dead&&x.team===0&&x.type==='dozer');
-  if(!dz.length){SFX.err();toast('🚜 No Dozers — train one at the Command Center');return}
-  dozI=(dozI+1)%dz.length;
-  const d=dz[dozI];
+  const all=units.filter(x=>!x.dead&&x.team===0&&x.type==='dozer');
+  if(!all.length){SFX.err();toast('🚜 No Dozers — train one at the Command Center');return}
+  const free=all.filter(x=>!x.site&&!x.fix);
+  if(!free.length){SFX.err();toast('🚜 All Dozers are busy');return}
+  dozI=(dozI+1)%free.length;
+  const d=free[dozI];
   sel=[d];cam.x=d.x;cam.y=d.y;clampCam();
   SFX.sel();updateCard();
 };

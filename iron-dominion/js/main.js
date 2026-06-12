@@ -21,8 +21,8 @@ function checkHints(){
 let chosenFac='vanguard';
 let chosenGenId='std';
 let chosenMapKey='desert';
+let chosenMapSize='s2';
 let chosenGens={vanguard:'std',crimson:'std',scorpion:'std',northwind:'std'};
-let _lobbyInited=false;
 
 /* ---------- screen helpers ---------- */
 function uiClick(){SFX.click()}
@@ -122,7 +122,7 @@ function showFactionSelect(){
   }
   s+='</div>';
   overlay.innerHTML=panel(
-    eyebrow('ARCADE — STEP 1 OF 3')+
+    eyebrow('ARCADE — STEP 1 OF 2')+
     '<h1 style="font-size:clamp(18px,5vw,30px)">CHOOSE FACTION</h1>'+
     s+
     '<div class="fdesc" id="fdesc">'+FACTIONS[chosenFac].desc+'</div>'+
@@ -140,78 +140,61 @@ function showFactionSelect(){
   };
   wireGens();
   document.getElementById('backBtn').onclick=()=>{uiClick();showModeTypeSelect()};
-  document.getElementById('nextBtn').onclick=()=>{uiClick();showGameModeSelect()};
+  document.getElementById('nextBtn').onclick=()=>{uiClick();showLobby()};
 }
 
-/* ===== SCREEN 4: GAME MODE ===== */
-function showGameModeSelect(){
-  const modes=Object.entries(GAME_MODES);
-  let s='<div class="mode-grid">';
-  for(const[k,m]of modes){
-    s+='<div class="mode-card'+(gameMode===k?' sel':'')+'" data-mode="'+k+'">'+
-      m.label+'<div class="mdesc">'+m.desc+'</div></div>';
-  }
-  s+='</div>';
-  overlay.innerHTML=panel(
-    eyebrow('ARCADE — STEP 2 OF 3')+
-    '<h1 style="font-size:clamp(18px,5vw,30px)">GAME MODE</h1>'+
-    s+
-    '<div class="nav-row">'+
-    '<button class="dbtn back-btn" id="backBtn">← BACK</button>'+
-    '<button class="dbtn next-btn" id="nextBtn">NEXT →</button>'+
-    '</div>'
-  );
-  for(const c of overlay.querySelectorAll('[data-mode]'))c.onclick=()=>{
-    gameMode=c.dataset.mode;uiClick();
-    for(const x of overlay.querySelectorAll('[data-mode]'))x.classList.toggle('sel',x.dataset.mode===gameMode);
-  };
-  document.getElementById('backBtn').onclick=()=>{uiClick();showFactionSelect()};
-  document.getElementById('nextBtn').onclick=()=>{uiClick();_lobbyInited=false;showLobby()};
-}
-
-/* ===== SCREEN 5: LOBBY (MAP + SLOT CONFIG) ===== */
+/* ===== SCREEN 4: MATCH SETUP (map + size + slots) ===== */
 const _TEAM_LETTERS='ABCDEFGH';
 const _TYPE_LABELS={easy:'🤖 Easy',medium:'🤖 Med',hard:'🤖 Hard'};
 const _TYPES_CYCLE=['easy','medium','hard'];
+const _MAP_SIZES=[['s2','Small'],['s4','Medium'],['s8','Large']];
 
 function showLobby(){
-  const mode=GAME_MODES[gameMode]||GAME_MODES['1v1'];
-  const ns=mode.slots;
-  // Init lobby slot state when entering fresh or when slot count changed
-  if(!_lobbyInited||slotType.length!==ns){
-    slotType=['human'];
-    for(let i=1;i<ns;i++)slotType.push('medium');
-    slotAlliance=mode.alliances.slice(0,ns);
-    _lobbyInited=true;
-  }
+  // Sync arrays to current numSlots
+  slotType[0]='human';
+  while(slotType.length<numSlots)slotType.push('medium');
+  slotType.length=numSlots;
+  while(slotAlliance.length<numSlots)slotAlliance.push(slotAlliance.length);
+  slotAlliance.length=numSlots;
 
-  let mapS='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0">';
+  let mapS='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:4px 0 2px">';
   for(const k of Object.keys(MAPS))
     mapS+='<button class="dbtn'+(chosenMapKey===k?' sel':'')+'" data-map="'+k+'" style="font-size:12px;padding:5px 12px">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>';
   mapS+='</div>';
 
+  let sizeS='<div style="display:flex;gap:6px;justify-content:center;margin:2px 0 8px">';
+  for(const[k,label]of _MAP_SIZES)
+    sizeS+='<button class="dbtn'+(chosenMapSize===k?' sel':'')+'" data-sz="'+k+'" style="font-size:11px;padding:4px 10px">'+label+'</button>';
+  sizeS+='</div>';
+
   let rows='<div class="lobby-slots">';
-  for(let i=0;i<ns;i++){
-    const col=ALL_TEAMC[i];
-    const letter=_TEAM_LETTERS[slotAlliance[i]||0];
+  for(let i=0;i<numSlots;i++){
+    const col=ALL_TEAMC[i%8];
+    const letter=_TEAM_LETTERS[slotAlliance[i]%8];
     const isHuman=slotType[i]==='human';
     rows+='<div class="lslot">'+
-      '<span class="lslot-dot" style="background:'+col+';color:'+(i<2?'#000':'#000')+'">'+( i+1)+'</span>'+
+      '<span class="lslot-dot" style="background:'+col+'">'+(i+1)+'</span>'+
       (isHuman
-        ? '<span class="lslot-team-fixed">Team '+letter+'</span>'
-        : '<button class="dbtn lslot-team" data-ti="'+i+'">Team '+letter+'</button>')+
+        ?'<span class="lslot-team-fixed">Team '+letter+'</span>'
+        :'<button class="dbtn lslot-team" data-ti="'+i+'">Team '+letter+'</button>')+
       (isHuman
-        ? '<span class="lslot-you">👤 YOU</span>'
-        : '<button class="dbtn lslot-type" data-si="'+i+'">'+_TYPE_LABELS[slotType[i]]+'</button>')+
+        ?'<span class="lslot-you">👤 YOU</span>'
+        :'<button class="dbtn lslot-type" data-si="'+i+'">'+_TYPE_LABELS[slotType[i]]+'</button>')+
       '</div>';
   }
   rows+='</div>';
 
   overlay.innerHTML=panel(
-    eyebrow('ARCADE — STEP 3 OF 3')+
+    eyebrow('ARCADE — STEP 2 OF 2')+
     '<h1 style="font-size:clamp(16px,5vw,26px);margin-bottom:4px">MATCH SETUP</h1>'+
-    mapS+
-    '<div style="font-size:10px;color:#8aaa80;text-align:center;margin-bottom:6px">Tap team badge to cycle · tap bot label to change difficulty</div>'+
+    mapS+sizeS+
+    '<div style="display:flex;align-items:center;gap:10px;justify-content:center;margin:4px 0 4px">'+
+    '<span style="font-size:11px;color:#8aaa80;letter-spacing:1px">PLAYERS</span>'+
+    '<button class="dbtn" id="slotMinus" style="min-width:34px;padding:4px 8px;font-size:18px;line-height:1">−</button>'+
+    '<span id="slotCount" style="font-size:20px;font-weight:800;min-width:22px;text-align:center">'+numSlots+'</span>'+
+    '<button class="dbtn" id="slotPlus" style="min-width:34px;padding:4px 8px;font-size:18px;line-height:1">+</button>'+
+    '</div>'+
+    '<div style="font-size:10px;color:#8aaa80;text-align:center;margin-bottom:5px">Tap team to reassign · tap bot to change difficulty</div>'+
     rows+
     '<div class="nav-row">'+
     '<button class="dbtn back-btn" id="backBtn">← BACK</button>'+
@@ -223,17 +206,29 @@ function showLobby(){
     chosenMapKey=b.dataset.map;uiClick();
     for(const x of overlay.querySelectorAll('[data-map]'))x.classList.toggle('sel',x.dataset.map===chosenMapKey);
   };
+  for(const b of overlay.querySelectorAll('[data-sz]'))b.onclick=()=>{
+    chosenMapSize=b.dataset.sz;uiClick();
+    for(const x of overlay.querySelectorAll('[data-sz]'))x.classList.toggle('sel',x.dataset.sz===chosenMapSize);
+  };
+  document.getElementById('slotMinus').onclick=()=>{
+    if(numSlots<=2)return;
+    numSlots--;slotType.length=numSlots;slotAlliance.length=numSlots;uiClick();showLobby();
+  };
+  document.getElementById('slotPlus').onclick=()=>{
+    if(numSlots>=8)return;
+    numSlots++;slotType.push('medium');slotAlliance.push(numSlots-1);uiClick();showLobby();
+  };
   for(const b of overlay.querySelectorAll('[data-ti]'))b.onclick=()=>{
     const i=+b.dataset.ti;
-    slotAlliance[i]=(slotAlliance[i]+1)%ns;
-    b.textContent='Team '+_TEAM_LETTERS[slotAlliance[i]];uiClick();
+    slotAlliance[i]=(slotAlliance[i]+1)%numSlots;
+    b.textContent='Team '+_TEAM_LETTERS[slotAlliance[i]%8];uiClick();
   };
   for(const b of overlay.querySelectorAll('[data-si]'))b.onclick=()=>{
     const i=+b.dataset.si;
     slotType[i]=_TYPES_CYCLE[(_TYPES_CYCLE.indexOf(slotType[i])+1)%3];
     b.textContent=_TYPE_LABELS[slotType[i]];uiClick();
   };
-  document.getElementById('backBtn').onclick=()=>{uiClick();showGameModeSelect()};
+  document.getElementById('backBtn').onclick=()=>{uiClick();showFactionSelect()};
   document.getElementById('startBtn').onclick=()=>{uiClick();init()};
 }
 
@@ -274,10 +269,9 @@ function endGame(win){
 function init(name){
   // name is optional (used by campaign); arcade uses slotType/slotAlliance from lobby
   diffName=name||'normal';D=DIFF[diffName]||DIFF.normal;
-  const mode=GAME_MODES[gameMode]||GAME_MODES['1v1'];
-  numSlots=mode.slots;
-  // Ensure slot arrays are sized correctly (may not be set if called from campaign)
-  if(!slotAlliance||slotAlliance.length!==numSlots)slotAlliance=mode.alliances.slice(0,numSlots);
+  // numSlots is set by the lobby (or campaign); ensure slot arrays are sized correctly
+  if(!numSlots||numSlots<2)numSlots=2;
+  if(!slotAlliance||slotAlliance.length!==numSlots){slotAlliance=[];for(let i=0;i<numSlots;i++)slotAlliance.push(i)}
   if(!slotType||slotType.length!==numSlots){slotType=['human'];for(let i=1;i<numSlots;i++)slotType.push('medium')}
 
   // Build faction list: slot 0 = player, rest random AI
@@ -294,8 +288,8 @@ function init(name){
   for(let i=1;i<numSlots;i++)gens.push('std');
 
   // Map setup
-  chosenMap=chosenMapKey;
-  MAP=getMapVariant(chosenMap,numSlots);
+  chosenMap=chosenMapKey||'desert';
+  MAP=(MAPS[chosenMap]||MAPS.desert)[chosenMapSize||'s2']||MAPS.desert.s2;
   setMapDims(MAP.w,MAP.h);
 
   simFrame=0;simAcc=0;
@@ -343,8 +337,8 @@ function init(name){
   state='play';
   refreshPowers();updateRankBtn();updateHUD();updateCard();
   toast('🚜 '+dispName('u','dozer',0)+' ready — build menu below');
-  const modeLabel=mode.label;
-  toast('⚔ Mode: '+modeLabel+' · Enemy: '+FACTIONS[fac[1]].name+(numSlots>2?' +more':''));
+  const mapLabel=chosenMap.charAt(0).toUpperCase()+chosenMap.slice(1);
+  toast('⚔ Map: '+mapLabel+' · Enemy: '+FACTIONS[fac[1]].name+(numSlots>2?' +more':''));
   toast('⭐ Spend your skill point — tap the star button');
   toast('⚔️ '+GENMOD(0).nm+' doctrine active');
 }

@@ -222,12 +222,11 @@ const BT={
   samsite:  {name:'SAM Site',       ic:'🚀', cost:1200,bt:10,hp:900, w:2,h:2,pow:3,  wpn:'sam',                 desc:'Anti-air defense'},
   radar:    {name:'Radar Tower',    ic:'📡', cost:1100,bt:10,hp:700, w:2,h:2,pow:2,  sight:20,                  desc:'Wide-area sensors — reveals fog in a large radius'},
 };
-const BUILD_ORDER_UI=['power','supply','barracks','factory','turret','market','tech','radar','airfield','samsite','silo','command'];
+const BUILD_ORDER_UI=['power','barracks','factory','airfield','tech','turret','samsite','radar','silo','supply','market','command'];
 const BUILD_CATEGORIES=[
-  {label:'Combat',     items:['turret','samsite','radar','airfield','silo']},
-  {label:'Production', items:['barracks','factory','tech']},
-  {label:'Power',      items:['power']},
-  {label:'Economy',    items:['supply','market','command']},
+  {id:'production', label:'Production', ic:'🏭', items:['barracks','factory','airfield','tech']},
+  {id:'combat',     label:'Combat',     ic:'⚔️',  items:['turret','samsite','radar','silo']},
+  {id:'economy',    label:'Economy',    ic:'💰',  items:['supply','market','command']},
 ];
 const COMBAT=['ranger','rocket','tank','arty','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar','raptor','gunship','bomber'];
 const DIFF={

@@ -5,6 +5,7 @@ const cardEl=document.getElementById('card');
 const toastsEl=document.getElementById('toasts');
 let cardQ=null; // queue progress element ref
 let selMode=false,lpTimer=null,dozI=-1;
+let openCat=null; // which dozer build category is expanded
 function setSelMode(v){
   selMode=v;
   document.getElementById('selBtn').classList.toggle('on',v);
@@ -201,23 +202,31 @@ function updateCard(){
   const dz=myUnits.find(u=>u.type==='dozer');
   if(dz){
     cardEl.appendChild(mkInfo('<b>🚜 '+dispName('u','dozer',0)+'</b>Pick a structure:'));
-    const REQ={tech:'barracks',silo:'factory',airfield:'factory',samsite:'power'};
-    for(const cat of BUILD_CATEGORIES){
-      const vis=cat.items.filter(bt=>!(bt==='power'&&FAC(0).noPower));
-      if(!vis.length)continue;
-      const sep=document.createElement('div');sep.className='ccat';sep.textContent=cat.label;
-      cardEl.appendChild(sep);
-      for(const bt of vis){
-        const t=BT[bt],bc=costOf('b',bt,0);
-        cardEl.appendChild(mkBtn(BT[bt].ic,dispName('b',bt,0),bc,t.silo?'sig':'',()=>{
-          if(REQ[bt]&&!hasB(REQ[bt])){SFX.err();toast('🔒 Requires a '+dispName('b',REQ[bt],0)+' first');return}
+    const REQ={tech:'barracks',silo:'factory',airfield:'factory',samsite:'power',market:'tech',command:'tech'};
+    const _bldBtn=bt=>{
+      const t=BT[bt],bc=costOf('b',bt,0);
+      const locked=!!(REQ[bt]&&!hasB(REQ[bt]));
+      cardEl.appendChild(mkBtn(t.ic,dispName('b',bt,0)+(locked?' 🔒':''),locked?0:bc,
+        t.silo?'sig':(locked?'warn':''),()=>{
+          if(locked){SFX.err();toast('🔒 Requires '+dispName('b',REQ[bt],0)+' first');return}
           if(money[0]<bc){SFX.err();toast('💰 Need $'+bc);return}
           const tx=clamp(TT(cam.x)-Math.floor(t.w/2),1,MAPW-t.w-1);
           const ty=clamp(TT(cam.y)-Math.floor(t.h/2),1,MAPH-t.h-1);
           placing={type:bt,tx,ty,ok:false};SFX.click();updateCard();
           toast('Tap the map to position, then ✓ PLACE');
         }));
-      }
+    };
+    // Power — standalone priority button (hidden for factions that need no power)
+    if(!FAC(0).noPower)_bldBtn('power');
+    // Collapsible category sections
+    for(const cat of BUILD_CATEGORIES){
+      const isOpen=openCat===cat.id;
+      const cb=document.createElement('button');
+      cb.className='cbtn ccat-btn'+(isOpen?' open':'');
+      cb.innerHTML='<span class="ic">'+(isOpen?'▾':'▸')+'</span><span class="nm">'+cat.ic+' '+cat.label+'</span>';
+      cb.onclick=()=>{openCat=isOpen?null:cat.id;SFX.sel();updateCard()};
+      cardEl.appendChild(cb);
+      if(isOpen)for(const bt of cat.items)_bldBtn(bt);
     }
   }else{
     const names=myUnits.length===1?UT[myUnits[0].type].ic+' '+dispName('u',myUnits[0].type,0):'⚔ '+myUnits.length+' units';

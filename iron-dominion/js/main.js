@@ -1,4 +1,9 @@
 'use strict';
+/* ---------- PWA install prompt ---------- */
+let _installPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_installPrompt=e;const ib=document.getElementById('installBtn');if(ib)ib.style.display=''});
+window.addEventListener('appinstalled',()=>{_installPrompt=null});
+
 /* ---------- hints ---------- */
 function hasB(type){return builds.some(b=>b.team===0&&!b.dead&&b.built&&b.type===type)}
 function checkHints(){
@@ -86,15 +91,17 @@ function showMenu(){
   overlay.innerHTML='<div class="panel">'+
     '<div class="eyebrow">REAL-TIME STRATEGY</div>'+
     '<h1>IRON <span>DOMINION</span></h1>'+
-    '<div class="sub">Choose your faction, Commander:</div>'+
+    '<div class="sub" style="margin-bottom:6px">Choose your faction, Commander:</div>'+
     facCards()+
     '<div id="genChipsArea">'+genChips(chosenFac)+'</div>'+
     mapChips()+
     diffBtns()+
-    '<div style="display:flex;gap:8px;justify-content:center;margin-top:6px">'+
-    '<button class="dbtn" id="campaignBtn" style="background:#4a3800;border-color:#c9a23a;color:#ffd95e">📋 CAMPAIGN</button>'+
+    '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:0">'+
+    '<button class="dbtn" id="campaignBtn" style="background:#4a3800;border-color:#c9a23a;color:#ffd95e;min-width:140px">📋 CAMPAIGN</button>'+
+    '<button class="dbtn install" id="installBtn">📲 Install App</button>'+
+    '<button class="dbtn" id="howtoBtn" style="min-width:120px;font-size:13px">❓ How to Play</button>'+
     '</div>'+
-    '<div class="howto">'+
+    '<div class="howto" id="howtoBox">'+
     '<b>🚜 Dozer</b> builds structures · <b>📦 Supply Center</b> earns cash via trucks<br>'+
     '<b>⚡ Power</b> keeps production fast and turrets online<br>'+
     '<b>Tap</b> select / command · <b>Drag</b> pan · <b>Pinch</b> zoom · minimap to jump<br>'+
@@ -108,6 +115,13 @@ function showMenu(){
   wireDiff();wireFac();wireGens();wireMaps();
   const cb=document.getElementById('campaignBtn');
   if(cb)cb.onclick=()=>{if(typeof showCampaignMenu==='function')showCampaignMenu();else toast('Campaign not available')};
+  const hb=document.getElementById('howtoBtn');
+  if(hb)hb.onclick=()=>{const box=document.getElementById('howtoBox');if(box){box.classList.toggle('open');hb.textContent=box.classList.contains('open')?'✖ Close':'❓ How to Play'}};
+  const ib=document.getElementById('installBtn');
+  if(ib){
+    if(_installPrompt){ib.style.display='';ib.onclick=()=>{_installPrompt.prompt();_installPrompt.userChoice.then(()=>{_installPrompt=null;ib.style.display='none'})}}
+    else ib.style.display='none';
+  }
 }
 function showPause(){
   overlay.style.display='flex';

@@ -1,6 +1,23 @@
 'use strict';
 /* ================= CONFIG ================= */
-const TILE=40, MAPW=60, MAPH=40, WW=MAPW*TILE, WH=MAPH*TILE;
+const TILE=40;
+let MAPW=60,MAPH=40,WW=MAPW*TILE,WH=MAPH*TILE;
+function setMapDims(w,h){MAPW=w;MAPH=h;WW=w*TILE;WH=h*TILE}
+
+const MAPS={
+  desert:{w:60,h:40,spawns:[[4,33],[55,5]],piles:[[18,28],[25,20],[38,14],[45,25]],
+    neutrals:[{type:'oilrig',tx:30,ty:20},{type:'civil',tx:12,ty:15},{type:'civil',tx:48,ty:25}],
+    rocks:[],walls:[],deco:'sand'},
+  urban:{w:60,h:40,spawns:[[4,33],[55,5]],piles:[[15,30],[22,22],[40,18],[50,28]],
+    neutrals:[{type:'oilrig',tx:22,ty:18},{type:'oilrig',tx:38,ty:22},{type:'civil',tx:10,ty:10},{type:'civil',tx:50,ty:30}],
+    rocks:[{tx:25,ty:25},{tx:35,ty:15},{tx:20,ty:10}],walls:[],deco:'urban'},
+  valley:{w:72,h:36,spawns:[[4,28],[67,6]],piles:[[20,24],[30,18],[42,14],[55,22]],
+    neutrals:[{type:'oilrig',tx:36,ty:18},{type:'civil',tx:15,ty:20},{type:'civil',tx:57,ty:14}],
+    rocks:[],walls:[[[24,10],[24,26]],[[48,10],[48,26]]],deco:'green'},
+};
+let MAP=MAPS.desert;
+let chosenMap='desert';
+
 let TEAMC=['#4da3ff','#ff5147'], TEAMD=['#244a6e','#6e2424'];
 
 /* ================= FACTIONS ================= */
@@ -46,12 +63,36 @@ function dispName(kind,type,team){
   const f=FAC(team);
   return (f.names&&f.names[type])||(kind==='u'?UT[type].name:BT[type].name);
 }
+
+/* ================= GENERALS ================= */
+const GENERALS={
+  vanguard:[
+    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[]},
+    {id:'air',nm:'Air General',desc:'Raptors −20% cost · no tank production',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:['tank','arty','dominator'],rapCost:.8},
+  ],
+  crimson:[
+    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[]},
+    {id:'inf',nm:'Infantry General',desc:'Infantry −25% cost · +20% HP',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:['tank','arty'],infCost:.75,infHp:1.2},
+  ],
+  scorpion:[
+    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[]},
+    {id:'toxin',nm:'Toxin General',desc:'All weapons apply poison DOT',ucostMul:1,bcostMul:1,incomeMul:1,toxin:true,turretHpMul:1,locked:[]},
+  ],
+  northwind:[
+    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[]},
+    {id:'def',nm:'Defense General',desc:'Turrets +50% HP · buildings +15% HP',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1.5,bHpMul:1.15,locked:[]},
+  ],
+};
+let gens=['std','std']; // chosen general id per team
+function GENMOD(t){const g=GENERALS[fac[t]];return g?g.find(x=>x.id===gens[t])||g[0]:{ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[]}}
+function isLocked(type,team){return GENMOD(team).locked.includes(type)}
+
 function costOf(kind,type,team){
   if(team<0)return 0;
-  const f=FAC(team);
+  const f=FAC(team),gm=GENMOD(team);
   let c=kind==='u'?UT[type].cost:BT[type].cost;
-  if(kind==='u'){c*=f.ucost;if(f.cheap.includes(type))c*=.85}
-  else c*=f.bcost;
+  if(kind==='u'){c*=f.ucost*gm.ucostMul;if(f.cheap.includes(type))c*=.85}
+  else c*=f.bcost*gm.bcostMul;
   return Math.round(c/25)*25;
 }
 
@@ -71,38 +112,43 @@ const WPN={
   mortar:  {dmg:55, rel:3.6,rng:280, kind:'arc',   spd:240, minRng:80, splash:36, mult:{inf:1.1,veh:.6,bld:.9}},
   boomkart:{dmg:260,rel:1,  rng:1,   kind:'hit',                 splash:60, mult:{inf:1,  veh:1,  bld:1.1}},
   nuke:    {dmg:1500,rel:1,  rng:1,   kind:'arc',   spd:300,     splash:165,mult:{inf:1,  veh:1,  bld:1}},
+  agm:     {dmg:90, rel:3.5,rng:280, kind:'rocket',spd:420,      splash:28, mult:{inf:.7, veh:1.2,bld:1},aa:false},
+  sam:     {dmg:65, rel:2.8,rng:260, kind:'rocket',spd:500,      splash:15, mult:{inf:.3, veh:.8, bld:.4},aa:true,aaOnly:true},
 };
 const UT={
-  dozer:{name:'Dozer',       ic:'🚜', cost:1000,bt:8, hp:300,spd:74, r:13,sight:5,cat:'veh', desc:'Constructs buildings'},
-  truck:{name:'Supply Truck',ic:'🚚', cost:600, bt:6, hp:260,spd:102,r:13,sight:5,cat:'veh', desc:'Hauls supplies — auto'},
-  ranger:{name:'Ranger',     ic:'🪖', cost:200, bt:4, hp:95, spd:62, r:7, sight:6,cat:'inf', wpn:'rifle',  desc:'Anti-infantry'},
-  rocket:{name:'Rocket Trp', ic:'🎯', cost:300, bt:5, hp:85, spd:56, r:7, sight:6,cat:'inf', wpn:'rocket', desc:'Anti-armor'},
-  tank: {name:'Brawler Tank',ic:'🦏', cost:800, bt:9, hp:330,spd:88, r:14,sight:6,cat:'veh', wpn:'cannon', desc:'Main battle tank'},
-  arty: {name:'Howitzer',    ic:'💣', cost:1100,bt:12,hp:190,spd:64, r:14,sight:7,cat:'veh', wpn:'howitzer',desc:'Long-range siege'},
-  paladin:  {name:'Paladin',  ic:'🔷', cost:1000,bt:10,hp:300,spd:92, r:14,sight:7,cat:'veh', wpn:'laser', desc:'Laser tank — melts armor',sig:true},
-  dominator:{name:'Dominator',ic:'🐗', cost:1200,bt:13,hp:520,spd:64, r:15,sight:6,cat:'veh', wpn:'twin',  desc:'Heavy twin-cannon tank',sig:true},
-  technical:{name:'Technical',ic:'🛻', cost:450, bt:5, hp:200,spd:130,r:13,sight:6,cat:'veh', wpn:'mgT',   desc:'Fast raider gun-truck',sig:true},
-  guardian: {name:'Guardian', ic:'🛡', cost:450, bt:6, hp:230,spd:54, r:8, sight:6,cat:'inf', wpn:'gmg',   desc:'Shielded heavy trooper',sig:true},
-  drone:    {name:'Falcon Drone',ic:'🛸',cost:500,bt:6, hp:130,spd:142,r:11,sight:8,cat:'veh', wpn:'dgun', desc:'Fast recon gun-drone',sig:true},
-  inferno:  {name:'Inferno Trooper',ic:'🔥',cost:350,bt:5,hp:100,spd:58,r:7,sight:6,cat:'inf', wpn:'flame',desc:'Close-range flamethrower',sig:true},
-  scarab:   {name:'Scarab Kart',ic:'💥',cost:400,bt:5, hp:110,spd:150,r:11,sight:6,cat:'veh', suicide:'boomkart',desc:'Rams & explodes!',sig:true},
-  mortar:   {name:'Mortar Team',ic:'🎇',cost:500,bt:6, hp:90, spd:52, r:8, sight:7,cat:'inf', wpn:'mortar',desc:'Long-range mortar',sig:true},
+  dozer:   {name:'Dozer',          ic:'🚜', cost:1000,bt:8, hp:300,spd:74, r:13,sight:5,cat:'veh', desc:'Constructs buildings',wc:2},
+  truck:   {name:'Supply Truck',   ic:'🚚', cost:600, bt:6, hp:260,spd:102,r:13,sight:5,cat:'veh', desc:'Hauls supplies — auto',wc:2},
+  ranger:  {name:'Ranger',         ic:'🪖', cost:200, bt:4, hp:95, spd:62, r:7, sight:6,cat:'inf', wpn:'rifle',  desc:'Anti-infantry',wc:1},
+  rocket:  {name:'Rocket Trp',     ic:'🎯', cost:300, bt:5, hp:85, spd:56, r:7, sight:6,cat:'inf', wpn:'rocket', desc:'Anti-armor',wc:1},
+  tank:    {name:'Brawler Tank',   ic:'🦏', cost:800, bt:9, hp:330,spd:88, r:14,sight:6,cat:'veh', wpn:'cannon', desc:'Main battle tank',wc:3},
+  arty:    {name:'Howitzer',       ic:'💣', cost:1100,bt:12,hp:190,spd:64, r:14,sight:7,cat:'veh', wpn:'howitzer',desc:'Long-range siege',wc:2},
+  paladin:   {name:'Paladin',       ic:'🔷', cost:1000,bt:10,hp:300,spd:92, r:14,sight:7,cat:'veh', wpn:'laser', desc:'Laser tank — melts armor',sig:true,wc:3},
+  dominator: {name:'Dominator',     ic:'🐗', cost:1200,bt:13,hp:520,spd:64, r:15,sight:6,cat:'veh', wpn:'twin',  desc:'Heavy twin-cannon tank',sig:true,wc:3},
+  technical: {name:'Technical',     ic:'🛻', cost:450, bt:5, hp:200,spd:130,r:13,sight:6,cat:'veh', wpn:'mgT',   desc:'Fast raider gun-truck',sig:true,wc:2},
+  guardian:  {name:'Guardian',      ic:'🛡', cost:450, bt:6, hp:230,spd:54, r:8, sight:6,cat:'inf', wpn:'gmg',   desc:'Shielded heavy trooper',sig:true,wc:1},
+  drone:     {name:'Falcon Drone',  ic:'🛸', cost:500, bt:6, hp:130,spd:142,r:11,sight:8,cat:'veh', wpn:'dgun', desc:'Fast recon gun-drone',sig:true,wc:2},
+  inferno:   {name:'Inferno Trooper',ic:'🔥',cost:350,bt:5, hp:100,spd:58, r:7, sight:6,cat:'inf', wpn:'flame',desc:'Close-range flamethrower',sig:true,wc:1},
+  scarab:    {name:'Scarab Kart',   ic:'💥', cost:400, bt:5, hp:110,spd:150,r:11,sight:6,cat:'veh', suicide:'boomkart',desc:'Rams & explodes!',sig:true,wc:2},
+  mortar:    {name:'Mortar Team',   ic:'🎇', cost:500, bt:6, hp:90, spd:52, r:8, sight:7,cat:'inf', wpn:'mortar',desc:'Long-range mortar',sig:true,wc:1},
+  raptor:    {name:'Raptor',        ic:'✈️', cost:1400,bt:14,hp:220,spd:240,r:12,sight:9,cat:'air', wpn:'agm',   desc:'Jet fighter — RTB to rearm',sig:false,wc:2,ammo:4},
 };
 const BT={
-  command: {name:'Command Center',ic:'🏢', cost:2000,bt:20,hp:2600,w:4,h:4,pow:2,  trains:['dozer'],          desc:'HQ — trains Dozers'},
-  power:   {name:'Power Plant',   ic:'⚡', cost:600, bt:8, hp:650, w:2,h:2,pow:-10,                            desc:'+10 power'},
-  supply:  {name:'Supply Center', ic:'📦', cost:1400,bt:10,hp:1300,w:3,h:3,pow:2,  trains:['truck'],          desc:'Drop-off + free truck'},
-  barracks:{name:'Barracks',      ic:'🪖', cost:500, bt:8, hp:1100,w:3,h:2,pow:1,  trains:['ranger','rocket'],desc:'Trains infantry'},
-  factory: {name:'War Factory',   ic:'🏭', cost:2000,bt:14,hp:1600,w:4,h:3,pow:3,  trains:['tank','arty'],    desc:'Builds vehicles'},
-  turret:  {name:'Guard Turret',  ic:'🗼', cost:900, bt:8, hp:950, w:2,h:2,pow:2,  wpn:'mg',                  desc:'Base defense — needs power'},
-  market:  {name:'Market',        ic:'💰', cost:1500,bt:10,hp:900, w:2,h:2,pow:2,  income:80,                 desc:'+$80 every 5s — endless income'},
-  tech:    {name:'Tech Lab',      ic:'🔬', cost:1500,bt:12,hp:1000,w:3,h:2,pow:3,  lab:true,                  desc:'Unlocks army upgrades'},
-  silo:    {name:'Missile Silo',  ic:'☢️', cost:4000,bt:22,hp:1500,w:3,h:3,pow:6,  silo:true,                 desc:'Superweapon — charges 150s'},
-  civil:   {name:'Civil Structure',ic:'🏠',cost:0,   bt:0, hp:350, w:2,h:2,pow:0,  garrison:true,garrisonMax:4,desc:'Infantry can garrison inside'},
-  oilrig:  {name:'Oil Derrick',   ic:'⛽', cost:0,   bt:0, hp:500, w:2,h:2,pow:0,  capturable:true,income:60, desc:'Capture with infantry for $60 every 5s'},
+  command:  {name:'Command Center', ic:'🏢', cost:2000,bt:20,hp:2600,w:4,h:4,pow:2,  trains:['dozer'],          desc:'HQ — trains Dozers'},
+  power:    {name:'Power Plant',    ic:'⚡', cost:600, bt:8, hp:650, w:2,h:2,pow:-10,                            desc:'+10 power'},
+  supply:   {name:'Supply Center',  ic:'📦', cost:1400,bt:10,hp:1300,w:3,h:3,pow:2,  trains:['truck'],          desc:'Drop-off + free truck'},
+  barracks: {name:'Barracks',       ic:'🪖', cost:500, bt:8, hp:1100,w:3,h:2,pow:1,  trains:['ranger','rocket'],desc:'Trains infantry'},
+  factory:  {name:'War Factory',    ic:'🏭', cost:2000,bt:14,hp:1600,w:4,h:3,pow:3,  trains:['tank','arty'],    desc:'Builds vehicles'},
+  turret:   {name:'Guard Turret',   ic:'🗼', cost:900, bt:8, hp:950, w:2,h:2,pow:2,  wpn:'mg',                  desc:'Base defense — needs power'},
+  market:   {name:'Market',         ic:'💰', cost:1500,bt:10,hp:900, w:2,h:2,pow:2,  income:80,                 desc:'+$80 every 5s — endless income'},
+  tech:     {name:'Tech Lab',       ic:'🔬', cost:1500,bt:12,hp:1000,w:3,h:2,pow:3,  lab:true,                  desc:'Unlocks army upgrades'},
+  silo:     {name:'Missile Silo',   ic:'☢️', cost:4000,bt:22,hp:1500,w:3,h:3,pow:6,  silo:true,                 desc:'Superweapon — charges 150s'},
+  civil:    {name:'Civil Structure',ic:'🏠', cost:0,   bt:0, hp:350, w:2,h:2,pow:0,  garrison:true,garrisonMax:4,desc:'Infantry can garrison inside'},
+  oilrig:   {name:'Oil Derrick',    ic:'⛽', cost:0,   bt:0, hp:500, w:2,h:2,pow:0,  capturable:true,income:60, desc:'Capture with infantry for $60 every 5s'},
+  airfield: {name:'Airfield',       ic:'✈️', cost:2500,bt:18,hp:1800,w:5,h:4,pow:4,  trains:['raptor'],pads:[[-1,-1],[1,-1],[-1,1],[1,1]],desc:'Trains & launches Raptors'},
+  samsite:  {name:'SAM Site',       ic:'🚀', cost:1200,bt:10,hp:900, w:2,h:2,pow:3,  wpn:'sam',                 desc:'Anti-air defense'},
 };
-const BUILD_ORDER_UI=['power','supply','barracks','factory','turret','market','tech','silo','command'];
-const COMBAT=['ranger','rocket','tank','arty','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar'];
+const BUILD_ORDER_UI=['power','supply','barracks','factory','turret','market','tech','airfield','samsite','silo','command'];
+const COMBAT=['ranger','rocket','tank','arty','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar','raptor'];
 const DIFF={
   easy:  {trickle:3, wave:120,first:220,cap:12,label:'EASY',silo:false},
   normal:{trickle:9, wave:95, first:160,cap:20,label:'NORMAL',silo:true},

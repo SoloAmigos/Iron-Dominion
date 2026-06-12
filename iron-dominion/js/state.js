@@ -10,3 +10,14 @@ let ids=1,gtime=0,fogT=0,powT=0,uiT=0,winT=1,aiT=0,sepT=0,miniT=0;
 let underAttackCd=0,readyCd=0,hintStage=0,hintT=0,shake=0;
 let ai=null,groundCv=null,fogCv=null,fogImg=null;
 const keys={};
+
+// Fixed timestep
+const SIM_DT=1/60;
+let simFrame=0,simAcc=0,renderAlpha=1;
+let matchSeed=1,inputQueue=[];
+
+// Object pool caps
+const PROJ_CAP=500,PART_CAP=700;
+
+// Campaign
+let campaign=null;

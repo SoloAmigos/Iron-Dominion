@@ -1042,6 +1042,7 @@ function drawProj(p){
 }
 function drawPart(p){
   if(!p.active)return;
+  if((p.k==='dust'||p.k==='spark')&&tileVisAt(p.x,p.y)<2)return;
   const f=p.life/p.max;
   switch(p.k){
     case 'scorch':
@@ -1198,14 +1199,14 @@ function renderMini(){
   for(const p of piles)if(p.amt>0)mctx.fillRect(p.x*sx-2,p.y*sy-2,4,4);
   for(const b of builds){
     if(b.dead)continue;
-    if(b.team===1&&vis[idx(b.tx,b.ty)]===0)continue;
+    if(isEnemy(0,b.team)&&vis[idx(b.tx,b.ty)]===0)continue;
     mctx.fillStyle=b.team>=0?TEAMC[b.team]:'#9aa48c';
     mctx.fillRect(b.tx*TILE*sx,b.ty*TILE*sy,Math.max(3,b.t.w*TILE*sx),Math.max(3,b.t.h*TILE*sy));
   }
   for(const u of units){
     if(u.dead)continue;
-    if(u.team===1&&tileVisAt(u.x,u.y)!==2)continue;
-    mctx.fillStyle=u.team===0?'#e9f1e2':TEAMC[1];
+    if(isEnemy(0,u.team)&&tileVisAt(u.x,u.y)!==2)continue;
+    mctx.fillStyle=TEAMC[u.team];
     mctx.fillRect(u.x*sx-1,u.y*sy-1,2.4,2.4);
   }
   mctx.fillStyle='rgba(0,0,0,.62)';

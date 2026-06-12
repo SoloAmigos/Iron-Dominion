@@ -218,11 +218,16 @@ function updateCard(){
   const myUnits=sel.filter(s=>s.kind==='u');
   const dz=myUnits.find(u=>u.type==='dozer');
   if(dz){
-    // Show active assignment with a cancel shortcut so the player doesn't need to find the site
+    // Show active assignment with a cancel shortcut
     if(dz.site&&!dz.site.dead){
       const s=dz.site;
       cardEl.appendChild(mkInfo('<b>🔧 Building:</b> '+s.t.ic+' '+dispName('b',s.type,0)+' — '+Math.floor(s.prog*100)+'%'));
-      cardEl.appendChild(mkBtn('🗑','Cancel build',0,'warn',()=>cancelSite(s)));
+      cardEl.appendChild(mkBtn('🗑','Cancel',0,'warn',()=>cancelSite(s)));
+    } else if(dz.fix&&!dz.fix.dead){
+      const b=dz.fix;
+      const pct=Math.round(b.hp/b.maxhp*100);
+      cardEl.appendChild(mkInfo('<b>🔩 Repairing:</b> '+b.t.ic+' '+dispName('b',b.type,0)+' — '+pct+'% HP'));
+      cardEl.appendChild(mkBtn('✕','Stop repair',0,'warn',()=>{dz.fix=null;dz.path=null;SFX.click();updateCard()}));
     }
     cardEl.appendChild(mkInfo('<b>🚜 '+dispName('u','dozer',0)+'</b>Pick a structure:'));
     const REQ={tech:'barracks',silo:'factory',airfield:'factory',samsite:'power',market:'tech',command:'tech'};
@@ -332,7 +337,7 @@ function commandTarget(hit){
   }
   if(hit.kind==='b'&&hit.team===0&&hit.built&&hit.hp<hit.maxhp){
     let n=0;
-    for(const u of sel)if(u.kind==='u'&&u.type==='dozer'&&!u.dead){u.fix=hit;u.site=null;u.order=null;u.attackTarget=null;u.path=null;n++}
+    for(const u of sel)if(u.kind==='u'&&u.type==='dozer'&&!u.dead){u.fix=hit;u.site=null;u.order=null;u.attackTarget=null;u.path=null;u.repath=0;n++}
     if(n){SFX.click();toast('🔧 Dozer repairing '+dispName('b',hit.type,0));return true}
   }
   // Garrison: infantry into a civil structure (neutral or friendly)
@@ -417,6 +422,8 @@ function tap(px,py,isCmd){
     }
     if(hit.team===0){
       if(hit.kind==='b'&&!hit.built&&sel.some(x=>x.kind==='u'&&x.type==='dozer'&&!x.dead)){resumeSite(hit);return}
+      // Let commandTarget handle repair/garrison before falling back to selection
+      if(sel.some(s=>s.kind==='u')&&commandTarget(hit))return;
       selectEnt(hit);return;
     }
     if(hit.team<0){  // neutral building

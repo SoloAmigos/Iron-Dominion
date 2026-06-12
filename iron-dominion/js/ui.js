@@ -251,7 +251,7 @@ function confirmPlace(){
     for(const u of units)if(!u.dead&&u.team===0&&u.type==='dozer'){const d=dist2(u,site);if(d<bd){bd=d;dz=u}}
   }
   if(dz){dz.site=site;dz.order=null;dz.attackTarget=null;dz.path=null}
-  placing=null;SFX.click();updateHUD();updateCard();
+  placing=null;SFX.build();updateHUD();updateCard();
 }
 
 /* ---------- pointer input ---------- */
@@ -543,7 +543,7 @@ document.getElementById('speedBtn').onclick=function(){
   gameSpeed=gameSpeed===1?2:gameSpeed===2?4:1;
   this.textContent=gameSpeed+'×';SFX.click();
 };
-document.getElementById('muteBtn').onclick=function(){muted=!muted;this.textContent=muted?'🔇':'🔊'};
+document.getElementById('muteBtn').onclick=function(){muted=!muted;this.textContent=muted?'🔇':'🔊';applyMute()};
 document.getElementById('menuBtn').onclick=()=>{
   if(state==='play'){state='pause';showPause()}
   else if(state==='pause'){overlay.style.display='none';state='play'}

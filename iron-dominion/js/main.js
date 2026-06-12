@@ -85,16 +85,34 @@ function showSettings(){
   overlay.innerHTML=panel(
     eyebrow('IRON DOMINION')+
     '<h1 style="font-size:clamp(22px,6vw,36px)">SETTINGS</h1>'+
-    '<div class="dbtns" style="flex-direction:column;gap:10px">'+
-    '<button class="dbtn" id="muteSet" style="width:100%">'+(window._muted?'🔇 Sound: OFF':'🔊 Sound: ON')+'</button>'+
+    '<div style="display:flex;flex-direction:column;gap:14px;margin:8px 0 4px">'+
+      '<button class="dbtn" id="muteSet" style="width:100%">'+(muted?'🔇 Sound: OFF':'🔊 Sound: ON')+'</button>'+
+      '<div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#c2d4b4">'+
+        '<span style="width:80px;text-align:right">Music</span>'+
+        '<input id="mxVol" type="range" min="0" max="100" value="'+Math.round(musicVol*100)+'" style="flex:1;accent-color:#62b169">'+
+        '<span id="mxVolN" style="width:32px">'+Math.round(musicVol*100)+'</span>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#c2d4b4">'+
+        '<span style="width:80px;text-align:right">SFX</span>'+
+        '<input id="sxVol" type="range" min="0" max="100" value="'+Math.round(sfxVol*100)+'" style="flex:1;accent-color:#62b169">'+
+        '<span id="sxVolN" style="width:32px">'+Math.round(sfxVol*100)+'</span>'+
+      '</div>'+
     '</div>'+
     '<div class="nav-row"><button class="dbtn back-btn" id="backBtn">← BACK</button></div>'
   );
   document.getElementById('backBtn').onclick=()=>{uiClick();showMainMenu()};
   document.getElementById('muteSet').onclick=()=>{
-    uiClick();window._muted=!window._muted;
-    document.getElementById('muteSet').textContent=window._muted?'🔇 Sound: OFF':'🔊 Sound: ON';
-    const mb=document.getElementById('muteBtn');if(mb)mb.textContent=window._muted?'🔇':'🔊';
+    muted=!muted;
+    document.getElementById('muteSet').textContent=muted?'🔇 Sound: OFF':'🔊 Sound: ON';
+    const mb=document.getElementById('muteBtn');if(mb)mb.textContent=muted?'🔇':'🔊';
+    applyMute();
+  };
+  document.getElementById('mxVol').oninput=function(){
+    setMusicVol(this.value/100);document.getElementById('mxVolN').textContent=this.value;
+  };
+  document.getElementById('sxVol').oninput=function(){
+    setSfxVol(this.value/100);document.getElementById('sxVolN').textContent=this.value;
+    SFX.click();
   };
 }
 
@@ -322,6 +340,7 @@ function showPause(){
 function endGame(win){
   if(state!=='play')return;
   state=win?'win':'lose';
+  stopMusic();
   const _elapsed=Math.floor(gtime);
   const _mm=Math.floor(_elapsed/60),_ss=_elapsed%60;
   const _timeStr=_mm+'m '+(_ss<10?'0':'')+_ss+'s';
@@ -426,6 +445,7 @@ function init(name){
   updateFog();recomputePower();renderMini();
   overlay.style.display='none';
   state='play';
+  startMusic();
   refreshPowers();updateRankBtn();updateHUD();updateCard();
   toast('🚜 '+dispName('u','dozer',0)+' ready — build menu below');
   const mapLabel=chosenMap.charAt(0).toUpperCase()+chosenMap.slice(1);
@@ -472,6 +492,14 @@ function simStep(){
   }
   shake=Math.max(0,shake-dt*1.4);
   underAttackCd=Math.max(0,underAttackCd-dt);
+  // Music intensity — ramp up when enemy units are near our territory
+  if(simFrame%120===0){
+    const threat=units.some(u=>{
+      if(u.dead||!isEnemy(0,u.team)||!COMBAT.includes(u.type))return false;
+      return builds.some(b=>!b.dead&&b.team===0&&dist2(u,b)<1600);
+    });
+    setMusicIntensity(threat?1:0);
+  }
   readyCd=Math.max(0,readyCd-dt);
   winT-=dt;
   if(winT<=0){

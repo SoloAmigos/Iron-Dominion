@@ -197,7 +197,7 @@ const UT={
   dominator: {name:'Dominator',     ic:'🐗', cost:1200,bt:13,hp:520,spd:64, r:15,sight:6,cat:'veh', wpn:'twin',  desc:'Heavy twin-cannon tank',sig:true,wc:3},
   technical: {name:'Technical',     ic:'🛻', cost:450, bt:5, hp:200,spd:130,r:13,sight:6,cat:'veh', wpn:'mgT',   desc:'Fast raider gun-truck',sig:true,wc:2},
   guardian:  {name:'Guardian',      ic:'🛡', cost:450, bt:6, hp:230,spd:54, r:8, sight:6,cat:'inf', wpn:'gmg',   desc:'Shielded heavy trooper',sig:true,wc:1},
-  drone:     {name:'Falcon Drone',  ic:'🛸', cost:500, bt:6, hp:130,spd:142,r:11,sight:8,cat:'veh', wpn:'dgun', desc:'Fast recon gun-drone',sig:true,wc:2},
+  drone:     {name:'Falcon Drone',  ic:'🛸', cost:500, bt:6, hp:130,spd:142,r:11,sight:8,cat:'air', wpn:'dgun', desc:'Light attack drone — trains from Airfield',sig:true,wc:2,ammo:8},
   inferno:   {name:'Inferno Trooper',ic:'🔥',cost:350,bt:5, hp:100,spd:58, r:7, sight:6,cat:'inf', wpn:'flame',desc:'Close-range flamethrower',sig:true,wc:1},
   scarab:    {name:'Scarab Kart',   ic:'💥', cost:400, bt:5, hp:110,spd:150,r:11,sight:6,cat:'veh', suicide:'boomkart',desc:'Rams & explodes!',sig:true,wc:2},
   mortar:    {name:'Mortar Team',   ic:'🎇', cost:500, bt:6, hp:90, spd:52, r:8, sight:7,cat:'inf', wpn:'mortar',desc:'Long-range mortar',sig:true,wc:1},

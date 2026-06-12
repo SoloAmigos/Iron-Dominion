@@ -94,7 +94,7 @@ const FACTIONS={
     tag:'High-tech precision strikes',
     desc:'+10% weapon damage · Airstrike drops 4 bombs, 80s cooldown · Signatures: Paladin laser tank & Falcon drone · units cost +10%',
     dmg:1.10,ucost:1.10,bcost:1,uhp:1,bhp:1,spd:1,noPower:false,turretDmg:1,cheap:[],
-    strikeCd:80,bombs:4,sigs:[{unit:'paladin',at:'factory'},{unit:'drone',at:'factory'}],h:140,sat:9,
+    strikeCd:80,bombs:4,sigs:[{unit:'paladin',at:'factory'},{unit:'drone',at:'airfield'}],h:140,sat:9,
     names:{dozer:'Pioneer',truck:'Hauler',ranger:'Trooper',rocket:'Javelin Team',tank:'Crusader',arty:'Thunderer',
       command:'Field HQ',power:'Fusion Plant',supply:'Logistics Center',barracks:'Training Camp',factory:'Assembly Bay',
       turret:'Sentry Gun',market:'Supply Pad',tech:'Strategy Lab',silo:'Orbital Uplink'}},

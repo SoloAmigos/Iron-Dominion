@@ -101,8 +101,8 @@ function aiTick(tick){
     const padAvail=b.padUnits&&b.padUnits.some(p=>p===null||p===undefined);
     if(!padAvail)continue;
     const airRoster=['raptor'];
-    const gmSigs=GENMOD(t).sigs||[];
-    for(const sg of gmSigs)if(sg.at==='airfield'&&!airRoster.includes(sg.unit))airRoster.push(sg.unit);
+    for(const sg of FAC(t).sigs)if(sg.at==='airfield'&&!airRoster.includes(sg.unit))airRoster.push(sg.unit);
+    for(const sg of GENMOD(t).sigs||[])if(sg.at==='airfield'&&!airRoster.includes(sg.unit))airRoster.push(sg.unit);
     const pick=airRoster[Math.floor(Math.random()*airRoster.length)];
     if(!isLocked(pick,t)){const c=costOf('u',pick,t);if(money[t]>=c){money[t]-=c;b.queue.push({type:pick,p:0})}}
   }

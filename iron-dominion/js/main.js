@@ -22,6 +22,7 @@ let chosenFac='vanguard';
 let chosenGenId='std';
 let chosenMapKey='desert';
 let chosenMapSize='s2';
+let chosenSpawnIdx=0;
 let chosenGens={vanguard:'std',crimson:'std',scorpion:'std',northwind:'std'};
 
 /* ---------- screen helpers ---------- */
@@ -149,6 +150,11 @@ const _TYPE_LABELS={easy:'🤖 Easy',medium:'🤖 Med',hard:'🤖 Hard'};
 const _TYPES_CYCLE=['easy','medium','hard'];
 const _MAP_SIZES=[['s2','Small'],['s4','Medium'],['s8','Large']];
 
+function _spawnLabel(sp,mw,mh){
+  const xf=sp[0]/mw,yf=sp[1]/mh;
+  return (yf<0.4?'Top':yf>0.6?'Bottom':'Mid')+'-'+(xf<0.4?'Left':xf>0.6?'Right':'Center');
+}
+
 function showLobby(){
   // Sync arrays to current numSlots
   slotType[0]='human';
@@ -157,15 +163,30 @@ function showLobby(){
   while(slotAlliance.length<numSlots)slotAlliance.push(slotAlliance.length);
   slotAlliance.length=numSlots;
 
+  // Clamp spawn index to available spawns for this map/slot combo
+  const _mapDef=(MAPS[chosenMapKey]||MAPS.desert)[chosenMapSize||'s2']||MAPS.desert.s2;
+  const _spawnMax=Math.min((_mapDef.spawns||[]).length,numSlots)-1;
+  if(chosenSpawnIdx>_spawnMax)chosenSpawnIdx=0;
+
   let mapS='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:4px 0 2px">';
   for(const k of Object.keys(MAPS))
     mapS+='<button class="dbtn'+(chosenMapKey===k?' sel':'')+'" data-map="'+k+'" style="font-size:12px;padding:5px 12px">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>';
   mapS+='</div>';
 
-  let sizeS='<div style="display:flex;gap:6px;justify-content:center;margin:2px 0 8px">';
+  let sizeS='<div style="display:flex;gap:6px;justify-content:center;margin:2px 0 4px">';
   for(const[k,label]of _MAP_SIZES)
     sizeS+='<button class="dbtn'+(chosenMapSize===k?' sel':'')+'" data-sz="'+k+'" style="font-size:11px;padding:4px 10px">'+label+'</button>';
   sizeS+='</div>';
+
+  // Spawn selector — one button per available spawn position
+  let spawnS='<div style="display:flex;gap:5px;align-items:center;justify-content:center;margin:2px 0 8px;flex-wrap:wrap">';
+  spawnS+='<span style="font-size:10px;color:#8aaa80;letter-spacing:1px">YOUR START:</span>';
+  const _mw=_mapDef.w||60,_mh=_mapDef.h||40;
+  for(let si=0;si<Math.min((_mapDef.spawns||[]).length,numSlots);si++){
+    const lbl=_spawnLabel(_mapDef.spawns[si],_mw,_mh);
+    spawnS+='<button class="dbtn'+(chosenSpawnIdx===si?' sel':'')+'" data-sp="'+si+'" style="font-size:10px;padding:3px 9px">'+lbl+'</button>';
+  }
+  spawnS+='</div>';
 
   let rows='<div class="lobby-slots">';
   for(let i=0;i<numSlots;i++){
@@ -187,7 +208,7 @@ function showLobby(){
   overlay.innerHTML=panel(
     eyebrow('ARCADE — STEP 2 OF 2')+
     '<h1 style="font-size:clamp(16px,5vw,26px);margin-bottom:4px">MATCH SETUP</h1>'+
-    mapS+sizeS+
+    mapS+sizeS+spawnS+
     '<div style="display:flex;align-items:center;gap:10px;justify-content:center;margin:4px 0 4px">'+
     '<span style="font-size:11px;color:#8aaa80;letter-spacing:1px">PLAYERS</span>'+
     '<button class="dbtn" id="slotMinus" style="min-width:34px;padding:4px 8px;font-size:18px;line-height:1">−</button>'+
@@ -203,12 +224,14 @@ function showLobby(){
   );
 
   for(const b of overlay.querySelectorAll('[data-map]'))b.onclick=()=>{
-    chosenMapKey=b.dataset.map;uiClick();
-    for(const x of overlay.querySelectorAll('[data-map]'))x.classList.toggle('sel',x.dataset.map===chosenMapKey);
+    chosenMapKey=b.dataset.map;chosenSpawnIdx=0;uiClick();showLobby();
   };
   for(const b of overlay.querySelectorAll('[data-sz]'))b.onclick=()=>{
-    chosenMapSize=b.dataset.sz;uiClick();
-    for(const x of overlay.querySelectorAll('[data-sz]'))x.classList.toggle('sel',x.dataset.sz===chosenMapSize);
+    chosenMapSize=b.dataset.sz;chosenSpawnIdx=0;uiClick();showLobby();
+  };
+  for(const b of overlay.querySelectorAll('[data-sp]'))b.onclick=()=>{
+    chosenSpawnIdx=+b.dataset.sp;uiClick();
+    for(const x of overlay.querySelectorAll('[data-sp]'))x.classList.toggle('sel',+x.dataset.sp===chosenSpawnIdx);
   };
   document.getElementById('slotMinus').onclick=()=>{
     if(numSlots<=2)return;
@@ -314,11 +337,15 @@ function init(name){
   shInit();
   genWorld(chosenMap,numSlots);buildGround();
 
-  const spawns=MAP.spawns.slice(0,numSlots);
-  const pc=placeBuilding('command',0,spawns[0][0],spawns[0][1],true);
+  const allSpawns=MAP.spawns.slice(0,numSlots);
+  const psi=Math.min(chosenSpawnIdx,allSpawns.length-1);
+  const playerSpawn=allSpawns[psi];
+  const aiSpawns=allSpawns.filter((_,i)=>i!==psi);
+  for(let si=aiSpawns.length-1;si>0;si--){const j=Math.floor(srandom()*(si+1));[aiSpawns[si],aiSpawns[j]]=[aiSpawns[j],aiSpawns[i]]}
+  const pc=placeBuilding('command',0,playerSpawn[0],playerSpawn[1],true);
   ais=[];
   for(let i=1;i<numSlots;i++){
-    const sp=spawns[i]||spawns[spawns.length-1];
+    const sp=aiSpawns[i-1]||aiSpawns[aiSpawns.length-1];
     const ec=placeBuilding('command',i,sp[0],sp[1],true);
     const diff=slotType[i]||'medium';
     const a=makeAI(diff);a.team=i;a.cc=ec;a.builtTypes.command=true;

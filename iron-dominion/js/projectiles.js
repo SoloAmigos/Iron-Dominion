@@ -3,13 +3,13 @@
 let _projI=0,_partI=0;
 function initPools(){
   projs.length=0;parts.length=0;
-  for(let i=0;i<PROJ_CAP;i++)projs.push({active:false,x:0,y:0,px:0,py:0,tx:0,ty:0,spd:0,dmg:0,splash:0,team:0,w:null,src:null,toxin:false,blood:false,zArc:0,t:0,life:0,kind:null,sx:0,sy:0,dx:0,dy:0,dur:0,target:null,mul:1,a:0,nuke:false});
+  for(let i=0;i<PROJ_CAP;i++)projs.push({active:false,x:0,y:0,px:0,py:0,tx:0,ty:0,spd:0,dmg:0,splash:0,team:0,w:null,src:null,toxin:false,blood:false,zArc:0,t:0,life:0,kind:null,sx:0,sy:0,dx:0,dy:0,dur:0,target:null,mul:1,a:0,nuke:false,delay:0});
   for(let i=0;i<PART_CAP;i++)parts.push({active:false,x:0,y:0,px:0,py:0,vx:0,vy:0,life:0,maxLife:0,r:0,col:'#fff',blood:false,type:'',k:'',max:0,s:0,c:null,rot:0,vr:0,txt:'',vy2:0,x2:0,y2:0,fl:false});
   _projI=0;_partI=0;
 }
 function _fillProj(s,o){
   // Reset to defaults first
-  s.active=true;s.a=0;s.target=null;s.nuke=false;s.mul=1;s.toxin=false;s.src=null;
+  s.active=true;s.a=0;s.target=null;s.nuke=false;s.mul=1;s.toxin=false;s.src=null;s.delay=0;
   // Copy all provided properties
   for(const k in o)s[k]=o[k];
   s.px=o.x||0;s.py=o.y||0;
@@ -35,6 +35,7 @@ function updateProjs(dt){
   for(let i=0;i<projs.length;i++){
     const p=projs[i];
     if(!p.active)continue;
+    if(p.delay>0){p.delay-=dt;continue}
     if(p.kind==='rocket'){
       if(p.target&&!p.target.dead){p.dx=p.target.x;p.dy=p.target.y}
       const dx=p.dx-p.x,dy=p.dy-p.y,d=Math.hypot(dx,dy),st=p.spd*dt;
@@ -97,12 +98,36 @@ function launchStrike(x,y){
 }
 function fireNukeFrom(s,x,y,team){
   s.charge=0;
-  addProj({kind:'arc',x:s.x,y:s.y,sx:s.x,sy:s.y,dx:x,dy:y,t:0,dur:2.4,spd:300,target:null,w:WPN.nuke,team,nuke:true});
-  addPart({k:'flash',x:s.x,y:s.y,life:.2,max:.2,s:46});
-  for(let i=0;i<6;i++)addPart({k:'smoke',x:s.x+vrand(-14,14),y:s.y+vrand(-4,20),vx:vrand(-10,10),vy:vrand(-24,-6),life:vrand(.6,1.3),max:vrand(.6,1.3),s:vrand(9,17)});
+  const faction=fac[team]||'crimson';
+  if(faction==='vanguard'){
+    // Orbital laser: fast beam, medium radius, bonus vs armor
+    addProj({kind:'arc',x:s.x,y:s.y,sx:s.x,sy:s.y,dx:x,dy:y,t:0,dur:0.9,spd:1200,target:null,w:WPN.orbitalLaser,team,nuke:true});
+    for(let i=0;i<4;i++)addPart({k:'smoke',x:s.x+vrand(-8,8),y:s.y+vrand(-4,10),vx:vrand(-6,6),vy:vrand(-20,-8),life:vrand(.4,.8),max:.8,s:vrand(5,10)});
+    toast(team===0?'🔆 ORBITAL STRIKE AWAY!':'⚠️ WARNING — orbital strike inbound!');
+  }else if(faction==='scorpion'){
+    // Toxic barrage: 5 staggered bombs with poison splash
+    for(let i=0;i<5;i++){
+      const ox=rand(-80,80),oy=rand(-80,80);
+      addProj({kind:'arc',x:s.x,y:s.y,sx:s.x,sy:s.y,dx:x+ox,dy:y+oy,t:0,dur:2.4,spd:280,target:null,w:WPN.toxicNuke,team,nuke:true,delay:i*.55});
+    }
+    for(let i=0;i<6;i++)addPart({k:'smoke',x:s.x+vrand(-14,14),y:s.y+vrand(-4,20),vx:vrand(-10,10),vy:vrand(-24,-6),life:vrand(.6,1.3),max:1.3,s:vrand(9,17)});
+    toast(team===0?'☠️ TOXIC BARRAGE AWAY!':'⚠️ WARNING — toxic barrage inbound!');
+  }else if(faction==='northwind'){
+    // Missile barrage: 8 rockets spread over wide area
+    for(let i=0;i<8;i++){
+      const ox=rand(-140,140),oy=rand(-140,140);
+      addProj({kind:'arc',x:s.x,y:s.y,sx:s.x,sy:s.y,dx:x+ox,dy:y+oy,t:0,dur:2.8,spd:360,target:null,w:WPN.barrageMsl,team,nuke:true,delay:i*.28});
+    }
+    for(let i=0;i<6;i++)addPart({k:'smoke',x:s.x+vrand(-14,14),y:s.y+vrand(-4,20),vx:vrand(-10,10),vy:vrand(-24,-6),life:vrand(.6,1.3),max:1.3,s:vrand(9,17)});
+    toast(team===0?'🚀 BARRAGE AWAY!':'⚠️ WARNING — missile barrage inbound!');
+  }else{
+    // Crimson (default): big nuclear explosion
+    addProj({kind:'arc',x:s.x,y:s.y,sx:s.x,sy:s.y,dx:x,dy:y,t:0,dur:2.4,spd:300,target:null,w:WPN.nuke,team,nuke:true});
+    for(let i=0;i<6;i++)addPart({k:'smoke',x:s.x+vrand(-14,14),y:s.y+vrand(-4,20),vx:vrand(-10,10),vy:vrand(-24,-6),life:vrand(.6,1.3),max:vrand(.6,1.3),s:vrand(9,17)});
+    toast(team===0?'☢️ MISSILE AWAY!':'☢️ WARNING — enemy missile launch detected!');
+  }
   SFX.jet();
-  toast(team===0?'☢️ MISSILE AWAY!':'☢️ WARNING — enemy missile launch detected!');
-  if(team===1)shake=Math.max(shake,.5);
+  if(team!==0)shake=Math.max(shake,.5);
 }
 function launchNuke(x,y){
   const s=builds.find(b=>!b.dead&&b.built&&b.team===0&&b.t.silo&&(b.charge||0)>=1);

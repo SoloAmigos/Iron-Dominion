@@ -21,7 +21,7 @@ function makeAI(diff){
     {b:'airfield',o:[9,7]},
   ];
   if(aiD.silo)bo.push({b:'silo',o:[7,9]},{b:'power',o:[-2,13]});
-  return{bo,boi:0,builtTypes:{},waveT:aiD.first,rebT:6,defT:0,upT:25,cc:null,D:aiD,team:1};
+  return{bo,boi:0,builtTypes:{},waveT:aiD.first,rebT:6,defT:0,upT:25,nukeT:0,cc:null,D:aiD,team:1};
 }
 function aiCountBuild(type){let n=0;for(const b of builds)if(!b.dead&&b.team===ai.team&&b.type===type)n++;return n}
 function aiBuildAt(type,off){
@@ -80,25 +80,31 @@ function aiTick(tick){
   }
   if(!piles.some(p=>p.amt>0)&&aiCountBuild('market')<3&&money[t]>=costOf('b','market',t)&&!sites.some(s2=>s2.type==='market'))
     aiBuildAt('market',[rand(-7,7)|0,rand(-2,11)|0]);
-  for(const b of builds){
-    if(b.dead||!b.built||b.team!==t||!b.t.silo||(b.charge||0)<1)continue;
-    let tgt=null,bs=-1;
-    for(const pb of builds){
-      if(pb.dead||!isEnemy(t,pb.team))continue;
-      let sc=pb.maxhp;
-      for(const pb2 of builds)if(!pb2.dead&&isEnemy(t,pb2.team)&&dist2(pb,pb2)<170)sc+=pb2.maxhp*.5;
-      if(sc>bs){bs=sc;tgt=pb}
+  ai.nukeT-=tick;
+  if(ai.nukeT<=0){
+    for(const b of builds){
+      if(b.dead||!b.built||b.team!==t||!b.t.silo||(b.charge||0)<1)continue;
+      let tgt=null,bs=-1;
+      for(const pb of builds){
+        if(pb.dead||!isEnemy(t,pb.team))continue;
+        let sc=pb.maxhp;
+        for(const pb2 of builds)if(!pb2.dead&&isEnemy(t,pb2.team)&&dist2(pb,pb2)<170)sc+=pb2.maxhp*.5;
+        if(sc>bs){bs=sc;tgt=pb}
+      }
+      if(!tgt){const pu=units.filter(u=>!u.dead&&isEnemy(t,u.team));if(pu.length)tgt=pu[0]}
+      if(tgt){fireNukeFrom(b,tgt.x+rand(-20,20),tgt.y+rand(-20,20),t);ai.nukeT=75+rand(-15,15);break}
     }
-    if(!tgt){const pu=units.filter(u=>!u.dead&&isEnemy(t,u.team));if(pu.length)tgt=pu[0]}
-    if(tgt)fireNukeFrom(b,tgt.x+rand(-20,20),tgt.y+rand(-20,20),t);
   }
-  // Airfield production
+  // Airfield production (raptor + any GENMOD sig air units)
   for(const b of builds){
     if(b.dead||!b.built||b.team!==t||b.type!=='airfield'||b.queue.length>=2)continue;
-    if(isLocked('raptor',t))continue;
-    const c=costOf('u','raptor',t);
     const padAvail=b.padUnits&&b.padUnits.some(p=>p===null||p===undefined);
-    if(padAvail&&money[t]>=c){money[t]-=c;b.queue.push({type:'raptor',p:0})}
+    if(!padAvail)continue;
+    const airRoster=['raptor'];
+    const gmSigs=GENMOD(t).sigs||[];
+    for(const sg of gmSigs)if(sg.at==='airfield'&&!airRoster.includes(sg.unit))airRoster.push(sg.unit);
+    const pick=airRoster[Math.floor(Math.random()*airRoster.length)];
+    if(!isLocked(pick,t)){const c=costOf('u',pick,t);if(money[t]>=c){money[t]-=c;b.queue.push({type:pick,p:0})}}
   }
   const myUnits=units.filter(u=>u.team===t&&!u.dead);
   const trucks=myUnits.filter(u=>u.type==='truck').length;
@@ -116,13 +122,13 @@ function aiTick(tick){
       let pick=Math.random()<.3?'arty':'tank';
       if(isLocked(pick,t))pick='arty';
       if(isLocked(pick,t))pick=null;
-      const fs=sigs.filter(g=>g.at==='factory');
+      const fs=[...sigs.filter(g=>g.at==='factory'),...(GENMOD(t).sigs||[]).filter(g=>g.at==='factory')];
       if(fs.length&&Math.random()<.35){const cand=fs[Math.floor(Math.random()*fs.length)].unit;if(!isLocked(cand,t))pick=cand}
       if(pick){const c=costOf('u',pick,t);if(money[t]>=c){money[t]-=c;b.queue.push({type:pick,p:0})}}
     }else if(b.type==='barracks'){
       let pick=Math.random()<.45?'rocket':'ranger';
       if(isLocked(pick,t))pick='ranger';
-      const bs2=sigs.filter(g=>g.at==='barracks');
+      const bs2=[...sigs.filter(g=>g.at==='barracks'),...(GENMOD(t).sigs||[]).filter(g=>g.at==='barracks')];
       if(bs2.length&&Math.random()<.4){const cand=bs2[Math.floor(Math.random()*bs2.length)].unit;if(!isLocked(cand,t))pick=cand}
       const c=costOf('u',pick,t);
       if(money[t]>=c&&Math.random()<.8){money[t]-=c;b.queue.push({type:pick,p:0})}

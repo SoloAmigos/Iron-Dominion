@@ -20,6 +20,14 @@ const GAME_MODES={
   'ffa8':{slots:8, alliances:[0,1,2,3,4,5,6,7],        label:'FFA 8', desc:'8-way free-for-all'},
 };
 let gameMode='1v1', numSlots=2, slotAlliance=[0,1];
+let slotType=['human','medium'];  // per-slot: 'human'|'easy'|'medium'|'hard'
+
+/* Per-AI difficulty presets */
+const SLOT_DIFFS={
+  easy:  {trickle:45,  cap:5,  wave:45, first:65, silo:false},
+  medium:{trickle:100, cap:10, wave:25, first:35, silo:false},
+  hard:  {trickle:175, cap:16, wave:16, first:20, silo:true},
+};
 function isEnemy(a,b){if(a===b||a<0||b<0)return false;if(!slotAlliance.length)return a!==b;return slotAlliance[a]!==slotAlliance[b]}
 
 const MAPS={

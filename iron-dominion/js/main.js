@@ -37,7 +37,7 @@ function genChips(fk){
   let s='<div style="margin:6px 0 2px;font-size:11px;opacity:.7">General:</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
   for(const g of gs){
     const sel=chosenGens[fk]===g.id;
-    s+='<button class="dbtn'+(sel?' sel':'')+'" data-genfk="'+fk+'" data-genid="'+g.id+'" style="font-size:11px;padding:4px 8px" title="'+g.desc+'">'+g.nm+'</button>';
+    s+='<button class="dbtn'+(sel?' sel':''+'" data-genfk="'+fk+'" data-genid="'+g.id+'" style="font-size:11px;padding:4px 8px" title="'+g.desc+'">'+g.nm+'</button>';
   }
   return s+'</div>';
 }
@@ -54,11 +54,14 @@ function wireGens(){
 function showMenu(){showMainMenu()}
 function showMainMenu(){
   state='menu';overlay.style.display='flex';
+  const _si=getSaveInfo();
+  const _loadBtn=_si?'<button class="big-btn" id="loadBtn" style="font-size:14px;padding:12px">💾 CONTINUE<br><span style="font-size:11px;font-weight:400;opacity:.75">'+(_si.fac[0]?FACTIONS[_si.fac[0]].name:'')+(numSlots>2?' +more':'')+' · '+_si.map+' · '+_si.time+' · '+_si.ago+'</span></button>':'';
   overlay.innerHTML=panel(
     eyebrow('REAL-TIME STRATEGY')+
     '<h1>IRON <span>DOMINION</span></h1>'+
     '<div class="sub" style="margin-bottom:20px">Command. Conquer. Dominate.</div>'+
-    '<button class="big-btn arcade" id="playBtn">▶ PLAY</button>'+
+    '<button class="big-btn arcade" id="playBtn">▶ NEW GAME</button>'+
+    _loadBtn+
     '<button class="big-btn" id="settingsBtn" style="font-size:14px;padding:12px">⚙ SETTINGS</button>'+
     '<button class="dbtn install" id="installBtn" style="width:100%;margin-top:8px">📲 Install App</button>'+
     '<button class="dbtn" id="howtoBtn" style="width:100%;margin-top:8px;font-size:13px">❓ How to Play</button>'+
@@ -73,6 +76,7 @@ function showMainMenu(){
     '</div>'
   );
   document.getElementById('playBtn').onclick=()=>{uiClick();showModeTypeSelect()};
+  const _lb=document.getElementById('loadBtn');if(_lb)_lb.onclick=()=>{uiClick();loadGame()};
   document.getElementById('settingsBtn').onclick=()=>{uiClick();showSettings()};
   const hb=document.getElementById('howtoBtn');
   hb.onclick=()=>{const box=document.getElementById('howtoBox');if(box){box.classList.toggle('open');hb.textContent=box.classList.contains('open')?'✖ Close':'❓ How to Play'}};
@@ -149,7 +153,7 @@ function showFactionSelect(){
   let s='<div class="fgrid2">';
   for(const k of FACKEYS){
     const F=FACTIONS[k];
-    s+='<div class="fcard2'+(k===chosenFac?' sel':'')+'" data-f="'+k+'" style="--fc:'+F.c+'">'+
+    s+='<div class="fcard2'+(k===chosenFac?' sel':''+'" data-f="'+k+'" style="--fc:'+F.c+'">'+
       '<div class="fname">'+F.name+'</div><div class="ftag">'+F.tag+'</div></div>';
   }
   s+='</div>';
@@ -201,12 +205,12 @@ function showLobby(){
 
   let mapS='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:4px 0 2px">';
   for(const k of Object.keys(MAPS))
-    mapS+='<button class="dbtn'+(chosenMapKey===k?' sel':'')+'" data-map="'+k+'" style="font-size:12px;padding:5px 12px">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>';
+    mapS+='<button class="dbtn'+(chosenMapKey===k?' sel':''+'" data-map="'+k+'" style="font-size:12px;padding:5px 12px">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>';
   mapS+='</div>';
 
   let sizeS='<div style="display:flex;gap:6px;justify-content:center;margin:2px 0 4px">';
   for(const[k,label]of _MAP_SIZES)
-    sizeS+='<button class="dbtn'+(chosenMapSize===k?' sel':'')+'" data-sz="'+k+'" style="font-size:11px;padding:4px 10px">'+label+'</button>';
+    sizeS+='<button class="dbtn'+(chosenMapSize===k?' sel':''+'" data-sz="'+k+'" style="font-size:11px;padding:4px 10px">'+label+'</button>';
   sizeS+='</div>';
 
   // Spawn selector — one button per available spawn position
@@ -215,7 +219,7 @@ function showLobby(){
   const _mw=_mapDef.w||60,_mh=_mapDef.h||40;
   for(let si=0;si<Math.min((_mapDef.spawns||[]).length,numSlots);si++){
     const lbl=_spawnLabel(_mapDef.spawns[si],_mw,_mh);
-    spawnS+='<button class="dbtn'+(chosenSpawnIdx===si?' sel':'')+'" data-sp="'+si+'" style="font-size:10px;padding:3px 9px">'+lbl+'</button>';
+    spawnS+='<button class="dbtn'+(chosenSpawnIdx===si?' sel':''+'" data-sp="'+si+'" style="font-size:10px;padding:3px 9px">'+lbl+'</button>';
   }
   spawnS+='</div>';
 
@@ -342,10 +346,14 @@ function showPause(){
   overlay.innerHTML=panel(
     eyebrow('PAUSED')+
     '<h1 style="font-size:clamp(26px,7vw,44px)">IRON <span>DOMINION</span></h1>'+
-    '<div class="dbtns"><button class="dbtn" id="resBtn">▶ RESUME</button>'+
-    '<button class="dbtn hard" id="quitBtn">MAIN MENU</button></div>'
+    '<div class="dbtns">'+
+    '<button class="dbtn" id="resBtn">▶ RESUME</button>'+
+    '<button class="dbtn" id="saveBtn">💾 SAVE GAME</button>'+
+    '<button class="dbtn hard" id="quitBtn">MAIN MENU</button>'+
+    '</div>'
   );
   document.getElementById('resBtn').onclick=()=>{overlay.style.display='none';state='play'};
+  document.getElementById('saveBtn').onclick=()=>{saveGame();document.getElementById('saveBtn').textContent='✔ SAVED';document.getElementById('saveBtn').disabled=true};
   document.getElementById('quitBtn').onclick=showMenu;
 }
 
@@ -376,6 +384,192 @@ function endGame(win){
     document.getElementById('retryBtn').onclick=()=>{uiClick();init()};
     document.getElementById('menuBtn2').onclick=()=>{uiClick();showMenu()};
   },win?900:1400);
+}
+
+/* ---------- save / load ---------- */
+const SAVE_KEY='id_save_v1';
+function hasSave(){try{return!!localStorage.getItem(SAVE_KEY)}catch(e){return false}}
+function getSaveInfo(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    if(!s||s.v!==1)return null;
+    const ago=Math.floor((Date.now()-s.ts)/60000);
+    const agoStr=ago<1?'just now':ago<60?ago+'m ago':Math.floor(ago/60)+'h ago';
+    const mm=Math.floor((s.gtime||0)/60),ss=Math.floor((s.gtime||0)%60);
+    return{fac:s.fac||[],map:s.chosenMap||'?',time:mm+'m '+(ss<10?'0':'')+ss+'s',ago:agoStr};
+  }catch(e){return null}
+}
+function saveGame(){
+  if(state!=='play')return;
+  function serUnit(u){
+    return{id:u.id,type:u.type,team:u.team,x:u.x,y:u.y,a:u.a,
+      hp:u.hp,maxhp:u.maxhp,spd:u.spd,dmgMul:u.dmgMul,wc:u.wc,
+      ammo:u.ammo,poisonT:u.poisonT||0,poisonDps:u.poisonDps||0,
+      ts:u.ts,cargo:u.cargo||0,scrapLevel:u.scrapLevel||0,hidden:u.hidden||false,
+      unitXp:u.unitXp||0,unitRank:u.unitRank||0,kills:u.kills||0,
+      isCapturing:u.isCapturing||false,captureProgress:u.captureProgress||0,
+      order:u.order||null,wpi:u.wpi||0,auto:u.auto||false,padI:u.padI||-1,
+      site_id:u.site?u.site.id:null,fix_id:u.fix?u.fix.id:null,
+      home_id:u.home?u.home.id:null,at_id:u.attackTarget?u.attackTarget.id:null,
+      gb_id:u.garrisonBuilding?u.garrisonBuilding.id:null,
+      ct_id:u.captureTarget?u.captureTarget.id:null,
+      path:u.path?u.path.slice(0,20).map(p=>({x:p.x,y:p.y})):null};
+  }
+  function serBuild(b){
+    return{id:b.id,type:b.type,team:b.team,tx:b.tx,ty:b.ty,
+      hp:b.hp,maxhp:b.maxhp,built:b.built,prog:b.prog,dmgMul:b.dmgMul,
+      cd:b.cd||0,queue:b.queue.map(q=>({type:q.type,p:q.p})),
+      rally:{x:b.rally.x,y:b.rally.y},charge:b.charge||0,mkT:b.mkT||0,
+      isHole:b.isHole||false,holeT:b.holeT||0,selfBuild:b.selfBuild||false,rebuilt:b.rebuilt||false,
+      at_id:b.attackTarget?b.attackTarget.id:null,
+      garrison_ids:(b.garrison||[]).filter(u=>u&&!u.dead).map(u=>u.id),
+      pad_ids:(b.padUnits||[]).map(u=>u?u.id:null)};
+  }
+  const save={
+    v:1,ts:Date.now(),
+    fac:[...fac],gens:[...gens],slotAlliance:[...slotAlliance],slotType:[...slotType],
+    numSlots,chosenMap,chosenMapSize,chosenSpawnIdx,matchSeed,diffName,
+    gtime,simFrame,gameSpeed,gameStats:{...gameStats},ids,
+    money:[...money],upg:upg.map(u=>({...u})),
+    xp:[...xp],rank:[...rank],skp:[...skp],
+    pw:{repair:{...pw.repair},drop:{...pw.drop},strike:{...pw.strike},nuke:{...pw.nuke}},
+    strikeCdMax,strikeBombs,
+    units:units.filter(u=>!u.dead).map(serUnit),
+    builds:builds.filter(b=>!b.dead).map(serBuild),
+    piles:piles.map(p=>({tx:p.tx,ty:p.ty,amt:p.amt})),
+    vis:Array.from(vis),
+    ais:ais.map(a=>({waveN:a.waveN||0,builtTypes:{...a.builtTypes}})),
+  };
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));toast('💾 Game saved');SFX.click()}
+  catch(e){toast('⚠️ Save failed — storage full?');SFX.err()}
+}
+function loadGame(){
+  let save;
+  try{save=JSON.parse(localStorage.getItem(SAVE_KEY)||'null')}catch(e){save=null}
+  if(!save||save.v!==1){toast('⚠️ No save found');SFX.err();return}
+  // Restore match config
+  fac=[...save.fac];gens=[...save.gens];
+  slotAlliance=[...save.slotAlliance];slotType=[...save.slotType];
+  numSlots=save.numSlots;
+  chosenMap=save.chosenMap||'desert';chosenMapKey=chosenMap;
+  chosenMapSize=save.chosenMapSize||'s2';chosenSpawnIdx=save.chosenSpawnIdx||0;
+  matchSeed=save.matchSeed||1;diffName=save.diffName||'normal';D=DIFF[diffName]||DIFF.normal;
+  // Setup world dims + seed (same seed → same rock layout)
+  setSeed(matchSeed);
+  TEAMC=ALL_TEAMC.slice(0,numSlots);TEAMD=ALL_TEAMD.slice(0,numSlots);
+  MAP=(MAPS[chosenMap]||MAPS.desert)[chosenMapSize]||MAPS.desert.s2;
+  setMapDims(MAP.w,MAP.h);
+  // Reset sim
+  simFrame=save.simFrame||0;simAcc=0;gtime=save.gtime||0;
+  gameSpeed=save.gameSpeed||1;
+  const _sb=document.getElementById('speedBtn');if(_sb)_sb.textContent=gameSpeed+'×';
+  gameStats={...save.gameStats};ids=save.ids||1;strikeCdMax=save.strikeCdMax||110;strikeBombs=save.strikeBombs||3;
+  shake=0;
+  // Reset entity + UI state
+  units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];
+  blocked=new Uint8Array(MAPW*MAPH);vis=new Uint8Array(MAPW*MAPH);
+  fogT=0;powT=0;uiT=0;winT=3;aiT=1.5;miniT=0;sepT=0;
+  underAttackCd=0;readyCd=0;hintStage=5;
+  boxSel=null;boxStart=null;panMode=false;pinch=null;pts.clear();
+  setSelMode(false);clearLP();dozI=-1;lastTapT=0;lastTapId=0;
+  resetPowers();
+  // Economy + XP
+  money=[...save.money];upg=save.upg.map(u=>({...u}));
+  xp=[...save.xp];rank=[...save.rank];skp=[...save.skp];
+  for(const k in save.pw)if(pw[k])Object.assign(pw[k],save.pw[k]);
+  upg=Array.from({length:numSlots},(_,i)=>save.upg[i]?{...save.upg[i]}:{w:0,a:0,mk:0,cp:0});
+  genOpen=false;
+  // Generate world WITHOUT neutral buildings (we restore from save)
+  initPools();shInit();
+  genWorld(chosenMap,numSlots,true);
+  // Restore pile amounts (genWorld placed them with seeded amounts, overwrite with saved amounts)
+  if(save.piles){for(const sp of save.piles){const p=piles.find(x=>x.tx===sp.tx&&x.ty===sp.ty);if(p)p.amt=sp.amt}}
+  buildGround();
+  // Restore buildings
+  for(const bd of save.builds){
+    const t=BT[bd.type];if(!t)continue;
+    const b={kind:'b',id:bd.id,type:bd.type,team:bd.team,tx:bd.tx,ty:bd.ty,
+      x:(bd.tx+t.w/2)*TILE,y:(bd.ty+t.h/2)*TILE,
+      hp:bd.hp,maxhp:bd.maxhp,t,cat:'bld',built:bd.built,prog:bd.prog,
+      dmgMul:bd.dmgMul||1,queue:bd.queue.map(q=>({type:q.type,p:q.p})),
+      rally:bd.rally,cd:bd.cd||0,ta:0,scan:Math.random()*.4,
+      attackTarget:null,flash:0,dead:false,stT:0,
+      charge:bd.charge||0,mkT:bd.mkT||0,
+      isHole:bd.isHole||false,holeT:bd.holeT||0,
+      selfBuild:bd.selfBuild||false,rebuilt:bd.rebuilt||false};
+    if(t.garrison)b.garrison=[];
+    if(bd.type==='airfield')b.padUnits=new Array(4).fill(null);
+    if(bd.team>=0&&fac[bd.team]==='scorpion'&&b.isHole===undefined){b.isHole=false;b.holeT=0;b.selfBuild=false;b.rebuilt=false}
+    if(!b.dead)blockRect(b.tx,b.ty,t.w,t.h,1);
+    builds.push(b);
+  }
+  // Restore units
+  for(const ud of save.units){
+    const t=UT[ud.type];if(!t)continue;
+    const u={kind:'u',id:ud.id,type:ud.type,team:ud.team,x:ud.x,y:ud.y,px:ud.x,py:ud.y,
+      a:ud.a||0,ta:0,hp:ud.hp,maxhp:ud.maxhp,t,cat:t.cat,
+      spd:ud.spd,dmgMul:ud.dmgMul||1,wc:ud.wc||t.wc||1,
+      zHeight:t.cat==='air'?30:0,ammo:ud.ammo||0,home:null,padI:ud.padI||-1,rearmT:0,
+      poisonT:ud.poisonT||0,poisonDps:ud.poisonDps||0,
+      cd:0,scan:Math.random()*.4,repath:0,path:ud.path||null,wpi:ud.wpi||0,
+      order:ud.order||null,attackTarget:null,site:null,pile:null,
+      ts:ud.ts||'idle',lt:0,retry:0,cargo:ud.cargo||0,flash:0,dead:false,stT:0,
+      lx:ud.x,ly:ud.y,anchor:null,auto:ud.auto||false,smkT:0,fix:null,healT:0,
+      unitXp:ud.unitXp||0,unitRank:ud.unitRank||0,kills:ud.kills||0,
+      scrapLevel:ud.scrapLevel||0,hidden:ud.hidden||false,garrisonBuilding:null,
+      isCapturing:ud.isCapturing||false,captureTarget:null,captureProgress:ud.captureProgress||0,
+      _site_id:ud.site_id,_fix_id:ud.fix_id,_home_id:ud.home_id,
+      _at_id:ud.at_id,_gb_id:ud.gb_id,_ct_id:ud.ct_id};
+    units.push(u);
+  }
+  // Resolve cross-references by id
+  const _byId={};
+  for(const u of units)_byId[u.id]=u;
+  for(const b of builds)_byId[b.id]=b;
+  for(const u of units){
+    if(u._site_id)u.site=_byId[u._site_id]||null;
+    if(u._fix_id)u.fix=_byId[u._fix_id]||null;
+    if(u._home_id)u.home=_byId[u._home_id]||null;
+    if(u._at_id)u.attackTarget=_byId[u._at_id]||null;
+    if(u._gb_id)u.garrisonBuilding=_byId[u._gb_id]||null;
+    if(u._ct_id)u.captureTarget=_byId[u._ct_id]||null;
+    delete u._site_id;delete u._fix_id;delete u._home_id;
+    delete u._at_id;delete u._gb_id;delete u._ct_id;
+  }
+  for(let i=0;i<save.builds.length;i++){
+    const bd=save.builds[i],b=builds[i];
+    if(!b)continue;
+    if(bd.at_id)b.attackTarget=_byId[bd.at_id]||null;
+    if(bd.garrison_ids&&b.garrison)
+      b.garrison=bd.garrison_ids.map(id=>units.find(u=>u.id===id)).filter(Boolean);
+    if(bd.pad_ids&&b.padUnits)
+      b.padUnits=bd.pad_ids.map(id=>id!=null?units.find(u=>u.id===id)||null:null);
+  }
+  // Restore fog
+  const sv=save.vis;for(let i=0;i<sv.length&&i<vis.length;i++)vis[i]=sv[i];
+  // Rebuild AIs
+  ais=[];
+  for(let i=1;i<numSlots;i++){
+    const diff=slotType[i]||'medium';
+    const a=makeAI(diff);a.team=i;
+    a.cc=builds.find(b=>!b.dead&&b.team===i&&b.type==='command')||null;
+    const sai=save.ais[i-1];
+    if(sai){a.waveN=sai.waveN||0;a.builtTypes={...sai.builtTypes}}
+    a.builtTypes.command=true;
+    ais.push(a);
+  }
+  ai=ais[0]||null;
+  // Camera
+  const _pcc=builds.find(b=>b.team===0&&b.type==='command'&&!b.dead);
+  const _pu=units.find(u=>u.team===0&&!u.dead);
+  if(_pcc){cam.x=_pcc.x;cam.y=_pcc.y}else if(_pu){cam.x=_pu.x;cam.y=_pu.y}
+  cam.z=clamp(Math.min(vw,vh)/620,.55,1);clampCam();
+  // Start
+  updateFog();recomputePower();renderMini();
+  overlay.style.display='none';state='play';
+  startMusic();refreshPowers();updateRankBtn();updateHUD();updateCard();
+  const eFacs=fac.slice(1).filter((_,i)=>isEnemy(0,i+1)).map(f=>FACTIONS[f]?.name||f).join(', ');
+  toast('💾 Save loaded — '+FACTIONS[fac[0]].name+' vs '+(eFacs||'AI'));
 }
 
 /* ---------- init ---------- */

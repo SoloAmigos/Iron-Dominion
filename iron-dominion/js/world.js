@@ -1,6 +1,6 @@
 'use strict';
 /* ================= WORLD ================= */
-function genWorld(mapKey,slots){
+function genWorld(mapKey,slots,skipNeutrals){
   MAP=getMapVariant(mapKey||chosenMap||'desert',slots||numSlots||2);
   setMapDims(MAP.w,MAP.h);
   shInit();
@@ -66,7 +66,7 @@ function genWorld(mapKey,slots){
     if(Math.hypot(cx-spawn0[0]-2,cy-spawn0[1]-2)<8)ok=false;
     if(Math.hypot(cx-spawn1[0]-2,cy-spawn1[1]-2)<8)ok=false;
     for(const p of piles)if(Math.abs(cx-p.tx-1)<4&&Math.abs(cy-p.ty-1)<4)ok=false;
-    if(ok)placeBuilding(nd.type,-1,nd.tx,nd.ty,true);
+    if(ok&&!skipNeutrals)placeBuilding(nd.type,-1,nd.tx,nd.ty,true);
   }
 }
 function blockRect(tx,ty,w,h,v){

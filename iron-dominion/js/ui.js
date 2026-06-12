@@ -132,6 +132,8 @@ function updateCard(){
       cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+dispName('b',b.type,0)+'</b>Tap ground to set rally point'));
       const roster=b.t.trains.slice();
       for(const sg of FAC(0).sigs)if(sg.at===b.type&&!roster.includes(sg.unit))roster.push(sg.unit);
+      const gmSigs=GENMOD(0).sigs||[];
+      for(const sg of gmSigs)if(sg.at===b.type&&!roster.includes(sg.unit))roster.push(sg.unit);
       for(const ut of roster){
         const t=UT[ut],c=costOf('u',ut,0);
         cardEl.appendChild(mkBtn(iconURL('u',ut,0),dispName('u',ut,0),c,t.sig?'sig':'',()=>{
@@ -199,7 +201,7 @@ function updateCard(){
     for(const bt of BUILD_ORDER_UI){
       if(bt==='power'&&FAC(0).noPower)continue;
       const t=BT[bt],bc=costOf('b',bt,0);
-      cardEl.appendChild(mkBtn(iconURL('b',bt,0),dispName('b',bt,0),bc,t.silo?'sig':'',()=>{
+      cardEl.appendChild(mkBtn(BT[bt].ic,dispName('b',bt,0),bc,t.silo?'sig':'',()=>{
         if(REQ[bt]&&!hasB(REQ[bt])){SFX.err();toast('🔒 Requires a '+dispName('b',REQ[bt],0)+' first');return}
         if(money[0]<bc){SFX.err();toast('💰 Need $'+bc);return}
         const tx=clamp(TT(cam.x)-Math.floor(t.w/2),1,MAPW-t.w-1);
@@ -257,14 +259,14 @@ function hitTest(wx,wy){
   let best=null,bd=1e9;
   for(const u of units){
     if(u.dead||u.hidden)continue;
-    if(u.team===1&&tileVisAt(u.x,u.y)!==2)continue;
+    if(isEnemy(0,u.team)&&tileVisAt(u.x,u.y)!==2)continue;
     const d=Math.hypot(u.x-wx,u.y-wy);
     if(d<u.t.r+13&&d<bd){bd=d;best=u}
   }
   if(best)return best;
   for(const b of builds){
     if(b.dead)continue;
-    if(b.team===1&&vis[idx(b.tx,b.ty)]===0)continue;
+    if(isEnemy(0,b.team)&&vis[idx(b.tx,b.ty)]===0)continue;
     if(wx>=b.tx*TILE&&wx<=(b.tx+b.t.w)*TILE&&wy>=b.ty*TILE&&wy<=(b.ty+b.t.h)*TILE)return b;
   }
   for(const p of piles){
@@ -293,7 +295,7 @@ function commandTarget(hit){
     if(n){SFX.click();toast('🔧 Dozer repairing '+dispName('b',hit.type,0));return true}
   }
   // Garrison: infantry into a civil structure (neutral or friendly)
-  if(hit.kind==='b'&&hit.t&&hit.t.garrison&&hit.team!==1){
+  if(hit.kind==='b'&&hit.t&&hit.t.garrison&&!isEnemy(0,hit.team)){
     const inf=sel.filter(u=>u.kind==='u'&&!u.dead&&u.cat==='inf'&&u.team===0);
     if(inf.length){
       for(const u of inf)orderGarrison(u,hit);
@@ -322,7 +324,7 @@ function commandTarget(hit){
     if(n){SFX.click();return true}
     return false;
   }
-  if(hit.team===1){
+  if(isEnemy(0,hit.team)){
     let n=0;
     for(const u of sel)if(u.kind==='u'&&!u.dead&&(COMBAT.includes(u.type)))orderAttack(u,hit),n++;
     if(n){SFX.click();return true}

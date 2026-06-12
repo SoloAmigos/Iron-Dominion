@@ -9,9 +9,10 @@ function spawnUnit(type,team,x,y){
   // Apply GENMOD infantry HP bonus (Infantry General)
   const gm=GENMOD(team);
   if(gm.infHp&&t.cat==='inf')hp*=gm.infHp;
+  if(gm.uhpMul)hp*=gm.uhpMul;
   hp=Math.round(hp);
   const u={kind:'u',id:ids++,type,team,x,y,px:x,py:y,a:team?Math.PI*0.75:-Math.PI*0.25,ta:0,hp,maxhp:hp,t,cat:t.cat,
-    spd:t.spd*f.spd,dmgMul:f.dmg,
+    spd:t.spd*f.spd,dmgMul:f.dmg*(gm.unitDmgMul||1),
     wc:t.wc||1,zHeight:t.cat==='air'?30:0,
     ammo:t.ammo||0,home:null,padI:-1,rearmT:0,
     poisonT:0,poisonDps:0,
@@ -185,7 +186,7 @@ function crushCheck(u){
   if(u.dead||u.cat!=='veh'||u.wc<3)return;
   const near=shQuery(u.x,u.y,u.t.r+8);
   for(const e of near){
-    if(e===u||e.dead||e.team===u.team)continue;
+    if(e===u||e.dead||!isEnemy(u.team,e.team))continue;
     if(e.kind==='u'&&e.wc===1){
       const dx=e.x-u.x,dy=e.y-u.y;
       if(Math.sqrt(dx*dx+dy*dy)<u.t.r+e.t.r*.7){
@@ -207,11 +208,29 @@ function impact(p){
     for(let i=0;i<14;i++)addPart({k:'smoke',x:p.x+rand(-40,40),y:p.y+rand(-30,30),vx:vrand(-16,16),vy:vrand(-70,-25),life:vrand(1.2,2.4),max:2.4,s:vrand(16,34)});
     addPart({k:'scorch',x:p.x,y:p.y,life:18,max:18,s:130});
     SFX.nuke();shake=1.1;
+  }else if(p.w===WPN.orbitalLaser){
+    addPart({k:'ring',x:p.x,y:p.y,life:.5,max:.5,s:180,c:'#7deeff'});
+    addPart({k:'ring',x:p.x,y:p.y,life:.8,max:.8,s:100,c:'#bff5ff'});
+    addPart({k:'flash',x:p.x,y:p.y,life:.25,max:.25,s:200,c:'#9fe9ff'});
+    for(let i=0;i<10;i++)addPart({k:'spark',x:p.x+rand(-30,30),y:p.y+rand(-30,30),vx:vrand(-60,60),vy:vrand(-80,-10),life:vrand(.3,.7),max:.7,s:3,c:'#7deeff'});
+    addPart({k:'scorch',x:p.x,y:p.y,life:14,max:14,s:80,c:'#2a6080'});
+    SFX.nuke();shake=0.8;
+  }else if(p.w===WPN.toxicNuke){
+    boomFx(p.x,p.y,70,true);
+    for(let i=0;i<8;i++)addPart({k:'fire',x:p.x+rand(-40,40),y:p.y+rand(-40,40),vx:vrand(-20,20),vy:vrand(-60,-20),life:vrand(.4,.9),max:.9,s:vrand(10,28),c:'#4dff88'});
+    for(let i=0;i<6;i++)addPart({k:'smoke',x:p.x+rand(-30,30),y:p.y+rand(-20,20),vx:vrand(-10,10),vy:vrand(-50,-15),life:vrand(.8,1.8),max:1.8,s:vrand(10,24),c:'#3aaa55'});
+    addPart({k:'scorch',x:p.x,y:p.y,life:20,max:20,s:100,c:'#1a4020'});
+    SFX.nuke();shake=0.6;
+  }else if(p.w===WPN.barrageMsl){
+    boomFx(p.x,p.y,50,false);
+    shake=Math.min(shake+0.2,1.0);
   }else boomFx(p.x,p.y,Math.max(p.w.splash,14),p.w.splash>30);
   const rad=Math.max(p.w.splash,14);
   const nearby=shQuery(p.x,p.y,rad+24);
   for(const e of nearby){
-    if(e.dead||e.team===p.team||e.hidden)continue;
+    if(e.dead||(e.team===p.team&&!p.nuke)||e.hidden)continue;
+    // For non-nuke splash, also skip allies
+    if(!p.nuke&&!isEnemy(p.team,e.team))continue;
     // zHeight gate: AA-only weapons skip non-air, non-AA weapons skip air
     const isAir=e.kind==='u'&&(e.zHeight||0)>10;
     if(isAir&&!p.w.aa)continue;
@@ -221,6 +240,7 @@ function impact(p){
       dealDamage(e,p.w.dmg*(p.mul||1)*p.w.mult[e.cat]*fall,p.src||null);
       // Poison splash
       if(p.toxin)applyPoison(e,p.w.dmg*0.08);
+      if(p.w.toxicSplash)applyPoison(e,p.w.dmg*0.18);
     }
   }
 }
@@ -271,7 +291,7 @@ function findEnemyInRange(sh,r){
   const nearby=shQuery(sh.x,sh.y,r+24);
   const w=sh.t&&sh.t.wpn?WPN[sh.t.wpn]:null;
   for(const e of nearby){
-    if(e.dead||e.team===sh.team||e.team<0||e.hidden)continue;
+    if(e.dead||!isEnemy(sh.team,e.team)||e.team<0||e.hidden)continue;
     if(tileVisAt(e.x,e.y)!==2)continue;
     // zHeight/aa-aware targeting
     const isAir=e.kind==='u'&&(e.zHeight||0)>10;
@@ -352,7 +372,7 @@ function updateCombat(u,dt){
       u.scan=.45;
       if(!u.attackTarget||u.attackTarget.dead)u.attackTarget=findEnemyInRange(u,w.rng);
     }
-    if(u.attackTarget&&u.attackTarget.dead)u.attackTarget=null;
+    if(u.attackTarget&&(u.attackTarget.dead||dist2(u,u.attackTarget)-entRad(u.attackTarget)>w.rng*1.15))u.attackTarget=null;
     if(u.attackTarget&&u.cd<=0){
       fireFrom(u,u.t.wpn,u.attackTarget);
       u.cd=getVetCd(u,w.rel);

@@ -25,7 +25,7 @@ let slotType=['human','medium'];  // per-slot: 'human'|'easy'|'medium'|'hard'
 /* Per-AI difficulty presets */
 const SLOT_DIFFS={
   easy:  {trickle:45,  cap:5,  wave:45, first:65, silo:false},
-  medium:{trickle:100, cap:10, wave:25, first:35, silo:false},
+  medium:{trickle:100, cap:10, wave:25, first:35, silo:true},
   hard:  {trickle:175, cap:16, wave:16, first:20, silo:true},
 };
 function isEnemy(a,b){if(a===b||a<0||b<0)return false;if(!slotAlliance.length)return a!==b;return slotAlliance[a]!==slotAlliance[b]}
@@ -135,20 +135,20 @@ function dispName(kind,type,team){
 /* ================= GENERALS ================= */
 const GENERALS={
   vanguard:[
-    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[]},
-    {id:'air',nm:'Air General',desc:'Raptors −20% cost · no tank production',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:['tank','arty','dominator'],rapCost:.8},
+    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[],sigs:[]},
+    {id:'air',nm:'Air General',desc:'Gunship & Raptor −20% cost · no tanks',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:['tank','arty','dominator'],rapCost:.8,sigs:[{at:'airfield',unit:'gunship'}]},
   ],
   crimson:[
-    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[]},
-    {id:'inf',nm:'Infantry General',desc:'Infantry −25% cost · +20% HP',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:['tank','arty'],infCost:.75,infHp:1.2},
+    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[],sigs:[]},
+    {id:'inf',nm:'Infantry General',desc:'Infantry −25% cost, +15% HP · no factory',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:['tank','arty','dominator','paladin'],infCost:.75,infHp:1.15,sigs:[]},
   ],
   scorpion:[
-    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[]},
-    {id:'toxin',nm:'Toxin General',desc:'All weapons apply poison DOT',ucostMul:1,bcostMul:1,incomeMul:1,toxin:true,turretHpMul:1,locked:[]},
+    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[],sigs:[]},
+    {id:'toxin',nm:'Toxin General',desc:'Poison DOT on all attacks · units −10% HP',ucostMul:1,bcostMul:1,incomeMul:1,toxin:true,turretHpMul:1,locked:[],uhpMul:0.9,sigs:[]},
   ],
   northwind:[
-    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[]},
-    {id:'def',nm:'Defense General',desc:'Turrets +50% HP · buildings +15% HP',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1.5,bHpMul:1.15,locked:[]},
+    {id:'std',nm:'Standard',desc:'No modifier',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1,locked:[],sigs:[]},
+    {id:'def',nm:'Defense General',desc:'Turrets +50% HP, buildings +15% HP · units −18% attack',ucostMul:1,bcostMul:1,incomeMul:1,toxin:false,turretHpMul:1.5,bHpMul:1.15,unitDmgMul:0.82,locked:[],sigs:[]},
   ],
 };
 let gens=['std','std']; // chosen general id per team
@@ -167,7 +167,7 @@ function costOf(kind,type,team){
 const WPN={
   rifle:   {dmg:9,  rel:.6, rng:150, kind:'hit',                 splash:0,  mult:{inf:1,  veh:.3, bld:.18}},
   mg:      {dmg:26, rel:.85,rng:230, kind:'hit',                 splash:0,  mult:{inf:.9, veh:.65,bld:.3}},
-  rocket:  {dmg:42, rel:2.4,rng:195, kind:'rocket', spd:300,     splash:22, mult:{inf:.55,veh:1,  bld:1}},
+  rocket:  {dmg:42, rel:2.4,rng:195, kind:'rocket', spd:300,     splash:22, mult:{inf:.55,veh:1,  bld:1},aa:true},
   cannon:  {dmg:46, rel:2.1,rng:185, kind:'shell',  spd:470,     splash:18, mult:{inf:.6, veh:1,  bld:.75}},
   howitzer:{dmg:80, rel:4.8,rng:330, kind:'arc',    spd:250, minRng:100, splash:50, mult:{inf:1,veh:.8,bld:1}},
   bomb:    {dmg:135,rel:1,  rng:1,   kind:'arc',    spd:300,     splash:72, mult:{inf:1,  veh:1,  bld:1}},
@@ -179,7 +179,10 @@ const WPN={
   flame:   {dmg:24, rel:.4, rng:115, kind:'hit',  flame:true,   splash:0,  mult:{inf:1.35,veh:.5, bld:.95}},
   mortar:  {dmg:55, rel:3.6,rng:280, kind:'arc',   spd:240, minRng:80, splash:36, mult:{inf:1.1,veh:.6,bld:.9}},
   boomkart:{dmg:260,rel:1,  rng:1,   kind:'hit',                 splash:60, mult:{inf:1,  veh:1,  bld:1.1}},
-  nuke:    {dmg:1500,rel:1,  rng:1,   kind:'arc',   spd:300,     splash:165,mult:{inf:1,  veh:1,  bld:1}},
+  nuke:        {dmg:1500,rel:1,rng:1,kind:'arc',  spd:300,splash:165,mult:{inf:1,  veh:1,  bld:1}},
+  toxicNuke:   {dmg:600, rel:1,rng:1,kind:'arc',  spd:280,splash:120,mult:{inf:1.2,veh:.8, bld:.7},toxicSplash:true},
+  barrageMsl:  {dmg:420, rel:1,rng:1,kind:'rocket',spd:360,splash:70, mult:{inf:1, veh:.9, bld:.8}},
+  orbitalLaser:{dmg:1800,rel:1,rng:1,kind:'arc',  spd:900,splash:90, mult:{inf:1, veh:1.3,bld:1.2},orbital:true},
   agm:     {dmg:90, rel:3.5,rng:280, kind:'rocket',spd:420,      splash:28, mult:{inf:.7, veh:1.2,bld:1},aa:false},
   sam:     {dmg:65, rel:2.8,rng:260, kind:'rocket',spd:500,      splash:15, mult:{inf:.3, veh:.8, bld:.4},aa:true,aaOnly:true},
 };
@@ -199,6 +202,7 @@ const UT={
   scarab:    {name:'Scarab Kart',   ic:'💥', cost:400, bt:5, hp:110,spd:150,r:11,sight:6,cat:'veh', suicide:'boomkart',desc:'Rams & explodes!',sig:true,wc:2},
   mortar:    {name:'Mortar Team',   ic:'🎇', cost:500, bt:6, hp:90, spd:52, r:8, sight:7,cat:'inf', wpn:'mortar',desc:'Long-range mortar',sig:true,wc:1},
   raptor:    {name:'Raptor',        ic:'✈️', cost:1400,bt:14,hp:220,spd:240,r:12,sight:9,cat:'air', wpn:'agm',   desc:'Jet fighter — RTB to rearm',sig:false,wc:2,ammo:4},
+  gunship:   {name:'Gunship',        ic:'🚁', cost:1800,bt:16,hp:420,spd:115,r:14,sight:9,cat:'air', wpn:'agm',   desc:'Attack helicopter — Air General only',sig:true,wc:3,ammo:6},
 };
 const BT={
   command:  {name:'Command Center', ic:'🏢', cost:2000,bt:20,hp:2600,w:4,h:4,pow:2,  trains:['dozer'],          desc:'HQ — trains Dozers'},
@@ -207,11 +211,11 @@ const BT={
   barracks: {name:'Barracks',       ic:'🪖', cost:500, bt:8, hp:1100,w:3,h:2,pow:1,  trains:['ranger','rocket'],desc:'Trains infantry'},
   factory:  {name:'War Factory',    ic:'🏭', cost:2000,bt:14,hp:1600,w:4,h:3,pow:3,  trains:['tank','arty'],    desc:'Builds vehicles'},
   turret:   {name:'Guard Turret',   ic:'🗼', cost:900, bt:8, hp:950, w:2,h:2,pow:2,  wpn:'mg',                  desc:'Base defense — needs power'},
-  market:   {name:'Market',         ic:'💰', cost:1500,bt:10,hp:900, w:2,h:2,pow:2,  income:80,                 desc:'+$80 every 5s — endless income'},
+  market:   {name:'Market',         ic:'💰', cost:1500,bt:10,hp:900, w:2,h:2,pow:2,  income:180,                desc:'+$180 every 5s — passive income'},
   tech:     {name:'Tech Lab',       ic:'🔬', cost:1500,bt:12,hp:1000,w:3,h:2,pow:3,  lab:true,                  desc:'Unlocks army upgrades'},
   silo:     {name:'Missile Silo',   ic:'☢️', cost:4000,bt:22,hp:1500,w:3,h:3,pow:6,  silo:true,                 desc:'Superweapon — charges 150s'},
   civil:    {name:'Civil Structure',ic:'🏠', cost:0,   bt:0, hp:350, w:2,h:2,pow:0,  garrison:true,garrisonMax:4,desc:'Infantry can garrison inside'},
-  oilrig:   {name:'Oil Derrick',    ic:'⛽', cost:0,   bt:0, hp:500, w:2,h:2,pow:0,  capturable:true,income:60, desc:'Capture with infantry for $60 every 5s'},
+  oilrig:   {name:'Oil Derrick',    ic:'⛽', cost:0,   bt:0, hp:500, w:2,h:2,pow:0,  capturable:true,income:100,desc:'Capture with infantry for $100 every 5s'},
   airfield: {name:'Airfield',       ic:'✈️', cost:2500,bt:18,hp:1800,w:5,h:4,pow:4,  trains:['raptor'],pads:[[-1,-1],[1,-1],[-1,1],[1,1]],desc:'Trains & launches Raptors'},
   samsite:  {name:'SAM Site',       ic:'🚀', cost:1200,bt:10,hp:900, w:2,h:2,pow:3,  wpn:'sam',                 desc:'Anti-air defense'},
 };

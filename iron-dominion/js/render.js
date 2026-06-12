@@ -852,7 +852,7 @@ function drawInf(u){
 }
 function drawUnit(u){
   if(u.hidden)return;
-  if(u.team===1&&tileVisAt(u.x,u.y)!==2)return;
+  if(isEnemy(0,u.team)&&tileVisAt(u.x,u.y)!==2)return;
   // Aircraft rendering
   if(u.cat==='air'||u.zHeight>10){
     const zh=u.zHeight||30;
@@ -872,15 +872,35 @@ function drawUnit(u){
     }
     const fk=fac[u.team];
     ctx.save();ctx.translate(u.x,drawY);ctx.rotate(u.a);
-    // Raptor swept-wing silhouette
-    ctx.fillStyle=TEAMC[u.team];
-    ctx.beginPath();
-    ctx.moveTo(14,0);ctx.lineTo(2,-10);ctx.lineTo(-12,-4);ctx.lineTo(-12,4);ctx.lineTo(2,10);ctx.closePath();ctx.fill();
-    ctx.fillStyle=TEAMD[u.team];
-    ctx.beginPath();ctx.moveTo(14,0);ctx.lineTo(2,-10);ctx.lineTo(2,0);ctx.closePath();ctx.fill();
-    // Engine glow
-    ctx.fillStyle='rgba(255,160,80,'+(0.5+0.4*Math.sin(gtime*20))+')';
-    ctx.beginPath();ctx.arc(-13,0,2.6,0,Math.PI*2);ctx.fill();
+    if(u.type==='gunship'){
+      // Gunship: rounded fuselage + rotor disk
+      ctx.fillStyle=TEAMC[u.team];
+      ctx.beginPath();ctx.ellipse(0,0,14,7,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=TEAMD[u.team];
+      ctx.fillRect(-12,-2,10,4);
+      // Rotor blades (horizontal lines)
+      ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(-16,0);ctx.lineTo(16,0);ctx.stroke();
+      ctx.save();ctx.rotate(Math.PI/2);
+      ctx.beginPath();ctx.moveTo(-12,0);ctx.lineTo(12,0);ctx.stroke();
+      ctx.restore();
+      // Tail rotor
+      ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(-13,-5);ctx.lineTo(-13,-10);ctx.stroke();
+      // Engine glow
+      ctx.fillStyle='rgba(255,160,80,'+(0.4+0.3*Math.sin(gtime*30))+')';
+      ctx.beginPath();ctx.arc(2,0,2.2,0,Math.PI*2);ctx.fill();
+    }else{
+      // Raptor swept-wing silhouette
+      ctx.fillStyle=TEAMC[u.team];
+      ctx.beginPath();
+      ctx.moveTo(14,0);ctx.lineTo(2,-10);ctx.lineTo(-12,-4);ctx.lineTo(-12,4);ctx.lineTo(2,10);ctx.closePath();ctx.fill();
+      ctx.fillStyle=TEAMD[u.team];
+      ctx.beginPath();ctx.moveTo(14,0);ctx.lineTo(2,-10);ctx.lineTo(2,0);ctx.closePath();ctx.fill();
+      // Engine glow
+      ctx.fillStyle='rgba(255,160,80,'+(0.5+0.4*Math.sin(gtime*20))+')';
+      ctx.beginPath();ctx.arc(-13,0,2.6,0,Math.PI*2);ctx.fill();
+    }
     ctx.restore();
     // Ammo pips
     if(u.ammo>0){

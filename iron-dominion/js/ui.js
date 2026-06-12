@@ -23,7 +23,7 @@ function cancelSite(b){
   b.dead=true;
   const refund=Math.floor(costOf('b',b.type,0)*(1-b.prog));
   money[0]+=refund;
-  for(let i=0;i<5;i++)parts.push({k:'dust',x:b.x+rand(-20,20),y:b.y+rand(-16,16),vx:rand(-10,10),vy:rand(-18,-4),life:.6,max:.6,s:rand(3,6)});
+  for(let i=0;i<5;i++)addPart({k:'dust',x:b.x+vrand(-20,20),y:b.y+vrand(-16,16),vx:vrand(-10,10),vy:vrand(-18,-4),life:.6,max:.6,s:vrand(3,6)});
   toast('🗑 Construction cancelled — refunded $'+refund);SFX.click();
   sel=sel.filter(e=>e!==b);updateHUD();updateCard();
 }
@@ -195,7 +195,7 @@ function updateCard(){
   const dz=myUnits.find(u=>u.type==='dozer');
   if(dz){
     cardEl.appendChild(mkInfo('<b>🚜 '+dispName('u','dozer',0)+'</b>Pick a structure:'));
-    const REQ={tech:'barracks',silo:'factory'};
+    const REQ={tech:'barracks',silo:'factory',airfield:'factory',samsite:'power'};
     for(const bt of BUILD_ORDER_UI){
       if(bt==='power'&&FAC(0).noPower)continue;
       const t=BT[bt],bc=costOf('b',bt,0);

@@ -23,4 +23,5 @@ const SFX={
   sel:()=>tone(520,.05,'triangle',.04),
   jet:()=>noise(.9,.12,3200),
   heal:()=>{tone(520,.1,'sine',.05);setTimeout(()=>tone(780,.12,'sine',.05),90)},
+  squish:()=>{noise(.13,.12,320);tone(95,.12,'sine',.08,-55)},
 };

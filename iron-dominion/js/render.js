@@ -324,6 +324,47 @@ function bSpr(type,fk){
         g.fillStyle='#23291f';g.beginPath();g.arc(X+W/2,Y+H/2,9,0,7);g.fill();
         g.strokeStyle=ac;g.lineWidth=2;g.beginPath();g.arc(X+W/2,Y+H/2,11.5,0,7);g.stroke();
         break;}
+      case 'airfield':{
+        pFoundation(g,X,Y,W,H);
+        // Taxiway stripes
+        g.fillStyle='#c9a23a';
+        for(let i=0;i<5;i++){g.fillRect(X+8+i*(W-16)/5,Y+H-14,(W-16)/5-2,4)}
+        // Runway
+        g.fillStyle='#3a3d35';g.fillRect(X+6,Y+H*.3,W-12,H*.35);
+        g.strokeStyle='#c9a23a';g.lineWidth=2;g.setLineDash([8,6]);
+        g.beginPath();g.moveTo(X+W/2,Y+H*.3);g.lineTo(X+W/2,Y+H*.65);g.stroke();
+        g.setLineDash([]);
+        // 4 landing pads
+        const pads2=BT.airfield.pads;
+        for(let i=0;i<4;i++){
+          const px2=(W/2+pads2[i][0]*1.2*TILE/TILE*20),py2=(H/2+pads2[i][1]*1.2*TILE/TILE*16);
+          g.fillStyle='#2d3328';g.beginPath();g.arc(X+px2,Y+py2,10,0,7);g.fill();
+          g.strokeStyle='#ffd95e';g.lineWidth=1.4;g.beginPath();g.arc(X+px2,Y+py2,10,0,7);g.stroke();
+          g.strokeStyle='#ffd95e';g.lineWidth=1;
+          g.beginPath();g.moveTo(X+px2-7,Y+py2);g.lineTo(X+px2+7,Y+py2);
+          g.moveTo(X+px2,Y+py2-7);g.lineTo(X+px2,Y+py2+7);g.stroke();
+        }
+        // Control tower
+        pPanel(g,X+W*.6,Y+4,W*.22,H*.5,C(32),C(40),C(18));
+        pWindows(g,X+W*.62,Y+12,2,true);
+        g.fillStyle=ac;g.fillRect(X+W*.6,Y+4,W*.22,3);
+        break;}
+      case 'samsite':{
+        pFoundation(g,X,Y,W,H);
+        // SAM launcher base
+        g.fillStyle=C(24);g.beginPath();g.arc(X+W/2,Y+H/2+4,W*.36,0,7);g.fill();
+        g.strokeStyle=C(14);g.lineWidth=1.4;g.stroke();
+        // Launch rail
+        g.fillStyle=C(30);g.fillRect(X+W*.2,Y+H*.25,W*.6,8);
+        g.strokeStyle=C(16);g.lineWidth=1;g.strokeRect(X+W*.2,Y+H*.25,W*.6,8);
+        // SAM missiles on rail
+        for(let i=0;i<3;i++){
+          const mx2=X+W*.25+i*(W*.5/3);
+          g.fillStyle='#8ab0bc';g.fillRect(mx2,Y+H*.18,5,10);
+          g.fillStyle='#c04030';g.fillRect(mx2,Y+H*.18,5,3);
+        }
+        g.fillStyle=ac;g.fillRect(X+6,Y+H-7,10,4);
+        break;}
     }
   });
 }
@@ -643,8 +684,21 @@ function drawHPBar(e,x,y,w){
 }
 function drawBuilding(b){
   const x0=b.tx*TILE,y0=b.ty*TILE,w=b.t.w*TILE,h=b.t.h*TILE;
+  const bx=x0+w/2,by=y0+h/2;
+  const btw=w,bth=h;
   const fk=b.team>=0?fac[b.team]:'neutral';
   const ac=b.team>=0?TEAMC[b.team]:'#9aa48c';
+  // GLA hole rendering (Scorpion)
+  if(b.isHole){
+    ctx.save();ctx.globalAlpha=0.85;
+    ctx.fillStyle='#1a0a00';ctx.beginPath();ctx.arc(bx,by,Math.max(btw,bth)*.4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ff6600';ctx.globalAlpha=0.4+0.2*Math.sin(Date.now()*.005);
+    ctx.beginPath();ctx.arc(bx,by,8,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#ffaa00';ctx.lineWidth=3;ctx.globalAlpha=0.7;
+    ctx.beginPath();ctx.arc(bx,by,Math.max(btw,bth)*.4,0,Math.PI*2*(1-b.holeT/15));ctx.stroke();
+    ctx.restore();
+    return;
+  }
   if(!b.built){
     ctx.fillStyle='#231d12';ctx.fillRect(x0+2,y0+2,w-4,h-4);
     ctx.fillStyle='#2f2818';ctx.fillRect(x0+5,y0+5,w-10,h-10);
@@ -687,7 +741,7 @@ function drawBuilding(b){
     case 'power':
       if(state==='play'&&Math.random()<.05){
         const cxp=Math.random()<.5?x0+22:x0+w-22;
-        parts.push({k:'smoke',x:cxp,y:y0+18,vx:rand(-4,4),vy:-18,life:.8,max:.8,s:4});
+        addPart({k:'smoke',x:cxp,y:y0+18,vx:vrand(-4,4),vy:-18,life:.8,max:.8,s:4});
       }
       break;
     case 'barracks':{
@@ -702,7 +756,7 @@ function drawBuilding(b){
       if(b.queue.length){
         ctx.fillStyle='rgba(255,200,90,'+(0.18+0.14*Math.sin(gtime*7))+')';
         ctx.fillRect(x0+w*.30,y0+h-18,w*.40,15);
-        if(state==='play'&&Math.random()<.12)parts.push({k:'smoke',x:x0+w-21,y:y0+2,vx:rand(-4,4),vy:-22,life:.9,max:.9,s:5});
+        if(state==='play'&&Math.random()<.12)addPart({k:'smoke',x:x0+w-21,y:y0+2,vx:vrand(-4,4),vy:-22,life:.9,max:.9,s:5});
       }
       break;
     case 'supply':
@@ -752,8 +806,8 @@ function drawBuilding(b){
       break;}
   }
   if(b.hp<b.maxhp*.45&&state==='play'){
-    if(Math.random()<.08)parts.push({k:'smoke',x:x0+rand(8,w-8),y:y0+rand(6,h*.5),vx:rand(-5,5),vy:rand(-26,-12),life:rand(.7,1.2),max:1.2,s:rand(5,9)});
-    if(b.hp<b.maxhp*.25&&Math.random()<.05)parts.push({k:'fire',x:x0+rand(10,w-10),y:y0+rand(8,h-12),vx:0,vy:rand(-14,-6),life:rand(.2,.4),max:.4,s:rand(5,9)});
+    if(Math.random()<.08)addPart({k:'smoke',x:x0+vrand(8,w-8),y:y0+vrand(6,h*.5),vx:vrand(-5,5),vy:vrand(-26,-12),life:vrand(.7,1.2),max:vrand(.7,1.2),s:vrand(5,9)});
+    if(b.hp<b.maxhp*.25&&Math.random()<.05)addPart({k:'fire',x:x0+vrand(10,w-10),y:y0+vrand(8,h-12),vx:0,vy:vrand(-14,-6),life:vrand(.2,.4),max:vrand(.2,.4),s:vrand(5,9)});
   }
   if(b.flash>0){ctx.fillStyle='rgba(255,255,255,'+(b.flash*3)+')';ctx.fillRect(x0+2,y0+2,w-4,h-4)}
   if(sel.includes(b)){
@@ -795,6 +849,48 @@ function drawInf(u){
 function drawUnit(u){
   if(u.hidden)return;
   if(u.team===1&&tileVisAt(u.x,u.y)!==2)return;
+  // Aircraft rendering
+  if(u.cat==='air'||u.zHeight>10){
+    const zh=u.zHeight||30;
+    const drawY=u.y-zh;
+    // Ground shadow
+    ctx.save();
+    ctx.globalAlpha=0.28*(1-zh/80);
+    ctx.fillStyle='rgba(0,0,0,.7)';
+    ctx.beginPath();ctx.ellipse(u.x+zh*.15,u.y+zh*.08,u.t.r*1.1,u.t.r*.5,0,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.restore();
+    // Selection ring at ground level
+    if(sel.includes(u)){
+      ctx.strokeStyle='rgba(159,226,124,.7)';ctx.lineWidth=1.6;ctx.setLineDash([6,4]);
+      ctx.beginPath();ctx.arc(u.x,u.y,u.t.r+4,0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    const fk=fac[u.team];
+    ctx.save();ctx.translate(u.x,drawY);ctx.rotate(u.a);
+    // Raptor swept-wing silhouette
+    ctx.fillStyle=TEAMC[u.team];
+    ctx.beginPath();
+    ctx.moveTo(14,0);ctx.lineTo(2,-10);ctx.lineTo(-12,-4);ctx.lineTo(-12,4);ctx.lineTo(2,10);ctx.closePath();ctx.fill();
+    ctx.fillStyle=TEAMD[u.team];
+    ctx.beginPath();ctx.moveTo(14,0);ctx.lineTo(2,-10);ctx.lineTo(2,0);ctx.closePath();ctx.fill();
+    // Engine glow
+    ctx.fillStyle='rgba(255,160,80,'+(0.5+0.4*Math.sin(gtime*20))+')';
+    ctx.beginPath();ctx.arc(-13,0,2.6,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+    // Ammo pips
+    if(u.ammo>0){
+      ctx.save();ctx.translate(u.x,drawY+u.t.r+8);
+      const maxAmmo=u.t.ammo||4;
+      for(let i=0;i<maxAmmo;i++){
+        ctx.fillStyle=i<u.ammo?'#ffd95e':'#333';
+        ctx.beginPath();ctx.arc((i-(maxAmmo-1)/2)*6,0,2,0,Math.PI*2);ctx.fill();
+      }
+      ctx.restore();
+    }
+    drawHPBar(u,u.x-12,drawY-u.t.r-10,24);
+    return;
+  }
   if(sel.includes(u)){
     ctx.fillStyle='rgba(159,226,124,.10)';
     ctx.beginPath();ctx.arc(u.x,u.y,u.t.r+6,0,7);ctx.fill();
@@ -834,9 +930,9 @@ function drawUnit(u){
       ctx.restore();
     }
     if(u.type==='dozer'&&u.site&&state==='play'&&Math.random()<.2)
-      parts.push({k:'spark',x:u.x+Math.cos(u.a)*17,y:u.y+Math.sin(u.a)*17,vx:rand(-20,20),vy:rand(-40,-5),life:.25,max:.25,s:1.8,c:'#ffe9a8'});
+      addPart({k:'spark',x:u.x+Math.cos(u.a)*17,y:u.y+Math.sin(u.a)*17,vx:vrand(-20,20),vy:vrand(-40,-5),life:.25,max:.25,s:1.8,c:'#ffe9a8'});
     if(u.moving&&state==='play'&&Math.random()<.2)
-      parts.push({k:'dust',x:u.x-Math.cos(u.a)*14+rand(-4,4),y:u.y-Math.sin(u.a)*14+rand(-4,4),vx:rand(-6,6),vy:rand(-10,-2),life:.55,max:.55,s:rand(2.5,5)});
+      addPart({k:'dust',x:u.x-Math.cos(u.a)*14+vrand(-4,4),y:u.y-Math.sin(u.a)*14+vrand(-4,4),vx:vrand(-6,6),vy:vrand(-10,-2),life:.55,max:.55,s:vrand(2.5,5)});
   }
   if(u.type==='scarab'&&Math.sin(gtime*9+u.id)>0){
     ctx.fillStyle='#ff5147';
@@ -894,6 +990,7 @@ function drawPile(p){
   }
 }
 function drawProj(p){
+  if(!p.active)return;
   let yoff=0;
   if(p.kind==='arc'){
     const d=Math.hypot(p.dx-p.sx,p.dy-p.sy);
@@ -920,6 +1017,7 @@ function drawProj(p){
   }
 }
 function drawPart(p){
+  if(!p.active)return;
   const f=p.life/p.max;
   switch(p.k){
     case 'scorch':
@@ -1011,7 +1109,7 @@ function render(){
   if(!groundCv)return;
   const z=cam.z;
   let shx=0,shy=0;
-  if(shake>0){shx=rand(-1,1)*shake*10;shy=rand(-1,1)*shake*10}
+  if(shake>0){shx=vrand(-1,1)*shake*10;shy=vrand(-1,1)*shake*10}
   ctx.setTransform(dpr*z,0,0,dpr*z,dpr*(vw/2-cam.x*z+shx),dpr*(vh/2-cam.y*z+shy));
   ctx.imageSmoothingEnabled=true;
   ctx.drawImage(groundCv,0,0);
@@ -1019,7 +1117,15 @@ function render(){
   for(const p of piles)drawPile(p);
   for(const s of scraps)drawScrap(s);
   for(const b of builds)drawBuilding(b);
-  for(const u of units)drawUnit(u);
+  // Render interpolation for units
+  for(const u of units){
+    if(u.dead)continue;
+    const ox=u.x,oy=u.y;
+    u.x=(u.px!==undefined)?u.px+(ox-u.px)*renderAlpha:ox;
+    u.y=(u.py!==undefined)?u.py+(oy-u.py)*renderAlpha:oy;
+    drawUnit(u);
+    u.x=ox;u.y=oy;
+  }
   for(const p of projs)drawProj(p);
   for(const p of parts)if(p.k!=='scorch')drawPart(p);
   for(const p of planes)drawPlane(p);

@@ -1,6 +1,6 @@
 'use strict';
 let state='menu',diffName='normal',D=DIFF.normal;
-let units=[],builds=[],projs=[],parts=[],planes=[],piles=[],rocks=[],scraps=[];
+let units=[],builds=[],projs=[],parts=[],planes=[],piles=[],rocks=[],scraps=[],rubbles=[];
 let blocked=new Uint8Array(MAPW*MAPH),vis=new Uint8Array(MAPW*MAPH);
 let money=[4000,4000],powerP=[0,0],powerU=[0,0],lowPow=[false,false];
 let sel=[],placing=null;
@@ -24,4 +24,4 @@ let campaign=null;
 
 // Game speed and match stats
 let gameSpeed=1;
-let gameStats={kills:0,bldgs:0};
+let gameStats={kills:0,bldgs:0,moneyEarned:0};

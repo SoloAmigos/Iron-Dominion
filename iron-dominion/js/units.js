@@ -97,6 +97,17 @@ function kill(e,src){
         if(pu&&!pu.dead){pu.home=null;pu.padI=-1}
       }
     }
+    // Refund production queue — proportional for in-progress item, full for queued
+    if(e.queue&&e.queue.length>0&&e.team>=0){
+      let refTotal=0;
+      for(let qi=0;qi<e.queue.length;qi++){
+        const qi_it=e.queue[qi];
+        const full=costOf('u',qi_it.type,e.team);
+        const rf=qi===0?Math.floor(full*(1-Math.min(1,qi_it.p/(UT[qi_it.type].bt||1)))):full;
+        money[e.team]+=rf;refTotal+=rf;
+      }
+      if(e.team===0&&refTotal>0&&state==='play')toast('↩ '+e.t.name+' lost — $'+refTotal+' refunded');
+    }
   }else{
     // Release pad for air units
     if(e.cat==='air'&&e.padI>=0&&e.home){e.home.padUnits[e.padI]=null}

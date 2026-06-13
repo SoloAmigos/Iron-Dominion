@@ -149,7 +149,39 @@ const MAPS={
 };
 let MAP=MAPS.desert.s2;
 let chosenMap='desert';
-function getMapVariant(mapKey,n){const m=MAPS[mapKey]||MAPS.desert;return n<=2?m.s2:n<=4?m.s4:m.s8}
+/* Rebuild a map variant's supply stashes + neutrals so every start is identical
+   relative to its base: a near "home" stash, a "forward" expansion stash, a
+   forward neutral, and shared prize(s) dead-centre. Built deterministically from
+   the spawn positions, so the result is point-fair no matter where you start. */
+function applyFairLayout(m){
+  if(!m||m._fair)return m;
+  const W=m.w,H=m.h,cx=W/2,cy=H/2;
+  const cTx=v=>Math.round(v<3?3:v>W-5?W-5:v);
+  const cTy=v=>Math.round(v<3?3:v>H-5?H-5:v);
+  const piles=[],neutrals=[];
+  for(const s of m.spawns){
+    const bx=s[0]+2,by=s[1]+2;            // approx base centre (tiles)
+    let dx=cx-bx,dy=cy-by;const dl=Math.hypot(dx,dy)||1;dx/=dl;dy/=dl;
+    // home stash — right next to the base
+    piles.push([cTx(bx+dx*7-1),cTy(by+dy*7-1)]);
+    // forward expansion stash — partway to the centre
+    const fwd=Math.min(dl*0.42,18);
+    piles.push([cTx(bx+dx*fwd-1),cTy(by+dy*fwd-1)]);
+    // forward neutral oil rig — contested ground past the expansion
+    const nf=Math.min(dl*0.62,26);
+    neutrals.push({type:'oilrig',tx:cTx(bx+dx*nf-1),ty:cTy(by+dy*nf-1)});
+  }
+  // central supply — 1 for duels, more for crowded/large maps
+  const n=m.spawns.length,centrals=n<=2?1:n<=4?2:4;
+  if(centrals===1)piles.push([cTx(cx-1),cTy(cy+3)]);
+  else for(let i=0;i<centrals;i++){const a=i/centrals*Math.PI*2,r=Math.min(W,H)*0.13;piles.push([cTx(cx+Math.cos(a)*r-1),cTy(cy+Math.sin(a)*r-1)])}
+  // central prize building(s)
+  neutrals.push({type:n<=2?'oilrig':'watchtower',tx:cTx(cx-1),ty:cTy(cy-5)});
+  if(n>=4)neutrals.push({type:'repairbay',tx:cTx(cx-7),ty:cTy(cy-1)});
+  m.piles=piles;m.neutrals=neutrals;m._fair=true;
+  return m;
+}
+function getMapVariant(mapKey,n){const m=MAPS[mapKey]||MAPS.desert;return applyFairLayout(n<=2?m.s2:n<=4?m.s4:m.s8)}
 function mapSpawns(map,n){return map.spawns.slice(0,n)}
 
 /* ================= FACTIONS ================= */
@@ -254,13 +286,13 @@ const WPN={
 const UT={
   dozer:   {name:'Dozer',          ic:'🚜', cost:1000,bt:8, hp:300,spd:74, r:13,sight:5,cat:'veh', desc:'Constructs buildings',wc:2},
   truck:   {name:'Supply Truck',   ic:'🚚', cost:600, bt:6, hp:260,spd:102,r:13,sight:5,cat:'veh', desc:'Hauls supplies — auto',wc:2},
-  ranger:  {name:'Ranger',         ic:'🪖', cost:200, bt:4, hp:95, spd:62, r:7, sight:6,cat:'inf', wpn:'rifle',  desc:'Anti-infantry',wc:1},
+  ranger:  {name:'Ranger',         ic:'🧩', cost:200, bt:4, hp:95, spd:62, r:7, sight:6,cat:'inf', wpn:'rifle',  desc:'Anti-infantry',wc:1},
   rocket:  {name:'Rocket Trp',     ic:'🎯', cost:300, bt:5, hp:85, spd:56, r:7, sight:6,cat:'inf', wpn:'rocket', desc:'Anti-armor',wc:1},
   tank:    {name:'Brawler Tank',   ic:'🦏', cost:800, bt:9, hp:330,spd:88, r:14,sight:6,cat:'veh', wpn:'cannon', desc:'Main battle tank',wc:3},
   arty:    {name:'Howitzer',       ic:'💣', cost:1100,bt:12,hp:190,spd:64, r:14,sight:7,cat:'veh', wpn:'howitzer',desc:'Long-range siege',wc:2},
   paladin:   {name:'Paladin',       ic:'🔷', cost:1000,bt:10,hp:300,spd:92, r:14,sight:7,cat:'veh', wpn:'laser', desc:'Laser tank — melts armor',sig:true,wc:3},
   dominator: {name:'Dominator',     ic:'🐗', cost:1200,bt:13,hp:520,spd:64, r:15,sight:6,cat:'veh', wpn:'twin',  desc:'Heavy twin-cannon tank',sig:true,wc:3},
-  technical: {name:'Technical',     ic:'🛻', cost:450, bt:5, hp:200,spd:130,r:13,sight:6,cat:'veh', wpn:'mgT',   desc:'Fast raider gun-truck',sig:true,wc:2},
+  technical: {name:'Technical',     ic:'🛏', cost:450, bt:5, hp:200,spd:130,r:13,sight:6,cat:'veh', wpn:'mgT',   desc:'Fast raider gun-truck',sig:true,wc:2},
   guardian:  {name:'Guardian',      ic:'🛡', cost:450, bt:6, hp:230,spd:54, r:8, sight:6,cat:'inf', wpn:'gmg',   desc:'Shielded heavy trooper',sig:true,wc:1},
   drone:     {name:'Falcon Drone',  ic:'🛸', cost:500, bt:6, hp:130,spd:142,r:11,sight:8,cat:'air', wpn:'dgun', desc:'Light attack drone — trains from Airfield',sig:true,wc:2,ammo:8},
   inferno:   {name:'Inferno Trooper',ic:'🔥',cost:350,bt:5, hp:100,spd:58, r:7, sight:6,cat:'inf', wpn:'flame',desc:'Close-range flamethrower',sig:true,wc:1},

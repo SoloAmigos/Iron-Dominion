@@ -215,4 +215,15 @@ function aiTick(tick){
       }
     }
   }
+  // Air patrols: aircraft with no orders auto-attack nearest enemy — independent of wave timer
+  {
+    let airTgt=null,ad=1e9;
+    for(const b2 of builds){if(b2.dead||!isEnemy(t,b2.team))continue;const d=dist2(b2,ai.cc||builds[0]);if(d<ad){ad=d;airTgt=b2}}
+    if(airTgt){
+      for(const u of army){
+        if(u.cat!=='air'||u.loiter||u.rearmT>0||u.attackTarget)continue;
+        orderMove(u,airTgt.x+rand(-50,50),airTgt.y+rand(-50,50),'am');
+      }
+    }
+  }
 }

@@ -199,7 +199,7 @@ function showLobby(){
   slotAlliance.length=numSlots;
 
   // Clamp spawn index to available spawns for this map/slot combo
-  const _mapDef=(MAPS[chosenMapKey]||MAPS.desert)[chosenMapSize||'s2']||MAPS.desert.s2;
+  const _mapDef=applyFairLayout((MAPS[chosenMapKey]||MAPS.desert)[chosenMapSize||'s2']||MAPS.desert.s2);
   const _spawnMax=Math.min((_mapDef.spawns||[]).length,numSlots)-1;
   if(chosenSpawnIdx>_spawnMax)chosenSpawnIdx=0;
 

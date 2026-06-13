@@ -13,6 +13,9 @@ function genWorld(mapKey,slots,skipNeutrals){
     piles.push({kind:'p',tx,ty,x:(tx+1)*TILE,y:(ty+1)*TILE,amt,max:amt});
   }
 
+  // A tile sits on (or hugs) a supply stash — keep walls/rocks off it so stashes stay reachable
+  const onPile=(tx,ty)=>{for(const p of piles)if(Math.abs(tx-p.tx-1)<2.5&&Math.abs(ty-p.ty-1)<2.5)return true;return false};
+
   // Helper: is a tile safe from spawns and piles
   const spawn0=MAP.spawns[0],spawn1=MAP.spawns[1];
   const safe=(tx,ty)=>{
@@ -35,7 +38,7 @@ function genWorld(mapKey,slots,skipNeutrals){
 
   // MAP-defined rocks
   for(const r of (MAP.rocks||[])){
-    if(inB(r.tx,r.ty)&&!blocked[idx(r.tx,r.ty)]){
+    if(inB(r.tx,r.ty)&&!blocked[idx(r.tx,r.ty)]&&!onPile(r.tx,r.ty)){
       blocked[idx(r.tx,r.ty)]=1;
       rocks.push({tx:r.tx,ty:r.ty,v:srandom()});
     }
@@ -49,7 +52,7 @@ function genWorld(mapKey,slots,skipNeutrals){
     for(let s=0;s<=steps;s++){
       const tx=Math.round(p1[0]+dx*s/steps);
       const ty=Math.round(p1[1]+dy*s/steps);
-      if(inB(tx,ty)&&!blocked[idx(tx,ty)]){
+      if(inB(tx,ty)&&!blocked[idx(tx,ty)]&&!onPile(tx,ty)){
         blocked[idx(tx,ty)]=1;
         rocks.push({tx,ty,v:srandom()});
       }

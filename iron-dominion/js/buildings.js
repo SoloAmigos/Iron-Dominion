@@ -74,8 +74,9 @@ function updateBuilding(b,dt){
   // Airfield training
   if(b.type==='airfield'&&b.queue.length){
     const it=b.queue[0];
-    it.p+=dt*(lowPow[b.team]?.45:1);
-    if(it.p>=UT[it.type].bt){
+    const _bt=UT[it.type].bt;
+    if(it.p<_bt)it.p+=dt*(lowPow[b.team]?.45:1);  // cap at 100% while pad is full
+    if(it.p>=_bt){
       // Check if pad is available
       const padAvail=b.padUnits&&b.padUnits.some(p=>p===null||p===undefined);
       if(padAvail){
@@ -85,7 +86,7 @@ function updateBuilding(b,dt){
         claimPad(b,nu);
         if(b.team===0&&readyCd<=0){readyCd=1.4;toast(UT[it.type].ic+' '+dispName('u',it.type,b.team)+' ready');SFX.done()}
       }
-      // If no pad available, hold in queue (don't shift)
+      // pad full → hold at 100%, spawn the moment a pad frees
     }
   }
 

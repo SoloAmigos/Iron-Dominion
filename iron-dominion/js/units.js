@@ -79,6 +79,8 @@ function kill(e,src){
   }
   if(e.kind==='b'){
     blockRect(e.tx,e.ty,e.t.w,e.t.h,0);
+    // Building rubble — scorch mark that persists for 60s
+    rubbles.push({x:e.x,y:e.y,w:e.t.w*TILE,h:e.t.h*TILE,life:60,max:60});
     boomFx(e.x,e.y,Math.max(e.t.w,e.t.h)*22,true);
     // Eject garrisoned infantry when building dies
     if(e.garrison&&e.garrison.length){
@@ -538,7 +540,10 @@ function updateTruck(u,dt){
       if(!dep){u.retry-=dt;if(u.retry<=0)u.retry=2;break}
       if(dist2(u,dep)<TILE*2.1){
         money[u.team]+=u.cargo;
-        if(u.team===0){SFX.cash();addPart({k:'txt',txt:'+$'+u.cargo,x:dep.x,y:dep.y-30,vy:-26,life:1,max:1})}
+        if(u.team===0){
+          gameStats.moneyEarned=(gameStats.moneyEarned||0)+u.cargo;
+          SFX.cash();addPart({k:'txt',txt:'+$'+u.cargo,x:dep.x,y:dep.y-30,vy:-26,life:1,max:1});
+        }
         u.cargo=0;u.ts='idle';u.retry=0;u.path=null;
       }else{
         if(!u.path){u.retry-=dt;if(u.retry<=0){u.retry=1;u.path=findPath(u.x,u.y,dep.x,dep.y);u.wpi=0}}

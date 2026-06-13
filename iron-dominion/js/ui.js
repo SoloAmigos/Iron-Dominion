@@ -40,6 +40,14 @@ function updateHUD(){
   const pe=document.getElementById('power');
   pe.textContent='⚡ '+powerU[0]+'/'+powerP[0];
   pe.classList.toggle('low',lowPow[0]);
+  // Truck count HUD
+  const te=document.getElementById('trucks');
+  if(te&&state==='play'){
+    const trks=units.filter(u=>!u.dead&&u.team===0&&u.type==='truck').length;
+    const deps=builds.filter(b=>!b.dead&&b.built&&b.team===0&&b.type==='supply').length;
+    if(deps>0||trks>0){te.textContent='🚛'+trks+'/'+deps;te.style.display=''}
+    else te.style.display='none';
+  }
   for(const k in pw){
     const el=document.getElementById('pw_'+k);if(!el)continue;
     if(k==='nuke'){
@@ -170,9 +178,23 @@ function updateCard(){
           qrow.appendChild(chip);
         }
         d.appendChild(qrow);
-        const lbl=document.createElement('span');lbl.style.fontSize='11px';lbl.textContent='Queue '+b.queue.length+'/5 · tap to cancel';
+        const lbl=document.createElement('span');lbl.style.fontSize='11px';lbl.textContent='Queue '+b.queue.length+'/'+(b.type==='airfield'?4:5)+' · tap to cancel';
         d.appendChild(lbl);
         cardEl.appendChild(d);cardQ={b,el:null};
+        // Cancel-all button when queue has more than one item
+        if(b.queue.length>1){
+          cardEl.appendChild(mkBtn('🗑','Cancel All',0,'warn',()=>{
+            let total=0;
+            for(let qi=b.queue.length-1;qi>=0;qi--){
+              const qi_it=b.queue[qi];
+              const full=costOf('u',qi_it.type,0);
+              const rf=qi===0?Math.floor(full*(1-Math.min(1,qi_it.p/(UT[qi_it.type].bt||1)))):full;
+              money[0]+=rf;total+=rf;
+            }
+            b.queue=[];SFX.click();toast('↩ Queue cleared — $'+total+' refunded');
+            updateHUD();updateCard();
+          }));
+        }
       }
     }else if(b.t.lab){
       cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+dispName('b',b.type,0)+'</b>Research army upgrades:'));
@@ -237,7 +259,8 @@ function updateCard(){
     const _bldBtn=bt=>{
       const t=BT[bt],bc=costOf('b',bt,0);
       const locked=!!(REQ[bt]&&!hasB(REQ[bt]));
-      cardEl.appendChild(mkBtn(t.ic,dispName('b',bt,0)+(locked?' 🔒':''),locked?0:bc,
+      const willLowPow=!locked&&!FAC(0).noPower&&(t.pow||0)>0&&!lowPow[0]&&(powerU[0]+(t.pow||0)>powerP[0]);
+      cardEl.appendChild(mkBtn(t.ic,dispName('b',bt,0)+(locked?' 🔒':'')+(willLowPow?' ⚡?':''),locked?0:bc,
         t.silo?'sig':(locked?'warn':''),()=>{
           if(locked){SFX.err();toast('🔒 Requires '+dispName('b',REQ[bt],0)+' first');return}
           if(money[0]<bc){SFX.err();toast('💰 Need $'+bc);return}
@@ -262,9 +285,31 @@ function updateCard(){
   }else{
     const names=myUnits.length===1?UT[myUnits[0].type].ic+' '+dispName('u',myUnits[0].type,0):'⚔ '+myUnits.length+' units';
     cardEl.appendChild(mkInfo('<b>'+names+'</b>Tap ground to move · tap enemy to attack'));
+    // Veterancy XP bar for single unit selection
+    if(myUnits.length===1){
+      const u=myUnits[0];
+      if(u.unitRank<3&&(u.unitXp>0||u.unitRank>0)){
+        const nextXp=VXPT[u.unitRank];
+        const prevXp=u.unitRank>0?VXPT[u.unitRank-1]:0;
+        const pct=Math.max(0,Math.min(1,(u.unitXp-prevXp)/(nextXp-prevXp)));
+        const starLabels=['★','★★','★★★'];
+        const xpDiv=document.createElement('div');xpDiv.className='cinfo';
+        xpDiv.innerHTML='<div style="display:flex;align-items:center;gap:5px;font-size:10px;margin:1px 0;opacity:.9">'+
+          '<span style="opacity:.7">XP</span>'+
+          '<div style="flex:1;height:4px;background:rgba(255,255,255,.12);border-radius:2px">'+
+            '<div style="width:'+Math.round(pct*100)+'%;height:4px;background:#ffd95e;border-radius:2px"></div>'+
+          '</div>'+
+          '<span style="color:#ffd95e;font-size:9px">'+Math.floor(u.unitXp)+'/'+nextXp+' →'+starLabels[u.unitRank]+'</span></div>';
+        cardEl.appendChild(xpDiv);
+      }else if(u.unitRank>=3){
+        const hDiv=document.createElement('div');hDiv.className='cinfo';
+        hDiv.innerHTML='<div style="font-size:10px;color:#ffd95e;text-align:center;margin:1px 0">★★★ HEROIC — SELF-REPAIR ACTIVE</div>';
+        cardEl.appendChild(hDiv);
+      }
+    }
   }
   cardEl.appendChild(mkBtn('🛑','Stop',0,'warn',()=>{
-    for(const u of myUnits){u.order=null;u.path=null;u.attackTarget=null;if(u.type==='dozer')u.site=null;if(u.type==='truck'&&u.cargo>0)u.ts='toDepot'}
+    for(const u of myUnits){u.order=null;u.path=null;u.attackTarget=null;if(u.cat==='air')u.loiter=null;if(u.type==='dozer')u.site=null;if(u.type==='truck'&&u.cargo>0)u.ts='toDepot'}
     SFX.click();
   }));
   cardEl.appendChild(mkBtn('✕','Deselect',0,'cancel',()=>{sel=[];updateCard()}));
@@ -282,6 +327,8 @@ function confirmPlace(){
   const t=BT[placing.type],bc=costOf('b',placing.type,0);
   if(money[0]<bc){SFX.err();toast('💰 Not enough funds');return}
   if(!canPlace(placing.type,placing.tx,placing.ty,0)){SFX.err();toast('🚫 Cannot place here — find clear, explored ground');return}
+  if(!FAC(0).noPower&&(t.pow||0)>0&&powerU[0]+(t.pow||0)>powerP[0])
+    toast('⚡ Warning: this will drain your power grid — build a Power Plant soon');
   money[0]-=bc;
   const site=placeBuilding(placing.type,0,placing.tx,placing.ty,false);
   // assign a dozer: prefer selected, else nearest free
@@ -324,15 +371,16 @@ function hitTest(wx,wy){
   return null;
 }
 function commandGround(wx,wy){
-  let i=0;
+  let i=0;let catBlip=null;
   for(const u of sel){
     if(u.kind!=='u'||u.dead)continue;
     const[ox,oy]=formOff(i++);
+    if(!catBlip)catBlip=u.cat;
     if(u.type==='dozer'){u.site=null;orderMove(u,wx+ox,wy+oy,'move')}
     else if(u.type==='truck')orderMove(u,wx+ox,wy+oy,'move'),u.ts='idle',u.retry=1.6,u.pile=null;
     else orderMove(u,wx+ox,wy+oy,'am');
   }
-  if(i)SFX.click();
+  if(i){SFX.click();if(catBlip&&SFX.voice)SFX.voice(catBlip)}
 }
 function commandTarget(hit){
   if(hit.kind==='b'&&hit.team===0&&!hit.built&&sel.some(x=>x.kind==='u'&&x.type==='dozer'&&!x.dead)){
@@ -532,6 +580,9 @@ cv.addEventListener('wheel',e=>{
   e.preventDefault();
   const w=screenToWorld(e.clientX,e.clientY);
   cam.z=clamp(cam.z*(e.deltaY<0?1.12:.89),.45,1.7);
+  // Snap to common zoom levels when passing close enough
+  const ZLEVELS=[0.5,0.75,1.0,1.25,1.5];
+  for(const zl of ZLEVELS){if(Math.abs(cam.z-zl)<0.055){cam.z=zl;break}}
   cam.x=w.x-(e.clientX-vw/2)/cam.z;
   cam.y=w.y-(e.clientY-vh/2)/cam.z;
   clampCam();
@@ -553,6 +604,22 @@ addEventListener('keydown',e=>{
     if(placing)placing=null,updateCard();
     else if(targetPower)targetPower=null,updateHUD();
     else sel=[],updateCard();
+  }
+  // S = stop all selected units
+  if(state==='play'&&e.key.toLowerCase()==='s'&&!e.ctrlKey&&!e.metaKey){
+    const my=sel.filter(s=>s.kind==='u');
+    if(my.length){
+      for(const u of my){u.order=null;u.path=null;u.attackTarget=null;if(u.cat==='air')u.loiter=null;if(u.type==='dozer')u.site=null}
+      SFX.click();
+    }
+  }
+  // H = hold position (unit stays put, only attacks targets within range)
+  if(state==='play'&&e.key.toLowerCase()==='h'&&!e.ctrlKey&&!e.metaKey){
+    const my=sel.filter(s=>s.kind==='u'&&!s.dead&&s.cat!=='air');
+    if(my.length){
+      for(const u of my){u.order=null;u.path=null;u.attackTarget=null;u.anchor={x:u.x,y:u.y};u.auto=false}
+      SFX.click();toast('⏸ Hold position');
+    }
   }
   // Control groups: Ctrl+1..5 assign, 1..5 recall
   if(state==='play'&&/^[1-5]$/.test(e.key)){

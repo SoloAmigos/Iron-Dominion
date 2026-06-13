@@ -155,28 +155,69 @@ function flyTo(u,tx,ty,dt){
   u.x+=u.vx*dt;u.y+=u.vy*dt;
   return false;
 }
+function airCanHit(w,e){
+  if(!w)return true;
+  const isAir=e.kind==='u'&&(e.zHeight||0)>10;
+  if(isAir&&!w.aa)return false;
+  if(!isAir&&w.aaOnly)return false;
+  return true;
+}
+function airAcquire(u,cx,cy,radius){
+  let best=null,bd=1e9;const w=WPN[u.t.wpn];
+  const nearby=shQuery(cx,cy,radius+24);
+  for(const e of nearby){
+    if(e===u||e.dead||e.team<0||e.hidden||!isEnemy(u.team,e.team))continue;
+    if(u.team===0&&tileVisAt(e.x,e.y)!==2)continue;
+    if(!airCanHit(w,e))continue;
+    const d=Math.hypot(e.x-cx,e.y-cy);
+    if(d<radius&&d<bd){bd=d;best=e}
+  }
+  return best;
+}
 function updateAircraft(u,dt){
   if(u.dead)return;
+  const w=WPN[u.t.wpn];
+  // Rearm sequence on the pad
   if(u.rearmT>0){
     u.rearmT-=dt;
-    if(u.rearmT<=0){u.ammo=u.t.ammo||4;u.rearmT=0;if(u.home){const pp=padPos(u.home,u.padI);u.x=pp.x;u.y=pp.y}}
+    if(u.rearmT<=0){u.ammo=u.t.ammo||4;if(u.home&&!u.home.dead){const pp=padPos(u.home,u.padI);u.x=pp.x;u.y=pp.y}}
     return;
   }
-  if(u.ammo<=0&&u.home&&!u.home.dead){
-    const pp=padPos(u.home,u.padI);
-    if(flyTo(u,pp.x,pp.y,dt)&&u.rearmT<=0)u.rearmT=8;
+  // Out of ammo → fly home to rearm (orphaned aircraft auto-resupply so they stay usable)
+  if(u.ammo<=0){
+    if(u.home&&!u.home.dead){const pp=padPos(u.home,u.padI);if(flyTo(u,pp.x,pp.y,dt))u.rearmT=8}
+    else u.ammo=u.t.ammo||4;
     return;
   }
-  if(u.attackTarget&&!u.attackTarget.dead){flyTo(u,u.attackTarget.x,u.attackTarget.y,dt);return}
-  if(u.path&&u.path.length){
-    const wp=u.path[0];
-    const gx=wp.x!==undefined?wp.x:(wp[0]*TILE+TILE/2);
-    const gy=wp.y!==undefined?wp.y:(wp[1]*TILE+TILE/2);
-    if(flyTo(u,gx,gy,dt))u.path.shift();
+  // Loiter centre = explicit order point, else the home pad (for base defence)
+  let lc=u.loiter;
+  if(!lc&&u.home&&!u.home.dead)lc=padPos(u.home,u.padI);
+  // Validate / acquire a target
+  if(u.attackTarget&&u.attackTarget.dead)u.attackTarget=null;
+  if(u.attackTarget&&lc){
+    const leash=u.t.sight*TILE+w.rng*1.5;
+    if(Math.hypot(u.attackTarget.x-lc.x,u.attackTarget.y-lc.y)>leash)u.attackTarget=null;
+  }
+  u.scan-=dt;
+  if(!u.attackTarget&&u.scan<=0){
+    u.scan=.4;
+    const acx=lc?lc.x:u.x,acy=lc?lc.y:u.y;
+    u.attackTarget=airAcquire(u,acx,acy,u.t.sight*TILE+w.rng*0.6);
+  }
+  const tgt=u.attackTarget;
+  if(tgt&&!tgt.dead){
+    const d=Math.hypot(tgt.x-u.x,tgt.y-u.y);
+    if(d>w.rng*0.8){flyTo(u,tgt.x,tgt.y,dt)}
+    else{u.vx=0;u.vy=0;u.a=Math.atan2(tgt.y-u.y,tgt.x-u.x);if(u.cd<=0){fireFrom(u,u.t.wpn,tgt);u.cd=w.rel}}
+    return;
+  }
+  // No target — orbit the ordered loiter point, else park on the pad
+  if(u.loiter){
+    const d=Math.hypot(u.loiter.x-u.x,u.loiter.y-u.y);
+    if(d>TILE*2.2){flyTo(u,u.loiter.x,u.loiter.y,dt)}
+    else{u.orbT=(u.orbT||0)+dt;const a=u.orbT*1.1,r=TILE*1.8;flyTo(u,u.loiter.x+Math.cos(a)*r,u.loiter.y+Math.sin(a)*r,dt)}
   } else if(u.home&&!u.home.dead){
-    // Return to pad when no orders
-    const pp=padPos(u.home,u.padI);
-    flyTo(u,pp.x,pp.y,dt);
+    const pp=padPos(u.home,u.padI);flyTo(u,pp.x,pp.y,dt);
   }
 }
 
@@ -306,13 +347,15 @@ function findEnemyInRange(sh,r){
 
 /* ================= UNIT LOGIC ================= */
 function orderMove(u,x,y,kind){
-  // Air units skip pathfinding
-  if(u.cat==='air'){u.moveTarget={x,y};u.attackTarget=null;u.path=[{x,y}];return}
+  // Air units skip pathfinding — they loiter at the ordered point and engage nearby foes
+  if(u.cat==='air'){u.loiter={x,y};u.attackTarget=null;u.orbT=0;return}
   u.order={kind:kind||'move',x,y,target:null};
   u.attackTarget=null;u.site=null;u.fix=null;u.anchor=null;u.auto=false;
   u.path=findPath(u.x,u.y,x,y);u.wpi=0;u.stT=0;
 }
 function orderAttack(u,t){
+  // Air units pursue the target then hold over its last position
+  if(u.cat==='air'){u.attackTarget=t;u.loiter={x:t.x,y:t.y};u.orbT=0;return}
   u.order={kind:'attack',x:t.x,y:t.y,target:t};
   u.attackTarget=t;u.path=null;u.repath=0;u.anchor=null;u.auto=false;
 }
@@ -589,28 +632,9 @@ function updateUnit(u,dt){
   u.lxp=u.x;u.lyp=u.y;u.moving=false;
   u.cd=Math.max(0,u.cd-dt);u.flash=Math.max(0,u.flash-dt);
 
-  // Air unit handling
+  // Air unit handling — fly, acquire, engage, loiter, rearm (all in updateAircraft)
   if(u.cat==='air'){
     updateAircraft(u,dt);
-    // Air unit combat scan
-    if(u.ammo>0&&!u.rearmT){
-      u.scan-=dt;
-      if(u.scan<=0){
-        u.scan=.6;
-        const w=WPN[u.t.wpn];
-        if(w&&(!u.attackTarget||u.attackTarget.dead)){
-          u.attackTarget=findEnemyInRange(u,w.rng);
-        }
-      }
-      if(u.attackTarget&&!u.attackTarget.dead){
-        const w=WPN[u.t.wpn];
-        if(u.cd<=0&&dist2(u,u.attackTarget)<w.rng){
-          fireFrom(u,u.t.wpn,u.attackTarget);
-          u.cd=w.rel;
-        }
-      }
-      if(u.attackTarget&&u.attackTarget.dead)u.attackTarget=null;
-    }
     u.lx=u.lxp;u.ly=u.lyp;
     return;
   }

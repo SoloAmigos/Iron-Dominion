@@ -18,7 +18,7 @@ try{
 }catch(e){}
 function _saveAudio(){try{localStorage.setItem('id_audio',JSON.stringify({m:musicVol,s:sfxVol,mu:muted}))}catch(e){}}
 
-// ─── Engine init ────────────────────────────────────────────────
+// ─── Engine init ──────────────────────────────────────────────
 function ac(){
   if(!AC){
     try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}
@@ -45,7 +45,7 @@ function _mkRev(s){
   const cv=c.createConvolver();cv.buffer=b;return cv;
 }
 
-// ─── Low-level synth primitives ─────────────────────────────────
+// ─── Low-level synth primitives ─────────────────────────────────────────
 // Oscillator with attack + exponential decay. Returns the osc so callers can ramp frequency.
 function _O(t,f,tp,dur,vol,dst,att,f2){
   if(!AC)return null;
@@ -75,7 +75,7 @@ function _N(t,dur,vol,fc,ft,dst,rvAmt){
   s.start(t); s.stop(t+dur+0.15);
 }
 
-// ─── Drum kit (used by music sequencer) ─────────────────────────
+// ─── Drum kit (used by music sequencer) ──────────────────────────────────
 function _kick(t,v){
   // Sub-bass sine sweep: 150Hz → 32Hz — the foundation of every good kick
   const o=AC.createOscillator(), g=AC.createGain();
@@ -138,7 +138,7 @@ function _pad(t,hz,dur,v){
   g.connect(_mxG); o.start(t); o.stop(t+dur+0.05);
 }
 
-// ─── Music sequencer ────────────────────────────────────────────
+// ─── Music sequencer ─────────────────────────────────────────────────────
 // Key: A minor. Bass notes in Hz (0 = rest).
 const _A1=55,_D2=73.4,_E2=82.4,_G2=98,_C2=65.4;
 const _PAT={
@@ -219,7 +219,7 @@ function _seqTick(){
   }
 }
 
-// ─── SFX ────────────────────────────────────────────────────────
+// ─── SFX ──────────────────────────────────────────────────────────────────────
 const SFX={
   // UI tap — clean metallic tick with a short high ring
   click:()=>{
@@ -335,6 +335,18 @@ const SFX={
     _O(t,    880,'square',0.09,0.065,_uG,0.001);
     _O(t+0.13,660,'square',0.09,0.055,_uG,0.001);
   },
+  // Unit voice acknowledgement — short blip per category (inf/veh/air)
+  voice:(cat)=>{
+    if(muted)return; const c=ac(); if(!c)return; const t=c.currentTime;
+    if(cat==='air'){
+      _O(t,    1100,'sine',0.06,0.04,_uG,0.002,1420);
+      _O(t+0.05,1420,'sine',0.05,0.032,_uG,0.001);
+    } else if(cat==='inf'){
+      _O(t,720,'sine',0.06,0.05,_uG,0.002,900);
+    } else {
+      _O(t,440,'sawtooth',0.05,0.055,_uG,0.002,320);
+    }
+  },
 };
 
 // Legacy shim — units.js calls tone() directly for laser sound
@@ -343,7 +355,7 @@ function tone(f,du,type,vol,slide){
   _O(c.currentTime,f,type,du,vol||0.04,_sG,0.003,slide?f+slide:undefined);
 }
 
-// ─── Volume / mute API ──────────────────────────────────────────
+// ─── Volume / mute API ──────────────────────────────────────────────
 function setMusicVol(v){
   musicVol=Math.max(0,Math.min(1,v));
   if(_mxG&&AC&&!muted) _mxG.gain.setTargetAtTime(musicVol,AC.currentTime,0.08);
@@ -354,6 +366,21 @@ function setSfxVol(v){
   if(_sG&&AC) _sG.gain.setTargetAtTime(sfxVol,AC.currentTime,0.05);
   _saveAudio();
 }
+// Low-power alarm — repeating two-tone pulse while under-powered
+let _lpAlarmId=null;
+function startLowPowAlarm(){
+  if(_lpAlarmId||muted)return;
+  _lpAlarmId=setInterval(()=>{
+    if(muted||!AC)return;
+    const c=ac();if(!c)return;const t=c.currentTime;
+    _O(t,    440,'square',0.05,0.08,_uG,0.001,370);
+    _O(t+0.18,370,'square',0.04,0.07,_uG,0.001);
+  },2400);
+}
+function stopLowPowAlarm(){
+  if(_lpAlarmId){clearInterval(_lpAlarmId);_lpAlarmId=null}
+}
+
 // Called by mute button — handles music fade in/out
 function applyMute(){
   _saveAudio();

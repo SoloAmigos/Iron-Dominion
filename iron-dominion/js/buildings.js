@@ -120,7 +120,10 @@ function updateBuilding(b,dt){
       b.mkT-=5;
       const inc=Math.round(b.t.income*upMk(b.team)*gm2.incomeMul);
       money[b.team]+=inc;
-      if(b.team===0)addPart({k:'txt',txt:'+$'+inc,x:b.x,y:b.y-26,vy:-22,life:.9,max:.9});
+      if(b.team===0){
+        gameStats.moneyEarned=(gameStats.moneyEarned||0)+inc;
+        addPart({k:'txt',txt:'+$'+inc,x:b.x,y:b.y-26,vy:-22,life:.9,max:.9});
+      }
     }
   }
   if(b.t.silo){
@@ -136,6 +139,21 @@ function updateBuilding(b,dt){
     b.scan-=dt;
     if(!b.attackTarget&&b.scan<=0){b.scan=.45;b.attackTarget=findEnemyInRange(b,WPN[b.t.wpn].rng)}
     if(b.attackTarget&&b.cd<=0){fireFrom(b,b.t.wpn,b.attackTarget);b.cd=WPN[b.t.wpn].rel}
+  }
+  // Enemy recapture of player-held neutral buildings (oil/watchtower/repairbay)
+  if(b.t.capturable&&b.team===0&&b.built){
+    const near=shQuery(b.x,b.y,entRad(b)+TILE*2.2);
+    let hasEnemy=false;
+    for(const e of near){if(!e.dead&&e.kind==='u'&&e.cat==='inf'&&isEnemy(0,e.team)){hasEnemy=true;break}}
+    if(hasEnemy){
+      b.recaptureT=(b.recaptureT||0)+dt;
+      if(b.recaptureT>=14){
+        b.team=-1;b.recaptureT=0;
+        if(state==='play')toast('📍 '+b.t.name+' lost to enemy infantry!');
+      }
+    }else{
+      if(b.recaptureT)b.recaptureT=Math.max(0,b.recaptureT-dt*0.6);
+    }
   }
 }
 function recomputePower(){

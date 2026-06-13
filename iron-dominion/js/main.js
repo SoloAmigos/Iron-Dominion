@@ -759,3 +759,57 @@ addEventListener('resize',resize);
 resize();
 showMenu();
 requestAnimationFrame(frame);
+
+/* ---- Airfield aircraft icon sprites ----
+   The base uSpr() in render.js returns null for raptor/gunship/bomber, which made
+   iconURL() throw and left the Airfield production card empty. This shim supplies
+   the missing icons (no-op if render.js already provides them). */
+(function(){
+  if(typeof uSpr!=='function')return;
+  const _baseUSpr=uSpr;
+  uSpr=function(type,fk){
+    const r=_baseUSpr(type,fk);
+    if(r||(type!=='raptor'&&type!=='gunship'&&type!=='bomber'))return r;
+    const F=FACTIONS[fk],ac=F.c,C=facCol(fk);
+    if(type==='gunship')return spr('Ugunship_'+fk,36,30,g=>{
+      g.translate(18,15);
+      g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(0,1,13,7,0,0,7);g.fill();
+      g.fillStyle=C(38);g.beginPath();g.ellipse(0,0,14,7,0,0,7);g.fill();
+      g.fillStyle=C(28);g.fillRect(-12,-2,10,4);
+      g.strokeStyle=C(14);g.lineWidth=1.2;g.beginPath();g.ellipse(0,0,14,7,0,0,7);g.stroke();
+      g.strokeStyle='rgba(225,235,225,.6)';g.lineWidth=1.5;
+      g.beginPath();g.moveTo(-16,0);g.lineTo(16,0);g.stroke();
+      g.beginPath();g.moveTo(0,-12);g.lineTo(0,12);g.stroke();
+      g.strokeStyle=C(16);g.lineWidth=1.4;g.beginPath();g.moveTo(-13,-5);g.lineTo(-13,-10);g.stroke();
+      g.fillStyle=ac;g.beginPath();g.arc(4,0,2.4,0,7);g.fill();
+    });
+    if(type==='bomber')return spr('Ubomber_'+fk,40,52,g=>{
+      g.translate(20,26);
+      g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(0,2,15,11,0,0,7);g.fill();
+      g.fillStyle=C(32);
+      g.beginPath();g.moveTo(2,-5);g.lineTo(-10,-24);g.lineTo(-15,-18);g.lineTo(-5,-5);g.closePath();g.fill();
+      g.beginPath();g.moveTo(2,5);g.lineTo(-10,24);g.lineTo(-15,18);g.lineTo(-5,5);g.closePath();g.fill();
+      g.fillStyle=C(40);
+      g.beginPath();g.moveTo(18,0);g.lineTo(0,-6);g.lineTo(-14,-4);g.lineTo(-14,4);g.lineTo(0,6);g.closePath();g.fill();
+      g.fillStyle=C(30);
+      g.beginPath();g.moveTo(18,0);g.lineTo(0,-6);g.lineTo(0,0);g.closePath();g.fill();
+      g.strokeStyle=C(15);g.lineWidth=1.2;
+      g.beginPath();g.moveTo(18,0);g.lineTo(0,-6);g.lineTo(-14,-4);g.lineTo(-14,4);g.lineTo(0,6);g.closePath();g.stroke();
+      g.fillStyle=C(20);for(const ey of[-15,15])g.fillRect(-11,ey-2.5,9,5);
+      g.fillStyle='#ffb060';for(const ey of[-15,15]){g.beginPath();g.arc(-11,ey,2,0,7);g.fill()}
+      g.fillStyle=ac;g.fillRect(2,-2.4,6,4.8);
+    });
+    return spr('Uraptor_'+fk,32,24,g=>{
+      g.translate(16,12);
+      g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(0,1,13,8,0,0,7);g.fill();
+      g.fillStyle=C(40);
+      g.beginPath();g.moveTo(14,0);g.lineTo(2,-10);g.lineTo(-12,-4);g.lineTo(-12,4);g.lineTo(2,10);g.closePath();g.fill();
+      g.fillStyle=C(30);
+      g.beginPath();g.moveTo(14,0);g.lineTo(2,-10);g.lineTo(2,0);g.closePath();g.fill();
+      g.strokeStyle=C(15);g.lineWidth=1.2;
+      g.beginPath();g.moveTo(14,0);g.lineTo(2,-10);g.lineTo(-12,-4);g.lineTo(-12,4);g.lineTo(2,10);g.closePath();g.stroke();
+      g.fillStyle=ac;g.fillRect(-2,-2.2,7,4.4);
+      g.fillStyle='#ffb060';g.beginPath();g.arc(-12,0,2.4,0,7);g.fill();
+    });
+  };
+})();

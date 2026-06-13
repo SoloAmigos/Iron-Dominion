@@ -143,7 +143,10 @@ function updateCard(){
         const t=UT[ut],c=costOf('u',ut,0);
         cardEl.appendChild(mkBtn(iconURL('u',ut,0),dispName('u',ut,0),c,t.sig?'sig':'',()=>{
           if(money[0]<c){SFX.err();toast('💰 Not enough funds');return}
-          if(b.queue.length>=5){SFX.err();toast('Queue is full');return}
+          if(b.type==='airfield'){
+            const alive=(b.padUnits||[]).filter(p=>p&&!p.dead).length;
+            if(alive+b.queue.length>=4){SFX.err();toast('Airfield at capacity — 4 pad limit');return}
+          }else if(b.queue.length>=5){SFX.err();toast('Queue is full');return}
           money[0]-=c;b.queue.push({type:ut,p:0});SFX.click();updateHUD();updateCard();
         }));
       }

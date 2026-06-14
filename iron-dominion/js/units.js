@@ -292,6 +292,7 @@ function impact(p){
     boomFx(p.x,p.y,50,false);
     shake=Math.min(shake+0.2,1.0);
   }else boomFx(p.x,p.y,Math.max(p.w.splash,14),p.w.splash>30);
+  if(p.w.flame&&p.w.splash>10)fireZones.push({x:p.x,y:p.y,r:55,life:10,maxLife:10,team:p.team,tickT:0,dmg:12});
   const rad=Math.max(p.w.splash,14);
   const nearby=shQuery(p.x,p.y,rad+24);
   for(const e of nearby){

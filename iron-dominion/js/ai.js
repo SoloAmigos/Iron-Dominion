@@ -65,6 +65,7 @@ function aiTick(tick){
   }
   let cur=ai.bo[ai.boi];
   while(cur&&FAC(t).noPower&&cur.b==='power'){ai.boi++;cur=ai.bo[ai.boi]}
+  while(cur&&fac[t]==='scorpion'&&cur.b==='airfield'){ai.boi++;cur=ai.bo[ai.boi]}
   if(cur&&money[t]>=costOf('b',cur.b,t)&&dozers.length&&sites.length<=dozers.length){
     if(aiBuildAt(cur.b,cur.o)!==false)ai.boi++;
     else ai.boi++;
@@ -105,9 +106,10 @@ function aiTick(tick){
       if(tgt){fireNukeFrom(b,tgt.x+rand(-20,20),tgt.y+rand(-20,20),t);ai.nukeT=75+rand(-15,15);break}
     }
   }
-  // Airfield production (raptor + any GENMOD sig air units)
+  // Airfield production (raptor + any GENMOD sig air units; Scorpion has no air doctrine)
   for(const b of builds){
     if(b.dead||!b.built||b.team!==t||b.type!=='airfield'||b.queue.length>=2)continue;
+    if(fac[t]==='scorpion')continue;
     const padAvail=b.padUnits&&b.padUnits.some(p=>p===null||p===undefined);
     if(!padAvail)continue;
     const airRoster=['raptor'];

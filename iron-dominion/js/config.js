@@ -41,6 +41,8 @@ const MAPS={
       neutrals:[{type:'oilrig',tx:44,ty:28},{type:'oilrig',tx:22,ty:28},{type:'oilrig',tx:66,ty:28},
         {type:'civil',tx:15,ty:22},{type:'civil',tx:70,ty:34},{type:'civil',tx:44,ty:40}],
       rocks:[],walls:[],deco:'sand'},
+    s6:{w:104,h:64, spawns:[[4,58],[99,5],[99,58],[4,5],[4,30],[99,30]],
+      piles:[],neutrals:[],rocks:[],walls:[],deco:'sand'},
     s8:{w:120,h:76, spawns:[[4,68],[115,5],[115,68],[4,5],[59,68],[60,5],[4,36],[115,36]],
       piles:[[20,58],[50,18],[70,18],[100,58],[20,18],[100,18],[60,68],[60,8],[40,38],[80,38],[15,38],[105,38],[40,58],[80,58]],
       neutrals:[{type:'oilrig',tx:60,ty:38},{type:'oilrig',tx:30,ty:38},{type:'oilrig',tx:90,ty:38},
@@ -58,6 +60,8 @@ const MAPS={
       neutrals:[{type:'oilrig',tx:44,ty:28},{type:'oilrig',tx:22,ty:28},{type:'oilrig',tx:66,ty:28},
         {type:'civil',tx:12,ty:24},{type:'civil',tx:72,ty:32},{type:'civil',tx:44,ty:42}],
       rocks:[{tx:30,ty:28},{tx:58,ty:28},{tx:44,ty:14},{tx:44,ty:42}],walls:[],deco:'urban'},
+    s6:{w:104,h:64, spawns:[[4,58],[99,5],[99,58],[4,5],[4,30],[99,30]],
+      piles:[],neutrals:[],rocks:[{tx:52,ty:22},{tx:52,ty:42}],walls:[],deco:'urban'},
     s8:{w:120,h:76, spawns:[[4,68],[115,5],[115,68],[4,5],[59,68],[60,5],[4,36],[115,36]],
       piles:[[18,60],[50,20],[70,20],[102,60],[18,20],[102,20],[60,70],[60,8],[38,38],[82,38],[14,38],[106,38],[38,60],[82,60]],
       neutrals:[{type:'oilrig',tx:60,ty:38},{type:'oilrig',tx:30,ty:38},{type:'oilrig',tx:90,ty:38},
@@ -75,6 +79,8 @@ const MAPS={
       neutrals:[{type:'oilrig',tx:48,ty:32},{type:'oilrig',tx:24,ty:32},{type:'oilrig',tx:72,ty:32},
         {type:'civil',tx:16,ty:24},{type:'civil',tx:78,ty:40}],
       rocks:[],walls:[[[28,16],[28,48]],[[68,16],[68,48]]],deco:'green'},
+    s6:{w:112,h:68, spawns:[[4,62],[107,5],[107,62],[4,5],[4,32],[107,32]],
+      piles:[],neutrals:[],rocks:[],walls:[[[32,8],[32,60]],[[80,8],[80,60]]],deco:'green'},
     s8:{w:128,h:80, spawns:[[4,72],[123,5],[123,72],[4,5],[63,72],[64,5],[4,40],[123,40]],
       piles:[[20,64],[48,22],[80,22],[108,64],[20,22],[108,22],[64,74],[64,6],[32,40],[96,40],[14,40],[114,40],[48,64],[80,64]],
       neutrals:[{type:'oilrig',tx:64,ty:40},{type:'oilrig',tx:32,ty:40},{type:'oilrig',tx:96,ty:40},
@@ -100,6 +106,11 @@ const MAPS={
       rocks:[],walls:[
         [[2,30],[18,30]],[[26,30],[42,30]],[[50,30],[66,30]],[[74,30],[90,30]],
         [[2,31],[18,31]],[[26,31],[42,31]],[[50,31],[66,31]],[[74,31],[90,31]],
+      ],deco:'green'},
+    s6:{w:112,h:68,spawns:[[4,62],[107,5],[107,62],[4,5],[4,32],[107,32]],
+      piles:[],neutrals:[],rocks:[],walls:[
+        [[2,33],[16,33]],[[22,33],[38,33]],[[44,33],[60,33]],[[66,33],[82,33]],[[88,33],[108,33]],
+        [[2,34],[16,34]],[[22,34],[38,34]],[[44,34],[60,34]],[[66,34],[82,34]],[[88,34],[108,34]],
       ],deco:'green'},
     s8:{w:128,h:80,spawns:[[4,72],[123,5],[123,72],[4,5],[63,72],[64,5],[4,40],[123,40]],
       piles:[[20,64],[40,52],[54,22],[92,58],[30,22],[98,22],[66,74],[60,6],[36,42],[90,42],[14,42],[112,42],[44,64],[84,64]],
@@ -133,6 +144,13 @@ const MAPS={
         [[2,27],[36,27]],[[48,27],[90,27]],
         [[2,38],[44,38]],[[56,38],[90,38]],
         [[2,39],[44,39]],[[56,39],[90,39]],
+      ],deco:'urban'},
+    s6:{w:112,h:68,spawns:[[4,62],[107,5],[107,62],[4,5],[4,32],[107,32]],
+      piles:[],neutrals:[],rocks:[],walls:[
+        [[2,22],[44,22]],[[52,22],[108,22]],
+        [[2,23],[44,23]],[[52,23],[108,23]],
+        [[2,46],[60,46]],[[68,46],[108,46]],
+        [[2,47],[60,47]],[[68,47],[108,47]],
       ],deco:'urban'},
     s8:{w:128,h:80,spawns:[[4,72],[123,5],[123,72],[4,5],[63,72],[64,5],[4,40],[123,40]],
       piles:[[18,62],[40,48],[56,24],[90,54],[32,24],[96,24],[68,72],[58,8],[38,40],[90,40],[14,42],[112,42],[46,64],[82,64]],
@@ -181,7 +199,7 @@ function applyFairLayout(m){
   m.piles=piles;m.neutrals=neutrals;m._fair=true;
   return m;
 }
-function getMapVariant(mapKey,n){const m=MAPS[mapKey]||MAPS.desert;return applyFairLayout(n<=2?m.s2:n<=4?m.s4:m.s8)}
+function getMapVariant(mapKey,n){const m=MAPS[mapKey]||MAPS.desert;const sz=typeof chosenMapSize!=='undefined'&&chosenMapSize?chosenMapSize:(n<=2?'s2':n<=4?'s4':n<=6?'s6':'s8');return applyFairLayout(m[sz]||m.s8||m.s4||m.s2)}
 function mapSpawns(map,n){return map.spawns.slice(0,n)}
 
 /* ================= FACTIONS ================= */
@@ -295,7 +313,7 @@ const UT={
   arty:    {name:'Howitzer',       ic:'💣', cost:1100,bt:12,hp:190,spd:64, r:14,sight:7,cat:'veh', wpn:'howitzer',desc:'Long-range siege',wc:2},
   paladin:   {name:'Paladin',       ic:'🔷', cost:1000,bt:10,hp:300,spd:92, r:14,sight:7,cat:'veh', wpn:'laser', desc:'Laser tank — melts armor',sig:true,wc:3},
   dominator: {name:'Dominator',     ic:'🐗', cost:1200,bt:13,hp:520,spd:64, r:15,sight:6,cat:'veh', wpn:'twin',  desc:'Heavy twin-cannon tank',sig:true,wc:3},
-  technical: {name:'Technical',     ic:'🛳', cost:450, bt:5, hp:200,spd:130,r:13,sight:6,cat:'veh', wpn:'mgT',   desc:'Fast raider gun-truck',sig:true,wc:2},
+  technical: {name:'Technical',     ic:'🛻', cost:450, bt:5, hp:200,spd:130,r:13,sight:6,cat:'veh', wpn:'mgT',   desc:'Fast raider gun-truck',sig:true,wc:2},
   guardian:  {name:'Guardian',      ic:'🛡', cost:450, bt:6, hp:230,spd:54, r:8, sight:6,cat:'inf', wpn:'gmg',   desc:'Shielded heavy trooper',sig:true,wc:1},
   drone:     {name:'Falcon Drone',  ic:'🛸', cost:500, bt:6, hp:130,spd:142,r:11,sight:8,cat:'air', wpn:'dgun', desc:'Light attack drone — trains from Airfield',sig:true,wc:2,ammo:8},
   inferno:   {name:'Inferno Trooper',ic:'🔥',cost:375,bt:5, hp:180,spd:58, r:7, sight:6,cat:'inf', wpn:'flame',desc:'Close-range flamethrower',sig:true,wc:1},
@@ -310,7 +328,7 @@ const BT={
   power:    {name:'Power Plant',    ic:'⚡', cost:600, bt:8, hp:650, w:2,h:2,pow:-10,                            desc:'+10 power'},
   supply:   {name:'Supply Center',  ic:'📦', cost:1400,bt:10,hp:1300,w:3,h:3,pow:2,  trains:['truck'],          desc:'Drop-off + free truck'},
   barracks: {name:'Barracks',       ic:'🪖', cost:500, bt:8, hp:1100,w:3,h:2,pow:1,  trains:['ranger','rocket'],desc:'Trains infantry'},
-  factory:  {name:'War Factory',    ic:'🏗', cost:2000,bt:14,hp:1600,w:4,h:3,pow:3,  trains:['tank','arty'],    desc:'Builds vehicles'},
+  factory:  {name:'War Factory',    ic:'🏭', cost:2000,bt:14,hp:1600,w:4,h:3,pow:3,  trains:['tank','arty'],    desc:'Builds vehicles'},
   turret:   {name:'Guard Turret',   ic:'🗼', cost:900, bt:8, hp:950, w:2,h:2,pow:2,  wpn:'mg',                  desc:'Base defense — needs power'},
   market:   {name:'Market',         ic:'💰', cost:1500,bt:10,hp:900, w:2,h:2,pow:2,  income:180,                desc:'+$180 every 5s — passive income'},
   tech:     {name:'Tech Lab',       ic:'🔬', cost:1500,bt:12,hp:1000,w:3,h:2,pow:3,  lab:true,                  desc:'Unlocks army upgrades'},
@@ -325,7 +343,7 @@ const BT={
 };
 const BUILD_ORDER_UI=['power','barracks','factory','airfield','tech','turret','samsite','radar','silo','supply','market','command'];
 const BUILD_CATEGORIES=[
-  {id:'production', label:'Production', ic:'🏗', items:['barracks','factory','airfield','tech']},
+  {id:'production', label:'Production', ic:'🏭', items:['barracks','factory','airfield','tech']},
   {id:'combat',     label:'Combat',     ic:'⚔️',  items:['turret','samsite','radar','silo']},
   {id:'economy',    label:'Economy',    ic:'💰',  items:['supply','market','command']},
 ];

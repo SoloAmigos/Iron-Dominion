@@ -12,7 +12,7 @@ function checkHints(){
     else{toast('🏗️ Step 1 — select your Dozer, build a ⚡ Power Plant');hintStage=1}
   }
   else if(hintStage===1&&hasB('power')){toast('📦 Step 2 — build a Supply Center near the gold crates');hintStage=2}
-  else if(hintStage===2&&hasB('supply')){toast('🦖 Step 3 — build a Barracks and train troops');hintStage=3}
+  else if(hintStage===2&&hasB('supply')){toast('🪖 Step 3 — build a Barracks and train troops');hintStage=3}
   else if(hintStage===3&&hasB('barracks')){toast('🏭 Step 4 — a War Factory unlocks tanks + Airstrike');hintStage=4}
   else if(hintStage===4&&hasB('factory')){toast('⚔️ Destroy ALL enemy buildings!');hintStage=5}
 }

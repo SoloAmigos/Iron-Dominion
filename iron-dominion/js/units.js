@@ -199,15 +199,20 @@ function airAcquire(u,cx,cy,radius){
 function updateAircraft(u,dt){
   if(u.dead)return;
   const w=WPN[u.t.wpn];
-  // Rearm sequence on the pad
+  // Rearm sequence
   if(u.rearmT>0){
     u.rearmT-=dt;
-    if(u.rearmT<=0){u.ammo=u.t.ammo||4;if(u.home&&!u.home.dead){const pp=padPos(u.home,u.padI);u.x=pp.x;u.y=pp.y}}
+    if(u.rearmT<=0){
+      u.ammo=u.t.ammo||4;
+      // Raptors/bombers snap back to pad after landing; gunship stays airborne
+      if(u.type!=='gunship'&&u.home&&!u.home.dead){const pp=padPos(u.home,u.padI);u.x=pp.x;u.y=pp.y}
+    }
     return;
   }
-  // Out of ammo → fly home to rearm (orphaned aircraft auto-resupply so they stay usable)
+  // Out of ammo: gunship hovers and rearmsS in-air; raptor/bomber RTB
   if(u.ammo<=0){
-    if(u.home&&!u.home.dead){const pp=padPos(u.home,u.padI);if(flyTo(u,pp.x,pp.y,dt))u.rearmT=8}
+    if(u.type==='gunship'){u.vx=0;u.vy=0;u.rearmT=6}
+    else if(u.home&&!u.home.dead){const pp=padPos(u.home,u.padI);if(flyTo(u,pp.x,pp.y,dt))u.rearmT=8}
     else u.ammo=u.t.ammo||4;
     return;
   }

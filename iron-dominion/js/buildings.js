@@ -129,7 +129,7 @@ function updateBuilding(b,dt){
   if(b.t.silo){
     if(b.charge===undefined)b.charge=0;
     if(b.charge<1&&!lowPow[b.team]){
-      b.charge=Math.min(1,b.charge+dt/150);
+      b.charge=Math.min(1,b.charge+dt/300);
       if(b.charge>=1&&b.team===0){toast('☢️ Missile ready — hit LAUNCH!');SFX.done();if(typeof refreshPowers==='function')refreshPowers()}
     }
   }
@@ -155,6 +155,7 @@ function updateBuilding(b,dt){
       if(b.recaptureT)b.recaptureT=Math.max(0,b.recaptureT-dt*0.6);
     }
   }
+  if((b.fortressT||0)>0)b.fortressT=Math.max(0,b.fortressT-dt);
 }
 function recomputePower(){
   const n=fac.length;

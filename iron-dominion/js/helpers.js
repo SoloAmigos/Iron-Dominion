@@ -21,7 +21,7 @@ const vrand=(a,b)=>a+Math.random()*(b-a); // render-only visual randomness
 function queueCmd(fn){inputQueue.push(fn)}
 function drainInputs(){if(!inputQueue.length)return;const q=inputQueue.splice(0);for(const f of q)f()}
 
-function tileVisAt(x,y){const tx=TT(x),ty=TT(y);return inB(tx,ty)?vis[idx(tx,ty)]:0}
+function tileVisAt(x,y){if(typeof scanT!=='undefined'&&scanT>0)return 2;const tx=TT(x),ty=TT(y);return inB(tx,ty)?vis[idx(tx,ty)]:0}
 function formOff(i){
   if(!i)return[0,0];let r=1,c=i;
   while(c>8*r){c-=8*r;r++}

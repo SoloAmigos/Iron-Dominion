@@ -135,6 +135,98 @@ function launchNuke(x,y){
   fireNukeFrom(s,x,y,0);
   updateHUD();
 }
+/* ===== General Power Handlers ===== */
+function doScan(){
+  scanT=15;pw.scan.cd=POWERS.scan.cd;
+  toast('🛰️ Satellite scan — full map visibility for 15s');SFX.done();updateHUD();
+}
+function doEmp(x,y){
+  let n=0;
+  for(const u of units){if(u.dead||!isEnemy(0,u.team)||u.cat==='air')continue;if(Math.hypot(u.x-x,u.y-y)<220){u.stunT=8;n++}}
+  addPart({k:'ring',x,y,life:.6,max:.6,s:220,c:'#7de4ff'});
+  pw.emp.cd=POWERS.emp.cd;toast(n?'⚡ EMP — '+n+' vehicles stunned for 8s!':'⚡ No vehicles in range');SFX.done();updateHUD();
+}
+function doRally(x,y){
+  let n=0;
+  for(const u of units){if(u.dead||u.team!==0||u.cat==='air')continue;if(Math.hypot(u.x-x,u.y-y)<220){u.rallyT=15;n++}}
+  addPart({k:'ring',x,y,life:.6,max:.6,s:220,c:'#ffd95e'});
+  pw.rally.cd=POWERS.rally.cd;toast(n?'📣 War Cry — '+n+' units rallied for 15s!':'📣 No ground units in range');SFX.done();updateHUD();
+}
+function doSupply(){
+  money[0]+=800;pw.supply.cd=POWERS.supply.cd;
+  toast('📦 Supply drop — +$800!');SFX.cash();updateHUD();
+}
+function doNapalm(x,y){
+  pw.napalm.cd=POWERS.napalm.cd;
+  planes.push({x:x-1150,y,tx:x,vx:520,dropped:false,kind:'napalm'});
+  SFX.jet();toast('🔥 Napalm run inbound!');updateHUD();
+}
+function doReinforce(){
+  const base=builds.find(b=>!b.dead&&b.built&&b.team===0&&b.type==='factory');
+  if(!base){SFX.err();toast('🚌 Needs a War Factory to receive reinforcements');return}
+  for(let i=0;i<2;i++){
+    const u=spawnUnit('tank',0,base.x+vrand(-20,20),(base.ty+base.t.h)*TILE+24);
+    if(u)u.rallyT=8;
+  }
+  pw.reinforce.cd=POWERS.reinforce.cd;toast('🚌 2 tanks reinforcing from factory!');SFX.done();updateHUD();
+}
+function doPropaganda(){
+  let n=0;
+  for(const u of units){
+    if(u.dead||u.team!==0)continue;
+    if(u.hp<u.maxhp){u.hp=Math.min(u.maxhp,u.hp+u.maxhp*.25);n++}
+    addPart({k:'heal',x:u.x,y:u.y,life:.7,max:.7,s:12});
+  }
+  pw.propaganda.cd=POWERS.propaganda.cd;toast(n?'📢 Iron Will — all units healed 25%!':'📢 All units at full health');SFX.heal();updateHUD();
+}
+function doToxin(x,y){
+  for(let i=0;i<4;i++)addProj({kind:'arc',x:x+rand(-50,50),y:y-480,sx:x,sy:y-480,dx:x+rand(-60,60),dy:y+rand(-40,40),t:0,dur:1.6+i*.25,spd:280,target:null,w:WPN.toxicNuke,team:0,delay:i*.35});
+  pw.toxin.cd=POWERS.toxin.cd;toast('☠️ Toxin barrage away!');SFX.rocket();updateHUD();
+}
+function doSabotage(x,y){
+  const tgt=builds.find(b=>!b.dead&&b.built&&isEnemy(0,b.team)&&Math.hypot(b.x-x,b.y-y)<200);
+  if(!tgt){SFX.err();toast('💣 No enemy structure in range');return}
+  dealDamage(tgt,tgt.maxhp*.4,null);
+  for(let i=0;i<5;i++)addPart({k:'smoke',x:tgt.x+vrand(-14,14),y:tgt.y+vrand(-8,8),vx:vrand(-8,8),vy:vrand(-20,-8),life:.8,max:.8,s:vrand(5,10)});
+  addPart({k:'ring',x:tgt.x,y:tgt.y,life:.45,max:.45,s:70,c:'#ff6b3d'});
+  pw.sabotage.cd=POWERS.sabotage.cd;toast('💣 Sabotage — '+BT[tgt.type].name+' critically damaged!');SFX.boom(false);updateHUD();
+}
+function doBarrage(x,y){
+  for(let i=0;i<8;i++)addProj({kind:'arc',x:x+rand(-180,180),y:y-380,sx:x,sy:y-380,dx:x+rand(-120,120),dy:y+rand(-100,100),t:0,dur:1.7+i*.12,spd:250,target:null,w:WPN.howitzer,team:0,delay:i*.32});
+  pw.barrage.cd=POWERS.barrage.cd;toast('🌧️ Artillery barrage — covering fire!');SFX.jet();updateHUD();
+}
+function doFortress(){
+  let n=0;
+  for(const b of builds){if(b.dead||!b.built||b.team!==0)continue;b.fortressT=30;n++}
+  pw.fortress.cd=POWERS.fortress.cd;toast(n?'🏰 Fortress — buildings take 40% less damage for 30s!':'🏰 No buildings to fortify');SFX.done();updateHUD();
+}
+function doBlizzard(x,y){
+  let n=0;
+  for(const u of units){if(u.dead||!isEnemy(0,u.team))continue;if(Math.hypot(u.x-x,u.y-y)<280){u.slowT=12;n++}}
+  addPart({k:'ring',x,y,life:.7,max:.7,s:280,c:'#9ef0ff'});
+  pw.blizzard.cd=POWERS.blizzard.cd;toast(n?'❄️ Blizzard — '+n+' enemies slowed for 12s!':'❄️ No enemies in range');SFX.done();updateHUD();
+}
+function activatePower(k,x,y){
+  if(k==='nuke'){launchNuke(x,y);return}
+  if(!pw[k]||pw[k].cd>0){SFX.err();return}
+  switch(k){
+    case 'repair':    doRepair(x,y);break;
+    case 'drop':      doDrop(x,y);break;
+    case 'strike':    launchStrike(x,y);break;
+    case 'scan':      doScan();break;
+    case 'emp':       doEmp(x,y);break;
+    case 'supply':    doSupply();break;
+    case 'napalm':    doNapalm(x,y);break;
+    case 'rally':     doRally(x,y);break;
+    case 'reinforce': doReinforce();break;
+    case 'propaganda':doPropaganda();break;
+    case 'toxin':     doToxin(x,y);break;
+    case 'sabotage':  doSabotage(x,y);break;
+    case 'barrage':   doBarrage(x,y);break;
+    case 'fortress':  doFortress();break;
+    case 'blizzard':  doBlizzard(x,y);break;
+  }
+}
 function updatePlanes(dt){
   for(let i=planes.length-1;i>=0;i--){
     const p=planes[i];
@@ -142,18 +234,25 @@ function updatePlanes(dt){
     if(Math.random()<.6)addPart({k:'smoke',x:p.x-26,y:p.y+vrand(-4,4),vx:-40,vy:0,life:.4,max:.4,s:3});
     if(!p.dropped&&p.kind==='drop'&&p.x>=p.tx-60){
       p.dropped=true;
-      for(let k=0;k<3;k++){
-        const u=spawnUnit(k===2?'rocket':'ranger',0,p.tx+vrand(-34,34),p.y+vrand(-28,28));
-        addPart({k:'chute',x:u.x,y:u.y-26,life:.85,max:.85,s:13});
-        addPart({k:'dust',x:u.x,y:u.y,life:.4,max:.4,s:10});
+      const f0=fac[0];
+      let drops;
+      if(f0==='crimson')drops=['ranger','ranger','ranger','inferno','rocket'];
+      else if(f0==='northwind')drops=['guardian','guardian','mortar'];
+      else drops=['ranger','ranger','rocket'];
+      for(const type of drops){
+        const u=spawnUnit(type,0,p.tx+vrand(-34,34),p.y+vrand(-28,28));
+        if(u){addPart({k:'chute',x:u.x,y:u.y-26,life:.85,max:.85,s:13});addPart({k:'dust',x:u.x,y:u.y,life:.4,max:.4,s:10})}
       }
       SFX.done();
     }
-    if(!p.dropped&&p.kind!=='drop'&&p.x>=p.tx-150){
+    if(!p.dropped&&(p.kind==='strike'||p.kind==='napalm')&&p.x>=p.tx-150){
       p.dropped=true;SFX.jet();
-      for(let k=0;k<strikeBombs;k++){
+      const isNapalm=p.kind==='napalm';
+      const bombs=isNapalm?6:strikeBombs;
+      const bw=isNapalm?WPN.napalmBomb:WPN.bomb;
+      for(let k=0;k<bombs;k++){
         const ox=vrand(-55,55),oy=vrand(-45,45);
-        addProj({kind:'arc',x:p.x,y:p.y,sx:p.x,sy:p.y,dx:p.tx+ox,dy:p.y+oy,t:0,dur:.55+k*.16,spd:300,target:null,w:WPN.bomb,team:0});
+        addProj({kind:'arc',x:p.x,y:p.y,sx:p.x,sy:p.y,dx:p.tx+ox,dy:p.y+oy,t:0,dur:.55+k*.16,spd:300,target:null,w:bw,team:0});
       }
     }
     if(p.x>p.tx+1500)planes.splice(i,1);

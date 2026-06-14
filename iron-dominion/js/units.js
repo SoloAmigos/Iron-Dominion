@@ -33,26 +33,35 @@ function spawnUnit(type,team,x,y){
 function checkVeterancy(u){
   if(!u||u.dead||u.cat==='veh'&&(u.type==='truck'||u.type==='dozer'))return;
   const old=u.unitRank;
-  if(u.unitXp>=VXPT[2]&&u.unitRank<3)u.unitRank=3;
+  if(u.unitXp>=VXPT[4]&&u.unitRank<5)u.unitRank=5;
+  else if(u.unitXp>=VXPT[3]&&u.unitRank<4)u.unitRank=4;
+  else if(u.unitXp>=VXPT[2]&&u.unitRank<3)u.unitRank=3;
   else if(u.unitXp>=VXPT[1]&&u.unitRank<2)u.unitRank=2;
   else if(u.unitXp>=VXPT[0]&&u.unitRank<1)u.unitRank=1;
   if(u.unitRank>old){
     if(u.unitRank===2&&old<2)u.spd=Math.min(u.spd*1.1,u.t.spd*FAC(u.team).spd*1.25);
+    if(u.unitRank===4&&old<4){u.maxhp=Math.round(u.maxhp*1.2);u.hp=Math.min(u.maxhp,Math.round(u.hp*1.2))}
+    if(u.unitRank===5&&old<5)u.r=Math.round(u.r*1.15);
     if(u.team===0){
-      const msgs=['★ VETERAN','★★ ELITE','★★★ HEROIC'];
-      toast(msgs[u.unitRank-1]+' — '+dispName('u',u.type,0)+(u.unitRank===3?' gains self-repair!':u.unitRank===2?' fires & moves faster!':('+10% fire rate!')));
+      const msgs=['★ VETERAN','★★ ELITE','★★★ HEROIC','★★★★ CHAMPION','★★★★★ LEGEND'];
+      toast(msgs[u.unitRank-1]+' — '+dispName('u',u.type,0)+(
+        u.unitRank===5?' — extended range!':u.unitRank===4?' — +20% toughness!':
+        u.unitRank===3?' gains self-repair!':u.unitRank===2?' fires & moves faster!':' +10% fire rate!'));
       SFX.done();
     }
   }
 }
 function getVetCd(u,base){
+  if(u.unitRank>=4)return base*.65;
   if(u.unitRank>=2)return base*.8;
   if(u.unitRank>=1)return base*.9;
   return base;
 }
+function getEffSpd(u){return(u.spd||u.t.spd)*(u.slowT>0?.5:1)*(u.rallyT>0?1.25:1)}
 
 function dealDamage(e,amt,src){
   if(!e||e.dead)return;
+  if(e.kind==='b'&&(e.fortressT||0)>0)amt*=0.6;
   e.hp-=amt;e.flash=.15;
   if(e.team===0&&e.kind==='b'&&underAttackCd<=0&&state==='play'){underAttackCd=14;toast('⚠️ Our base is under attack!');SFX.err()}
   if(e.hp<=0)kill(e,src);
@@ -300,7 +309,7 @@ function impact(p){
 function fireFrom(sh,wname,tgt){
   const w=WPN[wname];
   const scrapMul=SCRAP_DMG[sh.scrapLevel||0]||1;
-  const mul=(sh.dmgMul||1)*upDmg(sh.team)*scrapMul;
+  const mul=(sh.dmgMul||1)*upDmg(sh.team)*scrapMul*((sh.rallyT||0)>0?1.25:1);
   const ang=Math.atan2(tgt.y-sh.y,tgt.x-sh.x);sh.ta=ang;
   const mz=sh.kind==='b'?20:(sh.cat==='inf'?9:18);
   const mx=sh.x+Math.cos(ang)*mz,my=sh.y+Math.sin(ang)*mz;
@@ -398,7 +407,7 @@ function followPath(u,dt){
   }
   const dx=wp.x-u.x,dy=wp.y-u.y,d=Math.hypot(dx,dy);
   if(d<14){u.wpi++;if(u.wpi>=u.path.length){u.path=null;if(u.order&&(u.order.kind==='move'||u.order.kind==='am'))u.order=null}return}
-  const st=(u.spd||u.t.spd)*dt;
+  const st=getEffSpd(u)*dt;
   u.x+=dx/d*st;u.y+=dy/d*st;
   u.a=Math.atan2(dy,dx);u.moving=true;
   const moved=Math.hypot(u.x-u.lx,u.y-u.ly);
@@ -411,6 +420,7 @@ function followPath(u,dt){
 }
 const LEASH=240;
 function updateCombat(u,dt){
+  if((u.stunT||0)>0)return; // stunned: cannot move or fire
   if(u.isCapturing&&u.captureTarget&&!u.captureTarget.dead)return;
   if(u.garrisonBuilding){
     const b=u.garrisonBuilding;
@@ -464,7 +474,7 @@ function updateCombat(u,dt){
       if(u.cd<=0){fireFrom(u,u.t.wpn,t);u.cd=getVetCd(u,w.rel)}
     }else if(d<minR*.6){
       const ang=Math.atan2(u.y-t.y,u.x-t.x);
-      u.x+=Math.cos(ang)*(u.spd||u.t.spd)*dt;u.y+=Math.sin(ang)*(u.spd||u.t.spd)*dt;u.a=ang;u.moving=true;
+      const _ms=getEffSpd(u);u.x+=Math.cos(ang)*_ms*dt;u.y+=Math.sin(ang)*_ms*dt;u.a=ang;u.moving=true;
     }else{
       u.repath-=dt;
       if(!u.path||u.repath<=0){u.path=findPath(u.x,u.y,t.x,t.y);u.wpi=0;u.repath=.85}
@@ -647,6 +657,9 @@ function updateScrapPickup(u){
 function updateUnit(u,dt){
   u.lxp=u.x;u.lyp=u.y;u.moving=false;
   u.cd=Math.max(0,u.cd-dt);u.flash=Math.max(0,u.flash-dt);
+  if(u.stunT>0)u.stunT=Math.max(0,u.stunT-dt);
+  if(u.slowT>0)u.slowT=Math.max(0,u.slowT-dt);
+  if(u.rallyT>0)u.rallyT=Math.max(0,u.rallyT-dt);
 
   // Air unit handling — fly, acquire, engage, loiter, rearm (all in updateAircraft)
   if(u.cat==='air'){
@@ -662,8 +675,8 @@ function updateUnit(u,dt){
   if(u.isCapturing)updateCapture(u,dt);
   updateScrapPickup(u);
   updateFieldHeal(u,dt);
-  // Heroic rank: passive self-repair
-  if(u.unitRank>=3)u.hp=Math.min(u.maxhp,u.hp+dt*3);
+  // Heroic+ rank: passive self-repair (doubled at Legend)
+  if(u.unitRank>=3)u.hp=Math.min(u.maxhp,u.hp+dt*(u.unitRank>=5?6:3));
   // Poison DOT tick
   if(u.poisonT>0){
     u.poisonT-=dt;

@@ -63,11 +63,13 @@ function updateHUD(){
     el.classList.toggle('arm',targetPower===k);
   }
 }
+const INSTANT_POWERS=new Set(['scan','supply','reinforce','propaganda','fortress']);
 function refreshPowers(){
   const box=document.getElementById('powers');
   box.innerHTML='';
   for(const k in pw){
-    if(!pw[k].on||!pw[k].unl)continue;
+    if(k==='nuke'){if(!pw.nuke.on)continue}
+    else if(!pw[k].unl)continue;
     const b=document.createElement('button');
     b.className='pbtn';b.id='pw_'+k;
     b.onclick=()=>{
@@ -76,9 +78,10 @@ function refreshPowers(){
         let ch=0;for(const bb of builds)if(!bb.dead&&bb.built&&bb.team===0&&bb.t.silo)ch=Math.max(ch,bb.charge||0);
         if(ch<1){SFX.err();toast('☢️ Missile still charging…');return}
       }else if(pw[k].cd>0){SFX.err();return}
+      if(INSTANT_POWERS.has(k)){SFX.click();if(typeof activatePower==='function')activatePower(k,0,0);return}
       targetPower=targetPower===k?null:k;
       SFX.click();updateHUD();
-      if(targetPower)toast(POWERS[k].ic+' '+POWERS[k].hint);
+      if(targetPower&&POWERS[k])toast(POWERS[k].ic+' '+POWERS[k].hint);
     };
     box.appendChild(b);
   }
@@ -101,16 +104,20 @@ function updateRankBtn(){
 function genPanel(){
   const next=rank[0]<MAXRANK?XPL[rank[0]]:null;
   const prog=next?Math.floor(xp[0])+'/'+next+' XP':'MAX RANK';
-  cardEl.appendChild(mkInfo('<b>⭐ General — Rank '+rank[0]+'</b>'+prog+' · Skill points: '+skp[0]+'<br>Earn XP by destroying the enemy'));
-  for(const k of['repair','drop','strike']){
-    const P=POWERS[k],st=pw[k];
+  const unlocked=Object.keys(pw).filter(k=>k!=='nuke'&&pw[k].unl).length;
+  cardEl.appendChild(mkInfo('<b>⭐ General — Rank '+rank[0]+'</b> '+prog+'<br>Skill pts: '+skp[0]+' · Abilities: '+unlocked+'/5 — choose wisely (max 5 of 7)'));
+  const facPows=(FACTION_POWERS[fac[0]]||[]);
+  for(const fp of facPows){
+    const k=fp.id,P=POWERS[k],st=pw[k];
     let label,cls='',fn;
+    const needOk=!fp.need||builds.some(b=>!b.dead&&b.built&&b.team===0&&b.type===fp.need);
     if(st.unl){label=P.nm+' ✓';cls='confirm';fn=()=>SFX.click()}
-    else if(rank[0]<P.rank){label=P.nm+' — Rank '+P.rank;cls='warn';fn=()=>{SFX.err();toast('🔒 Reach General rank '+P.rank+' first')}}
-    else if(skp[0]<1){label=P.nm+' — 1pt';cls='warn';fn=()=>{SFX.err();toast('⭐ No skill points — earn a promotion')}}
-    else{label='UNLOCK '+P.nm;fn=()=>{unlockPower(0,k);updateCard()}}
-    const btn=mkBtn(P.ic,label,0,cls,fn);
-    cardEl.appendChild(btn);
+    else if(unlocked>=5){label=P.nm+' (5 max chosen)';cls='warn';fn=()=>{SFX.err();toast('⭐ Already selected 5 abilities')}}
+    else if(rank[0]<fp.rank){label=P.nm+' — Rank '+fp.rank+' req';cls='warn';fn=()=>{SFX.err();toast('🔒 Reach General rank '+fp.rank+' first')}}
+    else if(!needOk){label=P.nm+' — needs '+fp.need;cls='warn';fn=()=>{SFX.err();toast('🔒 Build a '+fp.need+' first')}}
+    else if(skp[0]<1){label=P.nm+' — 1pt needed';cls='warn';fn=()=>{SFX.err();toast('⭐ No skill points — earn a promotion')}}
+    else{label='UNLOCK '+P.nm+' (rank '+fp.rank+')';fn=()=>{unlockPower(0,k);updateCard()}}
+    cardEl.appendChild(mkBtn(P.ic,label,0,cls,fn));
   }
   cardEl.appendChild(mkBtn('✕','Close',0,'cancel',()=>{genOpen=false;updateCard()}));
 }
@@ -445,10 +452,7 @@ function tap(px,py,isCmd){
   const{x:wx,y:wy}=screenToWorld(px,py);
   if(targetPower){
     const k=targetPower;targetPower=null;
-    if(k==='strike'&&pw.strike.cd<=0)launchStrike(wx,wy);
-    else if(k==='repair'&&pw.repair.cd<=0)doRepair(wx,wy);
-    else if(k==='drop'&&pw.drop.cd<=0)doDrop(wx,wy);
-    else if(k==='nuke')launchNuke(wx,wy);
+    if(typeof activatePower==='function')activatePower(k,wx,wy);
     updateHUD();return;
   }
   if(placing){

@@ -12,7 +12,7 @@ function checkHints(){
     else{toast('🏗️ Step 1 — select your Dozer, build a ⚡ Power Plant');hintStage=1}
   }
   else if(hintStage===1&&hasB('power')){toast('📦 Step 2 — build a Supply Center near the gold crates');hintStage=2}
-  else if(hintStage===2&&hasB('supply')){toast('🪖 Step 3 — build a Barracks and train troops');hintStage=3}
+  else if(hintStage===2&&hasB('supply')){toast('🦖 Step 3 — build a Barracks and train troops');hintStage=3}
   else if(hintStage===3&&hasB('barracks')){toast('🏭 Step 4 — a War Factory unlocks tanks + Airstrike');hintStage=4}
   else if(hintStage===4&&hasB('factory')){toast('⚔️ Destroy ALL enemy buildings!');hintStage=5}
 }
@@ -444,7 +444,7 @@ function saveGame(){
     gtime,simFrame,gameSpeed,gameStats:{...gameStats},ids,
     money:[...money],upg:upg.map(u=>({...u})),
     xp:[...xp],rank:[...rank],skp:[...skp],
-    pw:{repair:{...pw.repair},drop:{...pw.drop},strike:{...pw.strike},nuke:{...pw.nuke}},
+    pw:Object.fromEntries(Object.entries(pw).map(([k,v])=>[k,{...v}])),
     strikeCdMax,strikeBombs,
     units:units.filter(u=>!u.dead).map(serUnit),
     builds:builds.filter(b=>!b.dead).map(serBuild),
@@ -694,6 +694,7 @@ function simStep(){
   updateProjs(dt);updateParts(dt);updatePlanes(dt);
   for(let i=scraps.length-1;i>=0;i--){scraps[i].life-=dt;if(scraps[i].life<=0)scraps.splice(i,1)}
   for(let i=rubbles.length-1;i>=0;i--){rubbles[i].life-=dt;if(rubbles[i].life<=0)rubbles.splice(i,1)}
+  if(scanT>0)scanT=Math.max(0,scanT-dt);
   separation(dt);
   fogT-=dt;if(fogT<=0){fogT=.25;updateFog()}
   powT-=dt;if(powT<=0){powT=.5;recomputePower()}

@@ -839,12 +839,29 @@ function drawBuilding(b){
       ctx.fillStyle='#ffd95e';ctx.beginPath();ctx.moveTo(r.x,r.y-17);ctx.lineTo(r.x+13,r.y-12.5);ctx.lineTo(r.x,r.y-8);ctx.closePath();ctx.fill();
       ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(r.x,r.y+1,5,2,0,0,7);ctx.fill();
     }
+  } else if(b.team===0&&b.t.trains&&b.built){
+    // Faint persistent rally line visible even when not selected
+    const r=b.rally;
+    const rdx=r.x-b.x,rdy=r.y-b.y;
+    if(rdx*rdx+rdy*rdy>TILE*TILE*2){
+      ctx.strokeStyle='rgba(255,217,94,0.22)';ctx.lineWidth=1.1;ctx.setLineDash([3,5]);
+      ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(r.x,r.y);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(255,217,94,0.30)';ctx.beginPath();ctx.arc(r.x,r.y,3,0,7);ctx.fill();
+    }
   }
   // Garrison count badge
   if(b.garrison&&b.garrison.length){
     ctx.fillStyle='rgba(0,0,0,.75)';ctx.beginPath();ctx.arc(x0+w-8,y0+8,8,0,7);ctx.fill();
     ctx.fillStyle='#c8d48e';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(b.garrison.length,x0+w-8,y0+8);
+  }
+  // Build queue count badge — small circle showing pending units
+  if(b.queue&&b.queue.length&&b.built&&b.t.trains){
+    const qx=x0+8,qy=y0+h-8;
+    ctx.fillStyle='rgba(0,0,0,.78)';ctx.beginPath();ctx.arc(qx,qy,8,0,7);ctx.fill();
+    ctx.fillStyle='#ffd95e';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(b.queue.length,qx,qy);
   }
   // Capture progress bar
   const capUnit=units.find(uu=>!uu.dead&&uu.isCapturing&&uu.captureTarget===b);
@@ -1170,6 +1187,16 @@ function render(){
   ctx.imageSmoothingEnabled=true;
   ctx.drawImage(groundCv,0,0);
   for(const p of parts)if(p.k==='scorch')drawPart(p);
+  // Building rubble — decaying scorch marks where buildings died
+  for(const r of rubbles){
+    const f=r.life/r.max;
+    ctx.globalAlpha=Math.min(0.85,f*2.5);
+    ctx.fillStyle='rgba(18,16,10,0.82)';
+    ctx.fillRect(r.x-r.w/2+2,r.y-r.h/2+2,r.w-4,r.h-4);
+    ctx.strokeStyle='rgba(55,48,28,0.7)';ctx.lineWidth=1.5;
+    ctx.strokeRect(r.x-r.w/2+4,r.y-r.h/2+4,r.w-8,r.h-8);
+    ctx.globalAlpha=1;
+  }
   for(const p of piles)drawPile(p);
   for(const s of scraps)drawScrap(s);
   for(const b of builds)drawBuilding(b);
@@ -1238,7 +1265,12 @@ function renderMini(){
     if(u.dead)continue;
     if(isEnemy(0,u.team)&&tileVisAt(u.x,u.y)!==2)continue;
     mctx.fillStyle=TEAMC[u.team];
-    mctx.fillRect(u.x*sx-1,u.y*sy-1,2.4,2.4);
+    if(u.cat==='air'){
+      // Circles for air units to distinguish from ground forces
+      mctx.beginPath();mctx.arc(u.x*sx,u.y*sy,2.2,0,7);mctx.fill();
+    }else{
+      mctx.fillRect(u.x*sx-1.5,u.y*sy-1.5,3,3);
+    }
   }
   mctx.fillStyle='rgba(0,0,0,.62)';
   const tw=TILE*sx,th=TILE*sy;

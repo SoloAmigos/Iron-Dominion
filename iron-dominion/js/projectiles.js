@@ -258,3 +258,23 @@ function updatePlanes(dt){
     if(p.x>p.tx+1500)planes.splice(i,1);
   }
 }
+function updateFireZones(dt){
+  for(let i=fireZones.length-1;i>=0;i--){
+    const fz=fireZones[i];
+    fz.life-=dt;
+    if(fz.life<=0){fireZones.splice(i,1);continue}
+    const fl=fz.life/fz.maxLife;
+    if(Math.random()<dt*12*fl)addPart({k:'fire',x:fz.x+vrand(-fz.r*.7,fz.r*.7),y:fz.y+vrand(-fz.r*.7,fz.r*.7),vx:vrand(-8,8),vy:vrand(-28,-6),life:vrand(.2,.45),max:.45,s:vrand(6,14)});
+    if(Math.random()<dt*5*fl)addPart({k:'smoke',x:fz.x+vrand(-fz.r*.5,fz.r*.5),y:fz.y+vrand(-fz.r*.5,fz.r*.5),vx:vrand(-4,4),vy:vrand(-20,-6),life:vrand(.4,.8),max:.8,s:vrand(6,10)});
+    fz.tickT-=dt;
+    if(fz.tickT<=0){
+      fz.tickT=0.5;
+      const nearby=shQuery(fz.x,fz.y,fz.r+12);
+      for(const e of nearby){
+        if(e.dead||e.hidden||!isEnemy(fz.team,e.team)||e.kind==='b')continue;
+        const d=dist2(e,fz)-entRad(e);
+        if(d<=fz.r)dealDamage(e,fz.dmg*((WPN.flame.mult[e.cat])||1),null);
+      }
+    }
+  }
+}

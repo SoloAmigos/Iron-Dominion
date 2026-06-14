@@ -384,7 +384,7 @@ function commandGround(wx,wy){
     const[ox,oy]=formOff(i++);
     if(!catBlip)catBlip=u.cat;
     if(u.type==='dozer'){u.site=null;orderMove(u,wx+ox,wy+oy,'move')}
-    else if(u.type==='truck')orderMove(u,wx+ox,wy+oy,'move'),u.ts='idle',u.retry=1.6,u.pile=null;
+    else if(u.type==='truck')orderMove(u,wx+ox,wy+oy,'move'),u.ts='idle',u.retry=1.6,u.pile=null,u.assignedPile=null;
     else orderMove(u,wx+ox,wy+oy,'am');
   }
   if(i){SFX.click();if(catBlip&&SFX.voice)SFX.voice(catBlip)}
@@ -423,7 +423,7 @@ function commandTarget(hit){
   if(hit.kind==='p'){
     let n=0;
     for(const u of sel)if(u.kind==='u'&&u.type==='truck'&&!u.dead){
-      u.pile=hit;u.ts='toPile';u.path=findPath(u.x,u.y,hit.x,hit.y);u.wpi=0;u.retry=1;n++;
+      u.pile=hit;u.assignedPile=hit;u.ts='toPile';u.path=findPath(u.x,u.y,hit.x,hit.y);u.wpi=0;u.retry=1;n++;
     }
     if(n){SFX.click();return true}
     return false;
@@ -467,7 +467,9 @@ function tap(px,py,isCmd){
     if(sel.length===1&&sel[0].kind==='b'&&sel[0].team===0&&sel[0].t.trains&&sel[0].built){
       sel[0].rally={x:wx,y:wy};SFX.click();return;
     }
-    commandGround(wx,wy);return;
+    // RMB on empty ground: deselect rather than issue a move command
+    if(sel.length){sel=[];updateCard();SFX.click()}
+    return;
   }
   // contextual tap (touch) / left click
   if(hit){
@@ -673,8 +675,8 @@ document.getElementById('rankBtn').onclick=()=>{
 };
 document.getElementById('speedBtn').onclick=function(){
   if(state!=='play')return;
-  gameSpeed=gameSpeed===1?2:gameSpeed===2?4:1;
-  this.textContent=gameSpeed+'×';SFX.click();
+  gameSpeed=gameSpeed<1?1.5:gameSpeed<2?3:0.75;
+  this.textContent=gameSpeed<1?'1×':gameSpeed<2?'2×':'4×';SFX.click();
 };
 document.getElementById('muteBtn').onclick=function(){muted=!muted;this.textContent=muted?'🔇':'🔊';applyMute()};
 document.getElementById('muteBtn').textContent=muted?'🔇':'🔊';

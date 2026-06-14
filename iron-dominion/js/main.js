@@ -39,7 +39,7 @@ function genChips(fk){
   let s='<div style="margin:6px 0 2px;font-size:11px;opacity:.7">General:</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
   for(const g of gs){
     const sel=chosenGens[fk]===g.id;
-    s+='<button class="dbtn'+(sel?' sel':'')+'" data-genfk="'+fk+'" data-genid="'+g.id+'" style="font-size:11px;padding:4px 8px" title="'+g.desc+'">'+g.nm+'</button>';
+    s+='<button class="dbtn'+(sel?' sel':''+'" data-genfk="'+fk+'" data-genid="'+g.id+'" style="font-size:11px;padding:4px 8px" title="'+g.desc+'">'+g.nm+'</button>';
   }
   return s+'</div>';
 }
@@ -185,7 +185,32 @@ function showFactionSelect(){
 const _TEAM_LETTERS='ABCDEFGH';
 const _TYPE_LABELS={easy:'🤖 Easy',medium:'🤖 Med',hard:'🤖 Hard'};
 const _TYPES_CYCLE=['easy','medium','hard'];
-const _MAP_SIZES=[['s2','Small'],['s4','Medium'],['s8','Large']];
+const _MAP_SIZES=[['s2','Small',2],['s4','Medium',4],['s6','Large',6],['s8','Huge',8]];
+const _SIZEMAXSLOTS={s2:2,s4:4,s6:6,s8:8};
+
+function _drawMapPrev(_md){
+  const _pCv=document.getElementById('mapPrev');
+  if(!_pCv||!_md)return;
+  const _pg=_pCv.getContext('2d');
+  const _mw=_md.w,_mh=_md.h,_scx=240/_mw,_scy=120/_mh;
+  _pg.fillStyle=_md.deco==='sand'?'#c4a96a':_md.deco==='urban'?'#4a4e48':'#2b3a25';
+  _pg.fillRect(0,0,240,120);
+  _pg.strokeStyle='rgba(100,80,60,.6)';_pg.lineWidth=2;
+  for(const w of(_md.walls||[])){const[p1,p2]=w;_pg.beginPath();_pg.moveTo((p1[0]+.5)*_scx,(p1[1]+.5)*_scy);_pg.lineTo((p2[0]+.5)*_scx,(p2[1]+.5)*_scy);_pg.stroke()}
+  _pg.fillStyle='rgba(150,160,140,.6)';
+  for(const nd of(_md.neutrals||[])){const t=BT[nd.type];if(t)_pg.fillRect(nd.tx*_scx,nd.ty*_scy,t.w*_scx,t.h*_scy)}
+  _pg.fillStyle='#ffd95e';
+  for(const[px,py]of(_md.piles||[])){_pg.fillRect((px+.3)*_scx,(py+.3)*_scy,1.4*_scx,1.4*_scy)}
+  const _sp=(_md.spawns||[]).slice(0,numSlots);
+  for(let si=0;si<_sp.length;si++){
+    const[sx,sy]=_sp[si];
+    _pg.fillStyle=si===chosenSpawnIdx?ALL_TEAMC[0]:ALL_TEAMC[Math.min(si,7)];
+    _pg.beginPath();_pg.arc((sx+2)*_scx,(sy+2)*_scy,si===chosenSpawnIdx?7:5,0,7);_pg.fill();
+    _pg.strokeStyle='rgba(0,0,0,.5)';_pg.lineWidth=1.5;_pg.stroke();
+    _pg.fillStyle='#fff';_pg.font='bold 8px sans-serif';_pg.textAlign='center';_pg.textBaseline='middle';
+    _pg.fillText(si===chosenSpawnIdx?'P':(si+1),(sx+2)*_scx,(sy+2)*_scy);
+  }
+}
 
 function _spawnLabel(sp,mw,mh){
   const xf=sp[0]/mw,yf=sp[1]/mh;
@@ -205,10 +230,12 @@ function showLobby(){
   const _spawnMax=Math.min((_mapDef.spawns||[]).length,numSlots)-1;
   if(chosenSpawnIdx>_spawnMax)chosenSpawnIdx=0;
 
-  let mapS='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:4px 0 2px">';
+  let mapS='<div style="display:flex;align-items:center;gap:8px;justify-content:center;margin:4px 0 2px">'+
+    '<span style="font-size:11px;color:#8aaa80;letter-spacing:1px">MAP</span>'+
+    '<select id="mapSelect" style="background:#23261a;color:#cfc9ae;border:1px solid #565d40;border-top-color:#6a715a;border-radius:3px;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">';
   for(const k of Object.keys(MAPS))
-    mapS+='<button class="dbtn'+(chosenMapKey===k?' sel':'')+'" data-map="'+k+'" style="font-size:12px;padding:5px 12px">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>';
-  mapS+='</div>';
+    mapS+='<option value="'+k+'"'+(chosenMapKey===k?' selected':'')+'>'+k.charAt(0).toUpperCase()+k.slice(1)+'</option>';
+  mapS+='</select></div>';
 
   let sizeS='<div style="display:flex;gap:6px;justify-content:center;margin:2px 0 4px">';
   for(const[k,label]of _MAP_SIZES)
@@ -221,7 +248,7 @@ function showLobby(){
   const _mw=_mapDef.w||60,_mh=_mapDef.h||40;
   for(let si=0;si<Math.min((_mapDef.spawns||[]).length,numSlots);si++){
     const lbl=_spawnLabel(_mapDef.spawns[si],_mw,_mh);
-    spawnS+='<button class="dbtn'+(chosenSpawnIdx===si?' sel':'')+'" data-sp="'+si+'" style="font-size:10px;padding:3px 9px">'+lbl+'</button>';
+    spawnS+='<button class="dbtn'+(chosenSpawnIdx===si?' sel':'')+('" data-sp="'+si+'" style="font-size:10px;padding:3px 9px">'+lbl+'</button>');
   }
   spawnS+='</div>';
 
@@ -275,57 +302,27 @@ function showLobby(){
   );
 
   // Draw map preview
-  const _pCv=document.getElementById('mapPrev');
-  if(_pCv){
-    const _pg=_pCv.getContext('2d');
-    const _mw=_mapDef.w,_mh=_mapDef.h;
-    const _scx=240/_mw,_scy=120/_mh;
-    _pg.fillStyle=_mapDef.deco==='sand'?'#c4a96a':_mapDef.deco==='urban'?'#4a4e48':'#2b3a25';
-    _pg.fillRect(0,0,240,120);
-    // Walls
-    _pg.strokeStyle='rgba(100,80,60,.6)';_pg.lineWidth=2;
-    for(const w of(_mapDef.walls||[])){
-      const[p1,p2]=w;_pg.beginPath();
-      _pg.moveTo((p1[0]+.5)*_scx,(p1[1]+.5)*_scy);_pg.lineTo((p2[0]+.5)*_scx,(p2[1]+.5)*_scy);_pg.stroke();
-    }
-    // Neutral buildings
-    _pg.fillStyle='rgba(150,160,140,.6)';
-    for(const nd of(_mapDef.neutrals||[])){
-      const t=BT[nd.type];_pg.fillRect(nd.tx*_scx,nd.ty*_scy,t.w*_scx,t.h*_scy);
-    }
-    // Gold piles
-    _pg.fillStyle='#ffd95e';
-    for(const[px,py]of(_mapDef.piles||[])){
-      _pg.fillRect((px+.3)*_scx,(py+.3)*_scy,1.4*_scx,1.4*_scy);
-    }
-    // Spawns
-    const _sp=(_mapDef.spawns||[]).slice(0,numSlots);
-    for(let si=0;si<_sp.length;si++){
-      const[sx,sy]=_sp[si];
-      _pg.fillStyle=si===chosenSpawnIdx?ALL_TEAMC[0]:ALL_TEAMC[Math.min(si,7)];
-      _pg.beginPath();_pg.arc((sx+2)*_scx,(sy+2)*_scy,si===chosenSpawnIdx?7:5,0,7);_pg.fill();
-      _pg.strokeStyle='rgba(0,0,0,.5)';_pg.lineWidth=1.5;_pg.stroke();
-      _pg.fillStyle='#fff';_pg.font='bold 8px sans-serif';_pg.textAlign='center';_pg.textBaseline='middle';
-      _pg.fillText(si===chosenSpawnIdx?'P':(si+1),(sx+2)*_scx,(sy+2)*_scy);
-    }
-  }
+  _drawMapPrev(_mapDef);
 
-  for(const b of overlay.querySelectorAll('[data-map]'))b.onclick=()=>{
-    chosenMapKey=b.dataset.map;chosenSpawnIdx=0;uiClick();showLobby();
-  };
+  const _msel=document.getElementById('mapSelect');
+  if(_msel)_msel.onchange=()=>{chosenMapKey=_msel.value;chosenSpawnIdx=0;uiClick();showLobby()};
   for(const b of overlay.querySelectorAll('[data-sz]'))b.onclick=()=>{
-    chosenMapSize=b.dataset.sz;chosenSpawnIdx=0;uiClick();showLobby();
+    chosenMapSize=b.dataset.sz;chosenSpawnIdx=0;
+    const _cap=_SIZEMAXSLOTS[chosenMapSize]||8;
+    if(numSlots>_cap){numSlots=_cap;slotType.length=_cap;slotAlliance.length=_cap;slotFac.length=_cap}
+    uiClick();showLobby();
   };
   for(const b of overlay.querySelectorAll('[data-sp]'))b.onclick=()=>{
     chosenSpawnIdx=+b.dataset.sp;uiClick();
     for(const x of overlay.querySelectorAll('[data-sp]'))x.classList.toggle('sel',+x.dataset.sp===chosenSpawnIdx);
+    _drawMapPrev(_mapDef);
   };
   document.getElementById('slotMinus').onclick=()=>{
     if(numSlots<=2)return;
     numSlots--;slotType.length=numSlots;slotAlliance.length=numSlots;slotFac.length=numSlots;uiClick();showLobby();
   };
   document.getElementById('slotPlus').onclick=()=>{
-    if(numSlots>=8)return;
+    if(numSlots>=(_SIZEMAXSLOTS[chosenMapSize||'s8']||8))return;
     numSlots++;slotType.push('medium');slotAlliance.push(numSlots-1);slotFac.push('rnd');uiClick();showLobby();
   };
   for(const b of overlay.querySelectorAll('[data-ti]'))b.onclick=()=>{
@@ -386,7 +383,7 @@ function endGame(win){
       '<div class="bigres '+(win?'win':'lose')+'">'+(win?'VICTORY':'DEFEAT')+'</div>'+
       '<div class="sub">'+(win?'Every enemy structure lies in ruins.':'The '+(enemyNames||FACTIONS[enemyFac].name)+' overran your position.')+'</div>'+
       '<div style="display:flex;justify-content:center;gap:14px;margin:12px 0 4px;font-size:12px;opacity:.88;flex-wrap:wrap">'+
-      '<span>⏱ '+_timeStr+'</span><span>⚔️ '+gameStats.kills+' kills</span><span>🏚 '+gameStats.bldgs+' bldgs</span>'+(_incomeRate?'<span>💰 $'+_incomeRate+'/min</span>':'')+
+      '<span>⏱ '+_timeStr+'</span><span>⚔️ '+gameStats.kills+' kills</span><span>🏘 '+gameStats.bldgs+' bldgs</span>'+(_incomeRate?'<span>💰 $'+_incomeRate+'/min</span>':'')+
       '</div>'+
       '<div class="dbtns" style="margin-top:12px">'+
       '<button class="dbtn arcade" id="retryBtn">↺ REMATCH</button>'+
@@ -469,6 +466,7 @@ function loadGame(){
   // Setup world dims + seed (same seed → same rock layout)
   setSeed(matchSeed);
   TEAMC=ALL_TEAMC.slice(0,numSlots);TEAMD=ALL_TEAMD.slice(0,numSlots);
+  for(let t=0;t<numSlots;t++){if(FACTIONS[fac[t]]){TEAMC[t]=FACTIONS[fac[t]].c;TEAMD[t]=FACTIONS[fac[t]].d}}
   MAP=(MAPS[chosenMap]||MAPS.desert)[chosenMapSize]||MAPS.desert.s2;
   setMapDims(MAP.w,MAP.h);
   // Reset sim
@@ -594,7 +592,7 @@ function init(name){
   if(!slotAlliance||slotAlliance.length!==numSlots){slotAlliance=[];for(let i=0;i<numSlots;i++)slotAlliance.push(i)}
   if(!slotType||slotType.length!==numSlots){slotType=['human'];for(let i=1;i<numSlots;i++)slotType.push('medium')}
 
-  // Build faction list: slot 0 = player, rest random AI (unique where possible)
+  / Build faction list: slot 0 = player, rest random AI (unique where possible)
   matchSeed=Date.now()&0x7fffffff;setSeed(matchSeed);
   fac=[chosenFac];
   const _usedFacs=new Set([chosenFac]);
@@ -606,6 +604,7 @@ function init(name){
   }
   TEAMC=ALL_TEAMC.slice(0,numSlots);
   TEAMD=ALL_TEAMD.slice(0,numSlots);
+  for(let t=0;t<numSlots;t++){if(FACTIONS[fac[t]]){TEAMC[t]=FACTIONS[fac[t]].c;TEAMD[t]=FACTIONS[fac[t]].d}}
   strikeCdMax=FAC(0).strikeCd;strikeBombs=FAC(0).bombs;
   gens=[chosenGens[chosenFac]||'std'];
   for(let i=1;i<numSlots;i++)gens.push('std');

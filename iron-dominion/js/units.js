@@ -101,11 +101,11 @@ function kill(e,src){
       }
       e.garrison=[];
     }
-    // Release airfield pads
+    // Kill aircraft parked on the airfield when it is destroyed
     if(e.padUnits){
       for(let i=0;i<4;i++){
         const pu=e.padUnits[i];
-        if(pu&&!pu.dead){pu.home=null;pu.padI=-1}
+        if(pu&&!pu.dead){pu.home=null;pu.padI=-1;kill(pu,src)}
       }
     }
     // Refund production queue — proportional for in-progress item, full for queued
@@ -528,8 +528,9 @@ function updateTruck(u,dt){
       if(u.path){followPath(u,dt);break}
       u.retry-=dt;if(u.retry>0)break;
       u.retry=1.5;
-      let best=null,bd=1e9;
-      for(const p of piles)if(p.amt>0){const d=dist2(u,p);if(d<bd){bd=d;best=p}}
+      // Sticky assignment: keep returning to the same pile until it's empty
+      let best=(u.assignedPile&&u.assignedPile.amt>0)?u.assignedPile:null;
+      if(!best){let bd=1e9;for(const p of piles)if(p.amt>0){const d=dist2(u,p);if(d<bd){bd=d;best=p}}u.assignedPile=best||null}
       if(best){u.pile=best;u.ts='toPile';u.path=findPath(u.x,u.y,best.x,best.y);u.wpi=0}
       break;}
     case 'toPile':{
@@ -597,7 +598,22 @@ function updateDozer(u,dt){
       if(!u.path){u.repath-=dt;if(u.repath<=0){u.repath=1;u.path=findPath(u.x,u.y,b.x,b.y);u.wpi=0}}
       else followPath(u,dt);
     }
-  }else if(u.path)followPath(u,dt);
+  }else{
+    if(u.path)followPath(u,dt);
+    else{
+      // Auto-repair: when idle, passively seek the most-damaged ally building
+      u.autoRepairT=(u.autoRepairT||0)+dt;
+      if(u.autoRepairT>=5){
+        u.autoRepairT=0;
+        let best=null,bd=1e9;
+        for(const b of builds){
+          if(b.dead||!b.built||b.team!==u.team||b.hp>=b.maxhp)continue;
+          const d=dist2(u,b);if(d<bd){bd=d;best=b}
+        }
+        if(best){u.fix=best;if(u.team===0)toast('🔩 Dozer repairing '+dispName('b',best.type,0))}
+      }
+    }
+  }
 }
 /* ===== Capture neutral structures ===== */
 function updateCapture(u,dt){

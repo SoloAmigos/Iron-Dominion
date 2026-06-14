@@ -25,6 +25,8 @@ let chosenMapSize='s2';
 let chosenSpawnIdx=0;
 let chosenGens={vanguard:'std',crimson:'std',scorpion:'std',northwind:'std'};
 let slotFac=[]; // per-slot chosen faction, null/'rnd' = random
+let startingCash=4000; // configurable in lobby
+let idleDozerT=0;  // tracks idle dozer time for alert
 
 /* ---------- screen helpers ---------- */
 function uiClick(){SFX.click()}
@@ -261,6 +263,11 @@ function showLobby(){
     '</div>'+
     '<div style="font-size:10px;color:#8aaa80;text-align:center;margin-bottom:5px">Tap team · tap bot · tap faction name to change</div>'+
     rows+
+    '<div style="display:flex;align-items:center;gap:8px;justify-content:center;margin:6px 0 2px">'+
+    '<span style="font-size:10px;color:#8aaa80;letter-spacing:1px">START $</span>'+
+    '<input id="startCashSlider" type="range" min="1000" max="12000" step="500" value="'+startingCash+'" style="flex:1;max-width:110px;accent-color:#62b169">'+
+    '<span id="startCashLabel" style="font-size:12px;font-weight:700;min-width:50px;color:#ffd95e">$'+startingCash+'</span>'+
+    '</div>'+
     '<div class="nav-row">'+
     '<button class="dbtn back-btn" id="backBtn">← BACK</button>'+
     '<button class="big-btn arcade" id="startBtn" style="flex:1;margin-bottom:0;padding:13px">⚔ START BATTLE</button>'+
@@ -339,6 +346,9 @@ function showLobby(){
   };
   document.getElementById('backBtn').onclick=()=>{uiClick();showFactionSelect()};
   document.getElementById('startBtn').onclick=()=>{uiClick();init()};
+  const _sc=document.getElementById('startCashSlider');
+  const _scL=document.getElementById('startCashLabel');
+  if(_sc)_sc.oninput=function(){startingCash=+this.value;if(_scL)_scL.textContent='$'+this.value};
 }
 
 function showPause(){
@@ -361,6 +371,7 @@ function endGame(win){
   if(state!=='play')return;
   state=win?'win':'lose';
   stopMusic();
+  if(typeof stopLowPowAlarm==='function')stopLowPowAlarm();
   const _elapsed=Math.floor(gtime);
   const _mm=Math.floor(_elapsed/60),_ss=_elapsed%60;
   const _timeStr=_mm+'m '+(_ss<10?'0':'')+_ss+'s';
@@ -369,12 +380,13 @@ function endGame(win){
     const enemyFac=fac.find((f,i)=>i>0&&isEnemy(0,i))||fac[1]||'crimson';
     const enemyNames=fac.filter((f,i)=>i>0&&isEnemy(0,i)).map(f=>FACTIONS[f].name).join(', ');
     overlay.style.display='flex';
+    const _incomeRate=_elapsed>60?Math.round((gameStats.moneyEarned||0)/(_elapsed/60)):0;
     overlay.innerHTML=panel(
       '<div class="eyebrow">'+(win?'VICTORY — THE REGION IS OURS':'BASE LOST')+'</div>'+
       '<div class="bigres '+(win?'win':'lose')+'">'+(win?'VICTORY':'DEFEAT')+'</div>'+
       '<div class="sub">'+(win?'Every enemy structure lies in ruins.':'The '+(enemyNames||FACTIONS[enemyFac].name)+' overran your position.')+'</div>'+
-      '<div style="display:flex;justify-content:center;gap:18px;margin:12px 0 4px;font-size:13px;opacity:.85">'+
-      '<span>⏱ '+_timeStr+'</span><span>⚔️ '+gameStats.kills+' kills</span><span>🏚 '+gameStats.bldgs+' bldgs</span>'+
+      '<div style="display:flex;justify-content:center;gap:14px;margin:12px 0 4px;font-size:12px;opacity:.88;flex-wrap:wrap">'+
+      '<span>⏱ '+_timeStr+'</span><span>⚔️ '+gameStats.kills+' kills</span><span>🏚 '+gameStats.bldgs+' bldgs</span>'+(_incomeRate?'<span>💰 $'+_incomeRate+'/min</span>':'')+
       '</div>'+
       '<div class="dbtns" style="margin-top:12px">'+
       '<button class="dbtn arcade" id="retryBtn">↺ REMATCH</button>'+
@@ -466,7 +478,8 @@ function loadGame(){
   gameStats={...save.gameStats};ids=save.ids||1;strikeCdMax=save.strikeCdMax||110;strikeBombs=save.strikeBombs||3;
   shake=0;
   // Reset entity + UI state
-  units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];
+  idleDozerT=0;
+  units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];rubbles=[];
   blocked=new Uint8Array(MAPW*MAPH);vis=new Uint8Array(MAPW*MAPH);
   fogT=0;powT=0;uiT=0;winT=3;aiT=1.5;miniT=0;sepT=0;
   underAttackCd=0;readyCd=0;hintStage=5;
@@ -603,9 +616,10 @@ function init(name){
   setMapDims(MAP.w,MAP.h);
 
   simFrame=0;simAcc=0;
-  gameStats={kills:0,bldgs:0};
+  gameStats={kills:0,bldgs:0,moneyEarned:0};
   gameSpeed=1;const _sb=document.getElementById('speedBtn');if(_sb)_sb.textContent='1×';
-  units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];
+  idleDozerT=0;
+  units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];rubbles=[];
   blocked=new Uint8Array(MAPW*MAPH);vis=new Uint8Array(MAPW*MAPH);
   resetPowers();
   upg=Array.from({length:numSlots},()=>({w:0,a:0,mk:0,cp:0}));
@@ -614,7 +628,7 @@ function init(name){
   rank=new Array(numSlots).fill(1);
   skp=new Array(numSlots).fill(1);
   genOpen=false;
-  money=new Array(numSlots).fill(4000);
+  money=new Array(numSlots).fill(startingCash||4000);
   powerP=new Array(numSlots).fill(0);
   powerU=new Array(numSlots).fill(0);
   lowPow=new Array(numSlots).fill(false);
@@ -679,6 +693,7 @@ function simStep(){
   if(builds.some(b=>b.dead))builds=builds.filter(b=>!b.dead);
   updateProjs(dt);updateParts(dt);updatePlanes(dt);
   for(let i=scraps.length-1;i>=0;i--){scraps[i].life-=dt;if(scraps[i].life<=0)scraps.splice(i,1)}
+  for(let i=rubbles.length-1;i>=0;i--){rubbles[i].life-=dt;if(rubbles[i].life<=0)rubbles.splice(i,1)}
   separation(dt);
   fogT-=dt;if(fogT<=0){fogT=.25;updateFog()}
   powT-=dt;if(powT<=0){powT=.5;recomputePower()}
@@ -707,6 +722,17 @@ function simStep(){
     setMusicIntensity(threat?1:0);
   }
   readyCd=Math.max(0,readyCd-dt);
+  // Low-power alarm — start/stop loop based on power state
+  if(simFrame%60===0){
+    if(lowPow[0]&&state==='play'){if(typeof startLowPowAlarm==='function')startLowPowAlarm()}
+    else{if(typeof stopLowPowAlarm==='function')stopLowPowAlarm()}
+  }
+  // Idle dozer alert — warn every 30s if a dozer has nothing to do
+  if(simFrame%180===0&&state==='play'){
+    const hasIdle=units.some(u=>!u.dead&&u.team===0&&u.type==='dozer'&&!u.site&&!u.fix&&!u.path&&!u.order);
+    if(hasIdle){idleDozerT+=3;if(idleDozerT>=30){idleDozerT=0;toast('🚜 Dozer is idle — tap 🚜 button to assign a task')}}
+    else idleDozerT=0;
+  }
   winT-=dt;
   if(winT<=0){
     winT=1;

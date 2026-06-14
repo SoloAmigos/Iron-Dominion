@@ -261,27 +261,29 @@ function costOf(kind,type,team){
 }
 
 const WPN={
-  rifle:   {dmg:9,  rel:.6, rng:150, kind:'hit',                 splash:0,  mult:{inf:1,  veh:.3, bld:.18}},
-  mg:      {dmg:26, rel:.85,rng:230, kind:'hit',                 splash:0,  mult:{inf:.9, veh:.65,bld:.3}},
-  rocket:  {dmg:42, rel:2.4,rng:195, kind:'rocket', spd:300,     splash:22, mult:{inf:.55,veh:1,  bld:1},aa:true},
-  cannon:  {dmg:46, rel:2.1,rng:185, kind:'shell',  spd:470,     splash:18, mult:{inf:.6, veh:1,  bld:.75}},
-  howitzer:{dmg:80, rel:4.8,rng:330, kind:'arc',    spd:250, minRng:100, splash:50, mult:{inf:1,veh:.8,bld:1}},
-  bomb:    {dmg:135,rel:1,  rng:1,   kind:'arc',    spd:300,     splash:72, mult:{inf:1,  veh:1,  bld:1}},
+  // Bullet/MG weapons excel vs infantry; explosive/blast weapons reduced vs infantry
+  rifle:   {dmg:9,  rel:.6, rng:150, kind:'hit',                 splash:0,  mult:{inf:1.25,veh:.3, bld:.18}},
+  mg:      {dmg:26, rel:.85,rng:230, kind:'hit',                 splash:0,  mult:{inf:1.4, veh:.65,bld:.3}},
+  rocket:  {dmg:36, rel:2.4,rng:195, kind:'rocket', spd:300,     splash:12, mult:{inf:.45, veh:.85, bld:.9},aa:true},
+  cannon:  {dmg:46, rel:2.1,rng:185, kind:'shell',  spd:470,     splash:18, mult:{inf:.38, veh:1,  bld:.75}},
+  howitzer:{dmg:80, rel:4.8,rng:330, kind:'arc',    spd:250, minRng:100, splash:50, mult:{inf:.65,veh:.8,bld:1}},
+  bomb:    {dmg:135,rel:1,  rng:1,   kind:'arc',    spd:300,     splash:72, mult:{inf:.45, veh:1,  bld:1}},
   laser:   {dmg:34, rel:1.0,rng:215, kind:'hit',  laser:true,   splash:0,  mult:{inf:.5, veh:1.15,bld:.6}},
-  twin:    {dmg:36, rel:1.25,rng:185,kind:'shell', spd:470, twin:true, splash:14, mult:{inf:.6,veh:1, bld:.8}},
-  mgT:     {dmg:20, rel:.5, rng:200, kind:'hit',                 splash:0,  mult:{inf:1,  veh:.5, bld:.25}},
-  gmg:     {dmg:16, rel:.55,rng:175, kind:'hit',                 splash:0,  mult:{inf:1.1,veh:.45,bld:.3}},
+  twin:    {dmg:36, rel:1.25,rng:185,kind:'shell', spd:470, twin:true, splash:14, mult:{inf:.45,veh:1, bld:.8}},
+  mgT:     {dmg:20, rel:.5, rng:200, kind:'hit',                 splash:0,  mult:{inf:1.3, veh:.5, bld:.25}},
+  gmg:     {dmg:16, rel:.55,rng:175, kind:'hit',                 splash:0,  mult:{inf:1.35,veh:.45,bld:.3}},
   dgun:    {dmg:12, rel:.4, rng:190, kind:'hit',                 splash:0,  mult:{inf:.9, veh:.5, bld:.2}},
-  flame:   {dmg:24, rel:.4, rng:115, kind:'hit',  flame:true,   splash:0,  mult:{inf:1.35,veh:.5, bld:.95}},
-  mortar:  {dmg:55, rel:3.6,rng:280, kind:'arc',   spd:240, minRng:80, splash:36, mult:{inf:1.1,veh:.6,bld:.9}},
-  boomkart:{dmg:260,rel:1,  rng:1,   kind:'hit',                 splash:60, mult:{inf:1,  veh:1,  bld:1.1}},
+  flame:   {dmg:24, rel:.4, rng:115, kind:'hit',  flame:true,   splash:0,  mult:{inf:1.6, veh:.5, bld:.95}},
+  mortar:  {dmg:55, rel:3.6,rng:280, kind:'arc',   spd:240, minRng:80, splash:36, mult:{inf:.7, veh:.6,bld:.9}},
+  boomkart:{dmg:260,rel:1,  rng:1,   kind:'hit',                 splash:60, mult:{inf:.75, veh:1,  bld:1.1}},
   nuke:        {dmg:1500,rel:1,rng:1,kind:'arc',  spd:300,splash:165,mult:{inf:1,  veh:1,  bld:1}},
-  toxicNuke:   {dmg:600, rel:1,rng:1,kind:'arc',  spd:280,splash:120,mult:{inf:1.2,veh:.8, bld:.7},toxicSplash:true},
-  barrageMsl:  {dmg:420, rel:1,rng:1,kind:'rocket',spd:360,splash:70, mult:{inf:1, veh:.9, bld:.8}},
+  toxicNuke:   {dmg:600, rel:1,rng:1,kind:'arc',  spd:280,splash:120,mult:{inf:1.0,veh:.8, bld:.7},toxicSplash:true},
+  barrageMsl:  {dmg:420, rel:1,rng:1,kind:'rocket',spd:360,splash:70, mult:{inf:.65,veh:.9, bld:.8}},
   orbitalLaser:{dmg:1800,rel:1,rng:1,kind:'arc',  spd:900,splash:90, mult:{inf:1, veh:1.3,bld:1.2},orbital:true},
   agm:     {dmg:90, rel:3.5,rng:280, kind:'rocket',spd:420,      splash:28, mult:{inf:.7, veh:1.2,bld:1},aa:false},
   sam:     {dmg:65, rel:2.8,rng:260, kind:'rocket',spd:500,      splash:15, mult:{inf:.3, veh:.8, bld:.4},aa:true,aaOnly:true},
-  bigbomb: {dmg:220,rel:6.5,rng:310, kind:'arc',   spd:260,      splash:185,mult:{inf:1.2,veh:1.1,bld:1.4},aa:false},
+  bigbomb: {dmg:220,rel:6.5,rng:310, kind:'arc',   spd:260,      splash:185,mult:{inf:.5, veh:1.1,bld:1.4},aa:false},
+  napalmBomb:{dmg:90,rel:1, rng:1,   kind:'arc',   spd:300,      splash:55, mult:{inf:1.2, veh:.4, bld:.5},flame:true},
 };
 const UT={
   dozer:   {name:'Dozer',          ic:'🚜', cost:1000,bt:8, hp:300,spd:74, r:13,sight:5,cat:'veh', desc:'Constructs buildings',wc:2},
@@ -311,7 +313,7 @@ const BT={
   turret:   {name:'Guard Turret',   ic:'🗼', cost:900, bt:8, hp:950, w:2,h:2,pow:2,  wpn:'mg',                  desc:'Base defense — needs power'},
   market:   {name:'Market',         ic:'💰', cost:1500,bt:10,hp:900, w:2,h:2,pow:2,  income:180,                desc:'+$180 every 5s — passive income'},
   tech:     {name:'Tech Lab',       ic:'🔬', cost:1500,bt:12,hp:1000,w:3,h:2,pow:3,  lab:true,                  desc:'Unlocks army upgrades'},
-  silo:     {name:'Missile Silo',   ic:'☢️', cost:4000,bt:22,hp:1500,w:3,h:3,pow:6,  silo:true,                 desc:'Superweapon — charges 150s'},
+  silo:     {name:'Missile Silo',   ic:'☢️', cost:4000,bt:22,hp:1500,w:3,h:3,pow:6,  silo:true,                 desc:'Superweapon — charges 300s'},
   civil:    {name:'Civil Structure',ic:'🏠', cost:0,   bt:0, hp:350, w:2,h:2,pow:0,  garrison:true,garrisonMax:4,desc:'Infantry can garrison inside'},
   oilrig:   {name:'Oil Derrick',    ic:'⛽', cost:0,   bt:0, hp:500, w:2,h:2,pow:0,  capturable:true,income:100,desc:'Capture with infantry for $100 every 5s'},
   repairbay:{name:'Repair Bay',     ic:'🔩', cost:0,   bt:0, hp:600, w:2,h:2,pow:0,  capturable:true,repairAura:true,desc:'Capture to auto-repair nearby friendly units'},
@@ -334,7 +336,7 @@ const DIFF={
 };
 
 /* ===== Veterancy XP thresholds (unit-level ranks) ===== */
-const VXPT=[200,600,1400]; // rank 1,2,3 unlock thresholds
+const VXPT=[650,2000,4500,8500,14000]; // rank 1-5 thresholds (3-4× harder)
 
 /* ===== Scrap damage multipliers for Scorpion faction ===== */
 const SCRAP_DMG=[1,1.15,1.3]; // level 0,1,2
@@ -352,23 +354,74 @@ const upDmg=t=>1+.12*upg[t].w;
 const upArm=t=>1+.12*upg[t].a;
 const upMk=t=>upg[t].mk?1.5:1;
 
+// All ability definitions — faction-specific slot assignments are in FACTION_POWERS below
 const POWERS={
-  repair:{ic:'🔧',nm:'REPAIR',cd:70, rank:1, need:null,      hint:'Tap an area — repairs nearby friendly units & buildings'},
-  drop:  {ic:'🪂',nm:'DROP',  cd:100,rank:2, need:'barracks',hint:'Tap an area — paradrops 3 infantry'},
-  strike:{ic:'✈️',nm:'STRIKE',cd:110,rank:3, need:'factory', hint:'Tap anywhere on the map to call the strike'},
-  nuke:  {ic:'☢️',nm:'LAUNCH',cd:0,  rank:0, need:'silo',    hint:'Tap the target — missile away!'},
+  repair:    {ic:'🔧',nm:'REPAIR',      cd:70,  hint:'Tap a spot — repairs nearby friendly units & buildings 50%'},
+  drop:      {ic:'🪂',nm:'PARADROP',    cd:100, hint:'Tap a landing zone — drops faction-specific infantry'},
+  scan:      {ic:'🛰️',nm:'SAT SCAN',   cd:90,  hint:'Reveals the entire map for 15 seconds'},
+  emp:       {ic:'⚡',nm:'EMP BURST',   cd:130, hint:'Tap a target area — stuns all enemy vehicles for 8 seconds'},
+  strike:    {ic:'✈️',nm:'AIR STRIKE', cd:110, hint:'Tap anywhere — fighter drops precision bombs'},
+  supply:    {ic:'📦',nm:'SUPPLY DROP', cd:140, hint:'Immediately grants +$800 funds'},
+  napalm:    {ic:'🔥',nm:'NAPALM RUN', cd:180, hint:'Tap a target — incendiary bombs, excels vs infantry'},
+  rally:     {ic:'📣',nm:'WAR CRY',    cd:110, hint:'Tap near your troops — +25% speed & damage for 15s'},
+  reinforce: {ic:'🚌',nm:'REINFORCE',  cd:160, hint:'Spawns 2 free tanks at your nearest factory'},
+  propaganda:{ic:'📢',nm:'IRON WILL',  cd:190, hint:'Instantly heals all your units by 25% HP'},
+  toxin:     {ic:'☠️',nm:'TOXIN BOMB', cd:130, hint:'Tap a target — deploys a lingering poison cloud'},
+  sabotage:  {ic:'💣',nm:'SABOTAGE',   cd:150, hint:'Tap near an enemy building — deal 40% HP damage to it'},
+  barrage:   {ic:'🌧️',nm:'BARRAGE',   cd:185, hint:'Tap a target — sustained artillery rain of 8 shells'},
+  fortress:  {ic:'🏰',nm:'FORTRESS',   cd:150, hint:'All your buildings take 40% less damage for 30s'},
+  blizzard:  {ic:'❄️',nm:'BLIZZARD',  cd:140, hint:'Tap a target — slows all nearby enemies 50% for 12s'},
+  nuke:      {ic:'☢️',nm:'LAUNCH',     cd:0,   hint:'Tap the target — superweapon away!'},
 };
-let pw=null,targetPower=null;
+// 7 abilities per faction — player chooses 5 by spending one skill point per general rank
+const FACTION_POWERS={
+  vanguard:[
+    {id:'repair',   rank:1,need:null},
+    {id:'drop',     rank:1,need:'barracks'},
+    {id:'scan',     rank:2,need:null},
+    {id:'emp',      rank:2,need:'tech'},
+    {id:'strike',   rank:3,need:'factory'},
+    {id:'supply',   rank:3,need:null},
+    {id:'napalm',   rank:4,need:'airfield'},
+  ],
+  crimson:[
+    {id:'repair',    rank:1,need:null},
+    {id:'drop',      rank:1,need:'barracks'},
+    {id:'rally',     rank:2,need:null},
+    {id:'napalm',    rank:2,need:'factory'},
+    {id:'strike',    rank:3,need:'factory'},
+    {id:'reinforce', rank:3,need:'factory'},
+    {id:'propaganda',rank:4,need:null},
+  ],
+  scorpion:[
+    {id:'repair',   rank:1,need:null},
+    {id:'drop',     rank:1,need:'barracks'},
+    {id:'toxin',    rank:2,need:'tech'},
+    {id:'sabotage', rank:2,need:null},
+    {id:'strike',   rank:3,need:'factory'},
+    {id:'supply',   rank:3,need:'market'},
+    {id:'barrage',  rank:4,need:'factory'},
+  ],
+  northwind:[
+    {id:'repair',   rank:1,need:null},
+    {id:'drop',     rank:1,need:'barracks'},
+    {id:'fortress', rank:2,need:null},
+    {id:'blizzard', rank:2,need:'tech'},
+    {id:'strike',   rank:3,need:'factory'},
+    {id:'barrage',  rank:3,need:'factory'},
+    {id:'supply',   rank:4,need:null},
+  ],
+};
+let pw=null,targetPower=null,scanT=0;
 function resetPowers(){
-  pw={repair:{unl:false,on:true, cd:0},
-      drop:  {unl:false,on:false,cd:0},
-      strike:{unl:false,on:false,cd:0},
-      nuke:  {unl:true, on:false,cd:0}};
-  targetPower=null;
+  pw={};
+  for(const k in POWERS)pw[k]={unl:false,on:false,cd:0};
+  pw.nuke={unl:true,on:false,cd:0};
+  scanT=0;targetPower=null;
 }
 resetPowers();
 
-const XPL=[0,500,1200,2200,3600,5400];
+const XPL=[0,1800,4200,8000,13500]; // max general rank 5 — 3-4× harder thresholds
 const MAXRANK=XPL.length;
 let xp=[0,0],rank=[1,1],skp=[1,1];
 function xpGain(team,amt){
@@ -385,13 +438,16 @@ function xpGain(team,amt){
   }
 }
 function unlockPower(team,k){
-  const P=POWERS[k];
-  if(!P||pw[k].unl)return false;
-  if(P.rank>rank[team])return false;
+  if(!pw[k]||pw[k].unl)return false;
+  const facPows=FACTION_POWERS[fac[team]]||[];
+  const fp=facPows.find(p=>p.id===k);
+  if(!fp)return false;
+  if(rank[team]<fp.rank)return false;
   if(skp[team]<1)return false;
+  if(fp.need&&!(typeof builds!=='undefined'&&builds.some(b=>!b.dead&&b.built&&b.team===team&&b.type===fp.need)))return false;
   skp[team]--;pw[k].unl=true;
   if(team===0){
-    toast(P.ic+' '+P.nm+' unlocked!');SFX.done();
+    toast(POWERS[k].ic+' '+POWERS[k].nm+' unlocked!');SFX.done();
     pw[k].cd=Math.min(pw[k].cd||0,15);
     if(typeof refreshPowers==='function')refreshPowers();
     if(typeof updateRankBtn==='function')updateRankBtn();

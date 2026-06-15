@@ -384,6 +384,23 @@ function issueOrder(u,order){
     u.wpi=0;
   }
 }
+// Order helpers — thin wrappers used by ui.js, ai.js, buildings.js
+function orderMove(u,x,y,kind){
+  if(u.cat==='air'){u.loiter={x,y};u.attackTarget=null;u.orbT=0;return}
+  u.attackTarget=null;u.anchor=null;
+  issueOrder(u,{type:kind==='am'?'attack-move':'move',x,y});
+}
+function orderAttack(u,tgt){
+  if(u.cat==='air'){u.attackTarget=tgt;if(tgt)u.loiter={x:tgt.x,y:tgt.y};u.orbT=0;return}
+  u.anchor=null;
+  issueOrder(u,{type:'attack',x:tgt.x,y:tgt.y,target:tgt});
+}
+function orderGarrison(u,b){
+  if(!b.t||!b.t.garrison)return;
+  if((b.garrison||[]).length>=(b.t.garrisonMax||4)){if(u.team===0){SFX.err();toast('🏠 Building full')}return}
+  u.attackTarget=null;u.anchor=null;
+  issueOrder(u,{type:'garrison',x:b.x,y:b.y,target:b});
+}
 function doGarrison(u,b){
   if(!b.garrison)b.garrison=[];
   if(b.garrison.length>=(b.t.garrisonMax||4))return;
@@ -461,8 +478,9 @@ function updateUnit(u,dt){
   u.scan-=dt;
   if(u.scan<0){
     u.scan=0.3+Math.random()*.2;
-    // Auto-retarget
-    if(u.ts==='idle'||u.ts==='move')u.attackTarget=findEnemy(u);
+    // Auto-retarget: idle or attack-move only — plain move and attack orders are not distracted
+    const _ot=u.order&&u.order.type;
+    if(u.ts==='idle'||(_ot==='attack-move'))u.attackTarget=findEnemy(u);
   }
   // Repath
   u.repath-=dt;
@@ -489,19 +507,18 @@ function updateUnit(u,dt){
       moveUnit(u,dt);u.ts='move';return;
     }
     if(o.type==='move'||o.type==='attack-move'){
-      const atk=o.type==='attack-move';
-      if(atk){
+      if(o.type==='attack-move'){
         const e=findEnemy(u);
         if(e)u.attackTarget=e;
-      }
-      if(u.attackTarget&&!u.attackTarget.dead){
-        const w=u.t.wpn?WPN[u.t.wpn]:null;
-        if(w){
-          const d=Math.hypot(u.attackTarget.x-u.x,u.attackTarget.y-u.y);
-          if(d<=w.rng*1.05){
-            u.moving=false;
-            if(u.cd<=0){fireFrom(u,u.t.wpn,u.attackTarget);u.cd=w.rel}
-            return;
+        if(u.attackTarget&&!u.attackTarget.dead){
+          const w=u.t.wpn?WPN[u.t.wpn]:null;
+          if(w){
+            const d=Math.hypot(u.attackTarget.x-u.x,u.attackTarget.y-u.y);
+            if(d<=w.rng*1.05){
+              u.moving=false;
+              if(u.cd<=0){fireFrom(u,u.t.wpn,u.attackTarget);u.cd=w.rel}
+              return;
+            }
           }
         }
       }

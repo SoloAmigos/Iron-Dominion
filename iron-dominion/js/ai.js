@@ -27,10 +27,11 @@ function makeAI(diff){
 }
 /* Per-faction combat doctrine: production weights + wave cadence */
 const FACMIX={
-  vanguard: {fArty:.2, fAlt:'paladin',  bRocket:.35,cadence:1.0},  // armor spearheads
-  crimson:  {fArty:.5, fAlt:'arty',     bRocket:.55,cadence:1.15}, // artillery sieges
-  scorpion: {fArty:.15,fAlt:'technical',bRocket:.4, cadence:.8},   // cheap fast raids
-  northwind:{fArty:.3, fAlt:'guardian', bRocket:.45,cadence:1.0},  // combined arms
+  // fAltR: chance to pick the faction's alt sig from factory; sigFR: factory sig override rate; sigBR: barracks sig override rate
+  vanguard: {fArty:.15,fAlt:'paladin',  fAltR:.30,bRocket:.28,cadence:1.0, sigFR:.45,sigBR:.42},  // paladin precision spearheads
+  crimson:  {fArty:.50,fAlt:'arty',     fAltR:.20,bRocket:.58,cadence:1.1, sigFR:.35,sigBR:.55},  // inferno + arty siege
+  scorpion: {fArty:.10,fAlt:'technical',fAltR:.30,bRocket:.36,cadence:.78, sigFR:.52,sigBR:.38},  // technical+scarab raider swarms
+  northwind:{fArty:.32,fAlt:'guardian', fAltR:.22,bRocket:.48,cadence:1.02,sigFR:.32,sigBR:.55},  // guardian+mortar combined wall
 };
 function aiMix(t){return FACMIX[fac[t]]||FACMIX.vanguard}
 function aiCountBuild(type){let n=0;for(const b of builds)if(!b.dead&&b.team===ai.team&&b.type===type)n++;return n}
@@ -132,17 +133,17 @@ function aiTick(tick){
     const sigs=FAC(t).sigs,mix=aiMix(t);
     if(b.type==='factory'){
       let pick=Math.random()<mix.fArty?'arty':'tank';
-      if(Math.random()<.22&&UT[mix.fAlt]&&!isLocked(mix.fAlt,t))pick=mix.fAlt;
+      if(Math.random()<(mix.fAltR||.22)&&UT[mix.fAlt]&&!isLocked(mix.fAlt,t))pick=mix.fAlt;
       if(isLocked(pick,t))pick='arty';
       if(isLocked(pick,t))pick=null;
       const fs=[...sigs.filter(g=>g.at==='factory'),...(GENMOD(t).sigs||[]).filter(g=>g.at==='factory')];
-      if(fs.length&&Math.random()<.35){const cand=fs[Math.floor(Math.random()*fs.length)].unit;if(!isLocked(cand,t)&&UT[cand]&&UT[cand].cat!=='air')pick=cand}
+      if(fs.length&&Math.random()<(mix.sigFR||.35)){const cand=fs[Math.floor(Math.random()*fs.length)].unit;if(!isLocked(cand,t)&&UT[cand]&&UT[cand].cat!=='air')pick=cand}
       if(pick&&UT[pick]&&UT[pick].cat!=='air'){const c=costOf('u',pick,t);if(money[t]>=c){money[t]-=c;b.queue.push({type:pick,p:0})}}
     }else if(b.type==='barracks'){
       let pick=Math.random()<mix.bRocket?'rocket':'ranger';
       if(isLocked(pick,t))pick='ranger';
       const bs2=[...sigs.filter(g=>g.at==='barracks'),...(GENMOD(t).sigs||[]).filter(g=>g.at==='barracks')];
-      if(bs2.length&&Math.random()<.4){const cand=bs2[Math.floor(Math.random()*bs2.length)].unit;if(!isLocked(cand,t))pick=cand}
+      if(bs2.length&&Math.random()<(mix.sigBR||.4)){const cand=bs2[Math.floor(Math.random()*bs2.length)].unit;if(!isLocked(cand,t))pick=cand}
       const c=costOf('u',pick,t);
       if(money[t]>=c&&Math.random()<.8){money[t]-=c;b.queue.push({type:pick,p:0})}
     }

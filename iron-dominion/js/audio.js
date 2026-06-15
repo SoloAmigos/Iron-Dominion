@@ -140,35 +140,87 @@ function _pad(t,hz,dur,v){
 
 // ─── Music sequencer ─────────────────────────────────────────────────────
 // Key: A minor. Bass notes in Hz (0 = rest).
-const _A1=55,_D2=73.4,_E2=82.4,_G2=98,_C2=65.4;
+const _A1=55,_B1=61.7,_C2=65.4,_D2=73.4,_E2=82.4,_F2=87.3,_G2=98,_A2=110;
+// Each tier is an array of bar-length variations, cycled bar-by-bar so the
+// loop evolves instead of repeating the same bar forever. All variants in a
+// tier share one tempo (bpm read from variant 0 during the glide).
 const _PAT={
-  calm:{
-    bpm:96,
-    kick:  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-    snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-    hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-    ohat:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    bass:  [_A1,0,0,0,0,0,0,0,_A1,0,0,0,_E2,0,0,0],
-    stab:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  },
-  intense:{
-    bpm:118,
-    kick:  [1,0,0,1,0,0,1,0,1,0,0,0,1,0,1,0],
-    snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-    hat:   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    ohat:  [0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],
-    bass:  [_A1,0,_E2,0,_A1,_D2,_E2,0,_A1,0,_C2,0,_E2,0,_G2,0],
-    stab:  [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
-  },
+  calm:[
+    { // A — Am drone
+      bpm:96,
+      kick:  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+      ohat:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      bass:  [_A1,0,0,0,0,0,0,0,_A1,0,0,0,_E2,0,0,0],
+      stab:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    },
+    { // B — Am→F→C→G gentle movement
+      bpm:96,
+      kick:  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1],
+      ohat:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      bass:  [_A1,0,0,0,_F2,0,0,0,_C2,0,0,0,_G2,0,0,0],
+      stab:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    },
+    { // C — breakdown, lets the pad breathe
+      bpm:96,
+      kick:  [1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
+      snare: [0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
+      hat:   [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      ohat:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      bass:  [_A1,0,0,0,0,0,0,0,_E2,0,0,0,0,0,0,0],
+      stab:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    },
+  ],
+  intense:[
+    { // A — main groove
+      bpm:118,
+      kick:  [1,0,0,1,0,0,1,0,1,0,0,0,1,0,1,0],
+      snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hat:   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      ohat:  [0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],
+      bass:  [_A1,0,_E2,0,_A1,_D2,_E2,0,_A1,0,_C2,0,_E2,0,_G2,0],
+      stab:  [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+    },
+    { // B — driving, walking bass
+      bpm:118,
+      kick:  [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1],
+      snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hat:   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      ohat:  [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+      bass:  [_A1,_A1,0,_C2,0,_D2,0,_E2,_A1,_A1,0,_C2,0,_E2,0,_F2],
+      stab:  [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+    },
+    { // C — syncopated, aggressive
+      bpm:118,
+      kick:  [1,0,1,0,0,1,0,0,1,0,1,0,0,1,0,0],
+      snare: [0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
+      hat:   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      ohat:  [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+      bass:  [_A1,0,0,_E2,_A1,0,_G2,0,_A1,0,0,_E2,_F2,0,_E2,0],
+      stab:  [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+    },
+    { // D — fill: snare roll building into the next loop
+      bpm:118,
+      kick:  [1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0],
+      snare: [0,0,0,0,0,0,0,0,1,0,1,0,1,1,1,1],
+      hat:   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      ohat:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      bass:  [_A1,0,_E2,0,_A1,0,_E2,0,_A1,0,0,0,_E2,0,0,0],
+      stab:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    },
+  ],
 };
 
-const SEQ={step:0,next:0,bpm:96,id:null,intensity:0,target:0,padNext:0};
+const SEQ={step:0,bar:0,next:0,bpm:96,id:null,intensity:0,target:0,padNext:0};
 const _LOOK=0.12; // schedule this many seconds ahead
 
 function startMusic(){
   if(SEQ.id||muted)return;
   const c=ac(); if(!c)return;
-  SEQ.step=0; SEQ.next=c.currentTime+0.08; SEQ.bpm=96;
+  SEQ.step=0; SEQ.bar=0; SEQ.next=c.currentTime+0.08; SEQ.bpm=96;
   SEQ.padNext=c.currentTime;
   SEQ.id=setInterval(_seqTick,22);
 }
@@ -195,26 +247,28 @@ function _seqTick(){
     :Math.max(SEQ.target,SEQ.intensity-spd);
 
   const hi=SEQ.intensity>=0.5;
-  const p=hi?_PAT.intense:_PAT.calm;
-  SEQ.bpm+=(p.bpm-SEQ.bpm)*0.04; // glide BPM
+  const tier=hi?_PAT.intense:_PAT.calm;
+  SEQ.bpm+=(tier[0].bpm-SEQ.bpm)*0.04; // glide BPM (variants share a tempo)
   const stepDur=60/(SEQ.bpm*4);  // 16th note duration
 
   while(SEQ.next<AC.currentTime+_LOOK){
     const s=SEQ.step,t=SEQ.next,iv=SEQ.intensity;
+    const p=tier[SEQ.bar%tier.length]; // cycle bar variations for variety
     if(p.kick[s])  _kick(t, 0.52+iv*0.18);
     if(p.snare[s]) _snare(t,0.34+iv*0.14);
     if(p.hat[s])   _hihat(t,0.12+iv*0.1,false);
     if(p.ohat[s])  _hihat(t,0.18,true);
     if(p.bass[s])  _bassnote(t,p.bass[s],0.26+iv*0.09);
     if(p.stab[s])  _chordstab(t);
-    // Ambient pad — fires once per bar (step 0) in calm mode
+    // Ambient pad — fires every two bars (bar start) in calm mode
     if(!hi&&s===0&&t>SEQ.padNext){
       const barDur=stepDur*16;
       _pad(t,_A1,barDur*2-0.1,0.032);
       _pad(t,_E2*0.5,barDur*2-0.1,0.018); // octave sub
       SEQ.padNext=t+barDur*2;
     }
-    SEQ.step=(SEQ.step+1)%16;
+    SEQ.step++;
+    if(SEQ.step>=16){SEQ.step=0;SEQ.bar=(SEQ.bar+1)%64}
     SEQ.next+=stepDur;
   }
 }

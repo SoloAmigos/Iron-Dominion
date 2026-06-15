@@ -381,6 +381,72 @@ function bSpr(type,fk){
         }
         g.fillStyle=ac;g.fillRect(X+6,Y+H-7,10,4);
         break;}
+      case 'repairbay':{
+        pShadow(g,X,Y,W,H);
+        pFoundation(g,X,Y,W,H);
+        // Overhead crane rail
+        g.fillStyle=C(40);g.fillRect(X+6,Y+10,W-12,5);
+        g.strokeStyle=C(16);g.lineWidth=1;g.strokeRect(X+6,Y+10,W-12,5);
+        // Crane trolley block
+        g.fillStyle=C(32);g.fillRect(X+W*.38,Y+8.5,W*.24,8);
+        g.strokeStyle=C(14);g.lineWidth=1;g.strokeRect(X+W*.38,Y+8.5,W*.24,8);
+        // Hoist cable + hook
+        g.strokeStyle='#8a8264';g.lineWidth=1.6;
+        g.beginPath();g.moveTo(X+W*.5,Y+16.5);g.lineTo(X+W*.5,Y+30);g.stroke();
+        g.strokeStyle='#c9a23a';g.lineWidth=2.4;g.lineCap='round';
+        g.beginPath();g.moveTo(X+W*.5,Y+30);g.lineTo(X+W*.5-5,Y+34);g.stroke();
+        g.lineCap='butt';
+        // Bay interior (dark recessed)
+        g.fillStyle='#141810';g.fillRect(X+8,Y+22,W-16,H*.42);
+        g.strokeStyle='rgba(0,0,0,.4)';g.lineWidth=1;g.strokeRect(X+8,Y+22,W-16,H*.42);
+        // Bay door frame (lower section)
+        g.fillStyle=C(24);g.fillRect(X+8,Y+H*.64,W-16,H*.26);
+        g.strokeStyle=C(12);g.lineWidth=1;g.strokeRect(X+8,Y+H*.64,W-16,H*.26);
+        // Horizontal door panel lines
+        g.strokeStyle='rgba(0,0,0,.28)';g.lineWidth=1;
+        for(let i=1;i<4;i++){g.beginPath();g.moveTo(X+8,Y+H*.64+i*H*.065);g.lineTo(X+W-8,Y+H*.64+i*H*.065);g.stroke()}
+        // Hazard stripe at door base
+        pHazard(g,X+8,Y+H*.9,W-16,4);
+        // Repair cross on side wall
+        g.fillStyle='rgba(90,210,80,.92)';
+        g.fillRect(X+W*.14,Y+H*.3,5,14);g.fillRect(X+W*.14-4.5,Y+H*.3+4.5,14,5);
+        // Tool storage box beside bay
+        g.fillStyle=C(20);g.fillRect(X+W-18,Y+H*.3,13,H*.24);
+        g.strokeStyle=C(10);g.lineWidth=1;g.strokeRect(X+W-18,Y+H*.3,13,H*.24);
+        g.fillStyle='#c9a23a';g.fillRect(X+W-16,Y+H*.36,2.4,6);g.fillRect(X+W-10,Y+H*.36,2.4,6);
+        // Faction accent
+        g.fillStyle=ac;g.fillRect(X+8,Y+H-6,18,4);
+        break;}
+      case 'watchtower':{
+        pShadow(g,X,Y,W,H);
+        // Foundation platform
+        pPanel(g,X+W*.16,Y+H*.68,W*.68,H*.28,C(24),C(32),C(14));
+        pBolts(g,X+W*.16,Y+H*.68,W*.68,H*.28);
+        // Tower shaft (narrow and tall)
+        pPanel(g,X+W*.33,Y+H*.22,W*.34,H*.52,C(26),C(34),C(15));
+        g.strokeStyle=C(14);g.lineWidth=1;
+        g.beginPath();g.moveTo(X+W*.33,Y+H*.36);g.lineTo(X+W*.67,Y+H*.36);g.stroke();
+        g.beginPath();g.moveTo(X+W*.33,Y+H*.52);g.lineTo(X+W*.67,Y+H*.52);g.stroke();
+        g.beginPath();g.moveTo(X+W*.33,Y+H*.65);g.lineTo(X+W*.67,Y+H*.65);g.stroke();
+        // Ladder rungs on left side
+        g.strokeStyle='#5a6454';g.lineWidth=1;
+        g.beginPath();g.moveTo(X+W*.24,Y+H*.26);g.lineTo(X+W*.24,Y+H*.68);g.stroke();
+        g.beginPath();g.moveTo(X+W*.31,Y+H*.26);g.lineTo(X+W*.31,Y+H*.68);g.stroke();
+        for(let i=0;i<5;i++){const ly=Y+H*.30+i*H*.08;g.beginPath();g.moveTo(X+W*.24,ly);g.lineTo(X+W*.31,ly);g.stroke()}
+        // Observation deck (wider than shaft)
+        pPanel(g,X+W*.14,Y+H*.16,W*.72,H*.1,C(30),C(38),C(18));
+        // Crenellations (battlements above deck top edge)
+        g.fillStyle=C(22);
+        for(let i=0;i<5;i++)g.fillRect(X+W*.16+i*W*.135,Y+H*.1,W*.09,H*.07);
+        // Apex searchlight
+        g.fillStyle='#1a1e18';g.beginPath();g.arc(X+W*.5,Y+H*.08,5.5,0,7);g.fill();
+        g.fillStyle='#ddd8a8';g.beginPath();g.arc(X+W*.5,Y+H*.08,3.8,0,7);g.fill();
+        // Light cone
+        g.fillStyle='rgba(245,245,180,.2)';
+        g.beginPath();g.moveTo(X+W*.5,Y+H*.08);g.lineTo(X+W*.5-14,Y+H*.02);g.lineTo(X+W*.5+14,Y+H*.02);g.closePath();g.fill();
+        // Faction accent on deck railing
+        g.fillStyle=ac;g.fillRect(X+W*.16,Y+H*.16,W*.68,3);
+        break;}
     }
   });
 }
@@ -820,9 +886,31 @@ function drawBuilding(b){
         ctx.strokeStyle='#ff6a5e';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(cx-6,y0-3);ctx.lineTo(cx+6,y0-15);ctx.stroke();
       }
       break;}
+    case 'repairbay':{
+      // Animated crane trolley traversing the rail
+      const ctpos=(gtime*.55+b.id*.4)%1;
+      const cxPos=x0+w*.14+w*.72*Math.abs(Math.sin(ctpos*Math.PI));
+      ctx.fillStyle='rgba(200,215,180,'+(0.45+0.18*Math.sin(gtime*2.2+b.id))+')';
+      ctx.beginPath();ctx.arc(cxPos,y0+13,4,0,7);ctx.fill();
+      // Pulsing repair cross when captured
+      if(b.team>=0){
+        const gp=0.18+0.12*Math.sin(gtime*4.5+b.id);
+        ctx.fillStyle='rgba(90,210,80,'+gp+')';
+        ctx.fillRect(x0+w*.14,y0+h*.3,5,14);ctx.fillRect(x0+w*.14-4.5,y0+h*.3+4.5,14,5);
+      }
+      break;}
+    case 'watchtower':{
+      // Rotating searchlight sweep
+      const wta=gtime*1.5+b.id*.7;
+      ctx.strokeStyle='rgba(255,255,195,'+(0.18+0.1*Math.sin(gtime*2+b.id))+')';ctx.lineWidth=3.4;
+      ctx.beginPath();ctx.moveTo(x0+w*.5,y0+h*.08);
+      ctx.lineTo(x0+w*.5+Math.cos(wta)*22,y0+h*.08+Math.sin(wta)*22*.4);ctx.stroke();
+      // Blinking red beacon
+      if(Math.sin(gtime*3.8+b.id)>0.2){ctx.fillStyle='rgba(255,70,55,.92)';ctx.beginPath();ctx.arc(x0+w*.5,y0+h*.08-5,2.4,0,7);ctx.fill()}
+      break;}
   }
   // Building type icon badge
-  {const BICO={command:'🏢',power:'⚡',supply:'📦',market:'💰',barracks:'🪖',factory:'⚙️',tech:'🔬',silo:'☢️',airfield:'✈️',samsite:'🚀'};
+  {const BICO={command:'🏢',power:'⚡',supply:'📦',market:'💰',barracks:'🪖',factory:'⚙️',tech:'🔬',silo:'☢️',airfield:'✈️',samsite:'🚀',repairbay:'🔩',watchtower:'🔭'};
   const bic=BICO[b.type];
   if(bic){ctx.save();const icx=x0+w/2,icy=y0+7;ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.ellipse(icx,icy,11,9,0,0,7);ctx.fill();ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(bic,icx,icy);ctx.restore()}}
   if(b.hp<b.maxhp*.45&&state==='play'&&(tileVisAt(b.x,b.y)===2||!isEnemy(0,b.team))){
@@ -1032,6 +1120,15 @@ function drawUnit(u){
     ctx.save();ctx.translate(u.x+u.t.r+2,u.y-4);
     ctx.fillStyle=u.scrapLevel>=2?'#ffd95e':'#c08040';
     for(let i=0;i<u.scrapLevel;i++)ctx.fillRect(-2.5,i*5-u.scrapLevel*2.5,5,3);
+    ctx.restore();
+  }
+  // Signature unit badge (★ pip to the right of HP bar)
+  if(u.t.sig){
+    const sx=u.x+u.t.r+7,sy=u.y-u.t.r-8;
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(sx,sy,5.8,0,7);ctx.fill();
+    ctx.fillStyle=TEAMC[u.team];ctx.font='bold 8px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('★',sx,sy);
     ctx.restore();
   }
 }

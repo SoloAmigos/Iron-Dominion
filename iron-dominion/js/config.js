@@ -35,20 +35,20 @@ const MAPS={
     s2:{w:60,h:40, spawns:[[4,33],[55,5]],
       piles:[[18,28],[25,20],[38,14],[45,25]],
       neutrals:[{type:'oilrig',tx:30,ty:20},{type:'civil',tx:12,ty:15},{type:'civil',tx:48,ty:25}],
-      rocks:[],walls:[],deco:'sand'},
+      rocks:[],walls:[[[22,12],[22,22]],[[38,18],[38,28]]],deco:'sand'},
     s4:{w:88,h:56, spawns:[[4,48],[83,5],[83,48],[4,5]],
       piles:[[20,40],[35,28],[55,28],[68,40],[20,15],[68,15],[44,48],[44,8]],
       neutrals:[{type:'oilrig',tx:44,ty:28},{type:'oilrig',tx:22,ty:28},{type:'oilrig',tx:66,ty:28},
         {type:'civil',tx:15,ty:22},{type:'civil',tx:70,ty:34},{type:'civil',tx:44,ty:40}],
-      rocks:[],walls:[],deco:'sand'},
+      rocks:[],walls:[[[24,16],[24,40]],[[64,16],[64,40]]],deco:'sand'},
     s6:{w:104,h:64, spawns:[[4,58],[99,5],[99,58],[4,5],[4,30],[99,30]],
-      piles:[],neutrals:[],rocks:[],walls:[],deco:'sand'},
+      piles:[],neutrals:[],rocks:[],walls:[[[26,16],[26,48]],[[78,16],[78,48]]],deco:'sand'},
     s8:{w:120,h:76, spawns:[[4,68],[115,5],[115,68],[4,5],[59,68],[60,5],[4,36],[115,36]],
       piles:[[20,58],[50,18],[70,18],[100,58],[20,18],[100,18],[60,68],[60,8],[40,38],[80,38],[15,38],[105,38],[40,58],[80,58]],
       neutrals:[{type:'oilrig',tx:60,ty:38},{type:'oilrig',tx:30,ty:38},{type:'oilrig',tx:90,ty:38},
         {type:'oilrig',tx:60,ty:20},{type:'oilrig',tx:60,ty:56},
         {type:'civil',tx:20,ty:38},{type:'civil',tx:100,ty:38}],
-      rocks:[],walls:[],deco:'sand'},
+      rocks:[],walls:[[[28,20],[28,56]],[[92,20],[92,56]]],deco:'sand'},
   },
   urban:{
     s2:{w:60,h:40, spawns:[[4,33],[55,5]],
@@ -164,6 +164,64 @@ const MAPS={
         [[2,43],[44,43]],[[56,43],[86,43]],[[96,43],[124,43]],
       ],deco:'urban'},
   },
+  canyon:{
+    s2:{w:64,h:42, spawns:[[4,35],[59,5]],
+      piles:[[10,32],[24,20],[40,18],[56,8]],
+      neutrals:[{type:'oilrig',tx:30,ty:20},{type:'repairbay',tx:14,ty:22},{type:'watchtower',tx:46,ty:18}],
+      rocks:[],
+      walls:[
+        [[8,14],[24,14]],[[36,14],[56,14]],
+        [[8,28],[20,28]],[[32,28],[56,28]],
+      ],deco:'sand'},
+    s4:{w:96,h:60, spawns:[[4,52],[91,5],[91,52],[4,5]],
+      piles:[[16,46],[28,30],[52,24],[72,44],[16,14],[76,14],[48,54],[48,6]],
+      neutrals:[{type:'oilrig',tx:48,ty:30},{type:'oilrig',tx:24,ty:30},{type:'oilrig',tx:72,ty:30},
+        {type:'repairbay',tx:12,ty:22},{type:'repairbay',tx:78,ty:36},{type:'watchtower',tx:48,ty:18}],
+      rocks:[],
+      walls:[
+        [[8,20],[38,20]],[[52,20],[88,20]],
+        [[8,40],[44,40]],[[58,40],[88,40]],
+      ],deco:'sand'},
+    s6:{w:112,h:68, spawns:[[4,62],[107,5],[107,62],[4,5],[4,32],[107,32]],
+      piles:[],neutrals:[],rocks:[],
+      walls:[
+        [[8,22],[44,22]],[[58,22],[104,22]],
+        [[8,46],[40,46]],[[62,46],[104,46]],
+      ],deco:'sand'},
+    s8:{w:128,h:80, spawns:[[4,72],[123,5],[123,72],[4,5],[63,72],[64,5],[4,40],[123,40]],
+      piles:[[18,64],[42,48],[56,24],[90,56],[28,24],[98,24],[66,74],[60,6],[40,40],[88,40],[14,42],[112,42],[46,62],[80,62]],
+      neutrals:[{type:'oilrig',tx:64,ty:40},{type:'oilrig',tx:32,ty:40},{type:'oilrig',tx:96,ty:40},
+        {type:'oilrig',tx:64,ty:22},{type:'oilrig',tx:64,ty:58},
+        {type:'repairbay',tx:22,ty:40},{type:'repairbay',tx:104,ty:40}],
+      rocks:[],
+      walls:[
+        [[8,26],[50,26]],[[66,26],[120,26]],
+        [[8,54],[44,54]],[[70,54],[120,54]],
+      ],deco:'sand'},
+  },
+  tundra:{
+    s2:{w:72,h:44, spawns:[[4,36],[67,6]],
+      piles:[[16,28],[26,20],[46,16],[60,28]],
+      neutrals:[{type:'oilrig',tx:36,ty:22},{type:'repairbay',tx:18,ty:18},{type:'watchtower',tx:52,ty:18}],
+      rocks:[{tx:28,ty:18},{tx:30,ty:16},{tx:32,ty:18},{tx:40,ty:24},{tx:42,ty:22}],
+      walls:[[[14,16],[14,26]],[[56,16],[56,26]]],deco:'snow'},
+    s4:{w:96,h:64, spawns:[[4,56],[91,5],[91,56],[4,5]],
+      piles:[[18,48],[32,32],[64,32],[78,48],[18,16],[78,16],[48,58],[48,6]],
+      neutrals:[{type:'oilrig',tx:48,ty:32},{type:'oilrig',tx:24,ty:32},{type:'oilrig',tx:72,ty:32},
+        {type:'repairbay',tx:16,ty:22},{type:'repairbay',tx:76,ty:40},{type:'watchtower',tx:48,ty:20}],
+      rocks:[{tx:36,ty:26},{tx:38,ty:24},{tx:40,ty:26},{tx:52,ty:36},{tx:54,ty:38},{tx:56,ty:36}],
+      walls:[[[22,18],[22,46]],[[74,18],[74,46]]],deco:'snow'},
+    s6:{w:112,h:68, spawns:[[4,62],[107,5],[107,62],[4,5],[4,32],[107,32]],
+      piles:[],neutrals:[],rocks:[{tx:56,ty:22},{tx:58,ty:22},{tx:56,ty:44},{tx:58,ty:44}],
+      walls:[[[26,16],[26,52]],[[86,16],[86,52]]],deco:'snow'},
+    s8:{w:128,h:80, spawns:[[4,72],[123,5],[123,72],[4,5],[63,72],[64,5],[4,40],[123,40]],
+      piles:[[22,62],[44,48],[54,24],[90,54],[28,24],[98,24],[66,74],[60,6],[38,40],[90,40],[14,42],[112,42],[48,64],[80,64]],
+      neutrals:[{type:'oilrig',tx:64,ty:40},{type:'oilrig',tx:32,ty:40},{type:'oilrig',tx:96,ty:40},
+        {type:'oilrig',tx:64,ty:22},{type:'oilrig',tx:64,ty:58},
+        {type:'watchtower',tx:22,ty:40},{type:'watchtower',tx:104,ty:40}],
+      rocks:[{tx:42,ty:28},{tx:44,ty:28},{tx:84,ty:50},{tx:86,ty:50}],
+      walls:[[[28,22],[28,58]],[[100,22],[100,58]]],deco:'snow'},
+  },
 };
 let MAP=MAPS.desert.s2;
 let chosenMap='desert';
@@ -173,6 +231,7 @@ let chosenMap='desert';
    the spawn positions, so the result is point-fair no matter where you start. */
 function applyFairLayout(m){
   if(!m||m._fair)return m;
+  if(m.piles&&m.piles.length&&m.neutrals&&m.neutrals.length){m._fair=true;return m;}
   const W=m.w,H=m.h,cx=W/2,cy=H/2;
   const cTx=v=>Math.round(v<3?3:v>W-5?W-5:v);
   const cTy=v=>Math.round(v<3?3:v>H-5?H-5:v);

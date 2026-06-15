@@ -186,6 +186,62 @@ function buildGround(){
     g.fillStyle='#2a2e28';g.fillRect(0,0,WW,14);g.fillRect(0,WH-14,WW,14);g.fillRect(0,0,14,WH);g.fillRect(WW-14,0,14,WH);
     g.strokeStyle='#181c16';g.lineWidth=5;g.strokeRect(2,2,WW-4,WH-4);
 
+  } else if(deco==='snow'){
+    // ── TUNDRA ── frozen arctic wasteland
+    g.fillStyle='#c4d0d8';g.fillRect(0,0,WW,WH);
+    // ice sheet variation patches
+    for(let i=0;i<800;i++){
+      const x=Math.random()*WW,y=Math.random()*WH,r=vrand(15,75);
+      g.fillStyle=['#c8d4dc','#b8c8d4','#d0dae2','#acbcc8','#d4dce4'][i%5];
+      g.globalAlpha=vrand(.2,.5);g.beginPath();g.ellipse(x,y,r,r*vrand(.4,.9),vrand(0,3),0,7);g.fill();
+    }
+    g.globalAlpha=1;
+    // snow drifts
+    for(let i=0;i<55;i++){
+      g.fillStyle='rgba(240,248,255,'+vrand(.18,.35)+')';
+      g.beginPath();g.ellipse(Math.random()*WW,Math.random()*WH,vrand(45,110),vrand(8,22),vrand(0,2),0,7);g.fill();
+    }
+    // ice cracks
+    for(let i=0;i<90;i++){
+      const x=Math.random()*WW,y=Math.random()*WH,l=vrand(10,50),a=vrand(0,Math.PI);
+      g.strokeStyle='#8099aa';g.lineWidth=vrand(.5,1.5);g.globalAlpha=vrand(.15,.45);
+      g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke();
+    }
+    g.globalAlpha=1;
+    // frozen scrub (snow-laden dead pines)
+    const spawn0sn=MAP.spawns[0],spawn1sn=MAP.spawns[1];
+    const decoOKsn=(tx,ty)=>{
+      if(!inB(tx,ty)||blocked[idx(tx,ty)])return false;
+      if(Math.hypot(tx-spawn0sn[0]-2,ty-spawn0sn[1]-2)<9)return false;
+      if(Math.hypot(tx-spawn1sn[0]-2,ty-spawn1sn[1]-2)<9)return false;
+      for(const p of piles)if(Math.abs(tx-p.tx-1)<3.5&&Math.abs(ty-p.ty-1)<3.5)return false;
+      return true;
+    };
+    for(let i=0;i<30;i++){
+      const tx=1+Math.random()*(MAPW-2)|0,ty=1+Math.random()*(MAPH-2)|0;
+      if(!decoOKsn(tx,ty))continue;
+      const x=tx*TILE+vrand(8,32),y=ty*TILE+vrand(8,32);
+      g.fillStyle='rgba(0,0,0,.10)';g.beginPath();g.ellipse(x+2,y+4,5,2.5,0,0,7);g.fill();
+      g.fillStyle='#3c4a54';g.fillRect(x-1,y-1,2,7);
+      g.fillStyle='#aabbc8';g.beginPath();g.moveTo(x,y-12);g.lineTo(x+6,y-2);g.lineTo(x-6,y-2);g.closePath();g.fill();
+      g.fillStyle='#c8d8e4';g.beginPath();g.moveTo(x,y-16);g.lineTo(x+4,y-8);g.lineTo(x-4,y-8);g.closePath();g.fill();
+    }
+    // frozen boulders (blue-grey, snow-capped)
+    for(const r of rocks){
+      const x=r.tx*TILE,y=r.ty*TILE;
+      g.fillStyle='#6e8090';g.beginPath();
+      g.moveTo(x+6,y+30);g.lineTo(x+4+r.v*8,y+10);g.lineTo(x+20,y+3+r.v*6);g.lineTo(x+34,y+12);g.lineTo(x+36,y+32);g.lineTo(x+20,y+38);g.closePath();g.fill();
+      g.fillStyle='#94a8b8';g.beginPath();g.moveTo(x+8,y+26);g.lineTo(x+8+r.v*6,y+12);g.lineTo(x+22,y+8);g.lineTo(x+28,y+18);g.lineTo(x+18,y+28);g.closePath();g.fill();
+      g.fillStyle='rgba(230,240,248,.9)';g.beginPath();g.ellipse(x+20,y+7,12,5,0,0,7);g.fill();
+      g.fillStyle='#506070';g.fillRect(x+8,y+32,24,4);
+    }
+    const vgsn=g.createRadialGradient(WW*.42,WH*.38,WH*.28,WW*.5,WH*.5,WW*.70);
+    vgsn.addColorStop(0,'rgba(240,248,255,.06)');vgsn.addColorStop(.6,'rgba(0,0,0,0)');vgsn.addColorStop(1,'rgba(30,50,70,.30)');
+    g.fillStyle=vgsn;g.fillRect(0,0,WW,WH);
+    g.fillStyle='#5a7088';g.fillRect(0,0,WW,14);g.fillRect(0,WH-14,WW,14);g.fillRect(0,0,14,WH);g.fillRect(WW-14,0,14,WH);
+    g.strokeStyle='#3a5060';g.lineWidth=5;g.strokeRect(2,2,WW-4,WH-4);
+    g.strokeStyle='rgba(150,180,200,.30)';g.lineWidth=1.4;g.strokeRect(16,16,WW-32,WH-32);
+
   } else {
     // ── VALLEY / GREEN ── lush green with vegetation
     g.fillStyle='#2b3a25';g.fillRect(0,0,WW,WH);

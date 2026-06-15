@@ -1197,6 +1197,16 @@ function render(){
     ctx.strokeRect(r.x-r.w/2+4,r.y-r.h/2+4,r.w-8,r.h-8);
     ctx.globalAlpha=1;
   }
+  for(const fz of fireZones){
+    if(tileVisAt(fz.x,fz.y)<1)continue;
+    const fl=fz.life/fz.maxLife;
+    const pulse=0.7+0.3*Math.sin(gtime*9+fz.x*.05);
+    const gr=ctx.createRadialGradient(fz.x,fz.y,0,fz.x,fz.y,fz.r);
+    gr.addColorStop(0,'rgba(255,160,30,'+(.7*fl*pulse)+')');
+    gr.addColorStop(.55,'rgba(230,60,10,'+(.5*fl)+')');
+    gr.addColorStop(1,'rgba(160,20,0,0)');
+    ctx.fillStyle=gr;ctx.beginPath();ctx.arc(fz.x,fz.y,fz.r,0,7);ctx.fill();
+  }
   for(const p of piles)drawPile(p);
   for(const s of scraps)drawScrap(s);
   for(const b of builds)drawBuilding(b);

@@ -39,7 +39,7 @@ function genChips(fk){
   let s='<div style="margin:6px 0 2px;font-size:11px;opacity:.7">General:</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
   for(const g of gs){
     const sel=chosenGens[fk]===g.id;
-    s+='<button class="dbtn'+(sel?' sel':''+'" data-genfk="'+fk+'" data-genid="'+g.id+'" style="font-size:11px;padding:4px 8px" title="'+g.desc+'">'+g.nm+'</button>';
+    s+='<button class="dbtn'+(sel?' sel':'')+'" data-genfk="'+fk+'" data-genid="'+g.id+'" style="font-size:11px;padding:4px 8px" title="'+g.desc+'">'+g.nm+'</button>';
   }
   return s+'</div>';
 }
@@ -248,7 +248,7 @@ function showLobby(){
   const _mw=_mapDef.w||60,_mh=_mapDef.h||40;
   for(let si=0;si<Math.min((_mapDef.spawns||[]).length,numSlots);si++){
     const lbl=_spawnLabel(_mapDef.spawns[si],_mw,_mh);
-    spawnS+='<button class="dbtn'+(chosenSpawnIdx===si?' sel':'')+('" data-sp="'+si+'" style="font-size:10px;padding:3px 9px">'+lbl+'</button>');
+    spawnS+='<button class="dbtn'+(chosenSpawnIdx===si?' sel':'')+'" data-sp="'+si+'" style="font-size:10px;padding:3px 9px">'+lbl+'</button>';
   }
   spawnS+='</div>';
 
@@ -383,7 +383,7 @@ function endGame(win){
       '<div class="bigres '+(win?'win':'lose')+'">'+(win?'VICTORY':'DEFEAT')+'</div>'+
       '<div class="sub">'+(win?'Every enemy structure lies in ruins.':'The '+(enemyNames||FACTIONS[enemyFac].name)+' overran your position.')+'</div>'+
       '<div style="display:flex;justify-content:center;gap:14px;margin:12px 0 4px;font-size:12px;opacity:.88;flex-wrap:wrap">'+
-      '<span>⏱ '+_timeStr+'</span><span>⚔️ '+gameStats.kills+' kills</span><span>🏘 '+gameStats.bldgs+' bldgs</span>'+(_incomeRate?'<span>💰 $'+_incomeRate+'/min</span>':'')+
+      '<span>⏱ '+_timeStr+'</span><span>⚔️ '+gameStats.kills+' kills</span><span>🏚 '+gameStats.bldgs+' bldgs</span>'+(_incomeRate?'<span>💰 $'+_incomeRate+'/min</span>':'')+
       '</div>'+
       '<div class="dbtns" style="margin-top:12px">'+
       '<button class="dbtn arcade" id="retryBtn">↺ REMATCH</button>'+
@@ -477,7 +477,7 @@ function loadGame(){
   shake=0;
   // Reset entity + UI state
   idleDozerT=0;
-  units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];rubbles=[];
+  units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];rubbles=[];fireZones=[];
   blocked=new Uint8Array(MAPW*MAPH);vis=new Uint8Array(MAPW*MAPH);
   fogT=0;powT=0;uiT=0;winT=3;aiT=1.5;miniT=0;sepT=0;
   underAttackCd=0;readyCd=0;hintStage=5;
@@ -592,7 +592,7 @@ function init(name){
   if(!slotAlliance||slotAlliance.length!==numSlots){slotAlliance=[];for(let i=0;i<numSlots;i++)slotAlliance.push(i)}
   if(!slotType||slotType.length!==numSlots){slotType=['human'];for(let i=1;i<numSlots;i++)slotType.push('medium')}
 
-  / Build faction list: slot 0 = player, rest random AI (unique where possible)
+  // Build faction list: slot 0 = player, rest random AI (unique where possible)
   matchSeed=Date.now()&0x7fffffff;setSeed(matchSeed);
   fac=[chosenFac];
   const _usedFacs=new Set([chosenFac]);
@@ -618,7 +618,7 @@ function init(name){
   gameStats={kills:0,bldgs:0,moneyEarned:0};
   gameSpeed=1;const _sb=document.getElementById('speedBtn');if(_sb)_sb.textContent='1×';
   idleDozerT=0;
-  units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];rubbles=[];
+  units=[];builds=[];planes=[];sel=[];placing=null;scraps=[];rubbles=[];fireZones=[];
   blocked=new Uint8Array(MAPW*MAPH);vis=new Uint8Array(MAPW*MAPH);
   resetPowers();
   upg=Array.from({length:numSlots},()=>({w:0,a:0,mk:0,cp:0}));
@@ -690,7 +690,7 @@ function simStep(){
   if(units.some(u=>u.dead))units=units.filter(u=>!u.dead);
   for(const b of builds)updateBuilding(b,dt);
   if(builds.some(b=>b.dead))builds=builds.filter(b=>!b.dead);
-  updateProjs(dt);updateParts(dt);updatePlanes(dt);
+  updateProjs(dt);updateParts(dt);updatePlanes(dt);updateFireZones(dt);
   for(let i=scraps.length-1;i>=0;i--){scraps[i].life-=dt;if(scraps[i].life<=0)scraps.splice(i,1)}
   for(let i=rubbles.length-1;i>=0;i--){rubbles[i].life-=dt;if(rubbles[i].life<=0)rubbles.splice(i,1)}
   if(scanT>0)scanT=Math.max(0,scanT-dt);

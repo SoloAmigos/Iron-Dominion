@@ -15,14 +15,4 @@ function facCol(fk){
   if(fk==='neutral')return l=>'hsl(90,12%,'+l+'%)';
   const F=FACTIONS[fk];return l=>'hsl('+F.h+','+F.sat+'%,'+l+'%)'
 }
-/* --- painter helpers --- */
-function pPanel(g,x,y,w,h,base,light,dark){
-  g.fillStyle=base;g.fillRect(x,y,w,h);
-  g.fillStyle=light;g.fillRect(x,y,w,1.6);g.fillRect(x,y,1.6,h);
-  g.fillStyle=dark;g.fillRect(x,y+h-1.6,w,1.6);g.fillRect(x+w-1.6,y,1.6,h);
-}
-function pBolts(g,x,y,w,h){
-  g.fillStyle='rgba(0,0,0,.4)';
-  g.fillRect(x+2,y+2,2,2);g.fillRect(x+w-4,y+2,2,2);
-  g.fillRect(x+2,y+h-4,2,2);g.fillRect(x+w-4,y+h-4,2,2);
-}
+__PLACEHOLDER_DO_NOT_SEND__

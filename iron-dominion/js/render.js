@@ -15,4 +15,4 @@ function facCol(fk){
   if(fk==='neutral')return l=>'hsl(90,12%,'+l+'%)';
   const F=FACTIONS[fk];return l=>'hsl('+F.h+','+F.sat+'%,'+l+'%)'
 }
-__PLACEHOLDER_DO_NOT_SEND__
+NEEDS_REAL_CONTENT

@@ -764,6 +764,72 @@ function drawHPBar(e,x,y,w){
   ctx.fillRect(x,y,w*f,3);
   ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(x,y,w*f,1.2);
 }
+/* --- battle damage: deterministic wear geometry cached per building --- */
+function bWear(b,w,h){
+  if(b._wear&&b._wear.w===w&&b._wear.h===h)return b._wear;
+  let s=((b.id+1)*2654435761)>>>0;
+  const rnd=()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296};
+  const ix0=w*.13,ix1=w*.87,iy0=h*.15,iy1=h*.9;
+  const RX=()=>ix0+rnd()*(ix1-ix0),RY=()=>iy0+rnd()*(iy1-iy0);
+  const cracks=[];
+  for(let i=0;i<7;i++){
+    let cx=RX(),cy=iy0+rnd()*(h*.38);const pts=[[cx,cy]];
+    const segs=2+(rnd()*3|0);
+    for(let k=0;k<segs;k++){cx+=(rnd()-.5)*w*.22;cy+=rnd()*h*.2+h*.05;pts.push([clamp(cx,ix0,ix1),clamp(cy,iy0,iy1)])}
+    cracks.push(pts);
+  }
+  const scorch=[];for(let i=0;i<6;i++)scorch.push([RX(),RY(),h*.1+rnd()*h*.15]);
+  const holes=[];for(let i=0;i<4;i++)holes.push([RX(),RY(),w*.1+rnd()*w*.1,h*.1+rnd()*h*.1]);
+  const fires=[];for(let i=0;i<5;i++)fires.push([ix0+rnd()*(ix1-ix0),iy0+(iy1-iy0)*(.42+rnd()*.52)]);
+  b._wear={w,h,cracks,scorch,holes,fires};
+  return b._wear;
+}
+function drawBuildingWear(b,x0,y0,w,h){
+  const f=clamp(b.hp/b.maxhp,0,1);
+  if(f>=0.82)return;
+  const W=bWear(b,w,h);
+  ctx.save();
+  ctx.beginPath();ctx.rect(x0,y0,w,h);ctx.clip();
+  // scorch smudges
+  const sa=clamp((0.82-f)*1.25,0,.55),nsc=f<.5?W.scorch.length:3;
+  for(let i=0;i<nsc;i++){const sc=W.scorch[i];
+    const g=ctx.createRadialGradient(x0+sc[0],y0+sc[1],0,x0+sc[0],y0+sc[1],sc[2]);
+    g.addColorStop(0,'rgba(12,10,8,'+sa+')');g.addColorStop(1,'rgba(12,10,8,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x0+sc[0],y0+sc[1],sc[2],0,7);ctx.fill();
+  }
+  // cracks
+  if(f<.7){
+    const nc=Math.round(clamp((.7-f)/.7,0,1)*W.cracks.length);
+    for(let i=0;i<nc;i++){const pts=W.cracks[i];
+      ctx.strokeStyle='rgba(10,9,7,.7)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(x0+pts[0][0],y0+pts[0][1]);
+      for(let k=1;k<pts.length;k++)ctx.lineTo(x0+pts[k][0],y0+pts[k][1]);ctx.stroke();
+      ctx.strokeStyle='rgba(150,140,120,.22)';ctx.lineWidth=.8;ctx.stroke();
+    }
+  }
+  // blown-out panels (interior exposed + bent rebar)
+  if(f<.45){
+    const nh=Math.round(clamp((.45-f)/.45,0,1)*W.holes.length);
+    for(let i=0;i<nh;i++){const hx=W.holes[i][0],hy=W.holes[i][1],hw=W.holes[i][2],hh=W.holes[i][3];
+      ctx.fillStyle='#0c0b08';
+      ctx.beginPath();ctx.moveTo(x0+hx,y0+hy);ctx.lineTo(x0+hx+hw*.6,y0+hy-hh*.12);
+      ctx.lineTo(x0+hx+hw,y0+hy+hh*.1);ctx.lineTo(x0+hx+hw*.85,y0+hy+hh);
+      ctx.lineTo(x0+hx+hw*.2,y0+hy+hh*.85);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(90,80,60,.5)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(x0+hx+2,y0+hy+hh);ctx.lineTo(x0+hx+hw*.3,y0+hy+2);
+      ctx.moveTo(x0+hx+hw*.6,y0+hy+hh);ctx.lineTo(x0+hx+hw*.7,y0+hy);ctx.stroke();
+    }
+  }
+  ctx.restore();
+  // ember glow when critical
+  if(f<.25){
+    const pulse=0.5+0.5*Math.sin(gtime*6+b.id);
+    for(let i=0;i<W.fires.length;i++){const fx=W.fires[i][0],fy=W.fires[i][1];
+      ctx.fillStyle='rgba(255,'+(90+60*pulse|0)+',30,'+(0.22+0.18*pulse)+')';
+      ctx.beginPath();ctx.arc(x0+fx,y0+fy,5+2*pulse,0,7);ctx.fill();
+    }
+  }
+}
 function drawBuilding(b){
   const x0=b.tx*TILE,y0=b.ty*TILE,w=b.t.w*TILE,h=b.t.h*TILE;
   const bx=x0+w/2,by=y0+h/2;
@@ -913,9 +979,17 @@ function drawBuilding(b){
   {const BICO={command:'🏢',power:'⚡',supply:'📦',market:'💰',barracks:'🪖',factory:'⚙️',tech:'🔬',silo:'☢️',airfield:'✈️',samsite:'🚀',repairbay:'🔩',watchtower:'🔭'};
   const bic=BICO[b.type];
   if(bic){ctx.save();const icx=x0+w/2,icy=y0+7;ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.ellipse(icx,icy,11,9,0,0,7);ctx.fill();ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(bic,icx,icy);ctx.restore()}}
-  if(b.hp<b.maxhp*.45&&state==='play'&&(tileVisAt(b.x,b.y)===2||!isEnemy(0,b.team))){
-    if(Math.random()<.08)addPart({k:'smoke',x:x0+vrand(8,w-8),y:y0+vrand(6,h*.5),vx:vrand(-5,5),vy:vrand(-26,-12),life:vrand(.7,1.2),max:vrand(.7,1.2),s:vrand(5,9)});
-    if(b.hp<b.maxhp*.25&&Math.random()<.05)addPart({k:'fire',x:x0+vrand(10,w-10),y:y0+vrand(8,h-12),vx:0,vy:vrand(-14,-6),life:vrand(.2,.4),max:vrand(.2,.4),s:vrand(5,9)});
+  // Progressive battle damage — cracks, scorch, blown panels, embers
+  drawBuildingWear(b,x0,y0,w,h);
+  // Damage particle emitters — smoke thickens with damage, fire + sparks when critical
+  if(b.built&&state==='play'&&(tileVisAt(b.x,b.y)===2||!isEnemy(0,b.team))){
+    const df=b.hp/b.maxhp;
+    if(df<.7&&Math.random()<(.7-df)*.2)
+      addPart({k:'smoke',x:x0+vrand(8,w-8),y:y0+vrand(6,h*.5),vx:vrand(-5,5),vy:vrand(-30,-14),life:vrand(.8,1.4),max:1.4,s:vrand(6,12)});
+    if(df<.28){
+      if(Math.random()<.12)addPart({k:'fire',x:x0+vrand(10,w-10),y:y0+vrand(h*.4,h-10),vx:vrand(-4,4),vy:vrand(-16,-6),life:vrand(.25,.5),max:.5,s:vrand(6,11)});
+      if(Math.random()<.05)addPart({k:'spark',x:x0+vrand(10,w-10),y:y0+vrand(h*.3,h-10),vx:vrand(-30,30),vy:vrand(-50,-10),life:vrand(.2,.4),max:.4,s:vrand(1.5,3),c:'#ffb347'});
+    }
   }
   if(b.flash>0){ctx.fillStyle='rgba(255,255,255,'+(b.flash*3)+')';ctx.fillRect(x0+2,y0+2,w-4,h-4)}
   if(sel.includes(b)){
@@ -1298,15 +1372,33 @@ function render(){
   ctx.imageSmoothingEnabled=true;
   ctx.drawImage(groundCv,0,0);
   for(const p of parts)if(p.k==='scorch')drawPart(p);
-  // Building rubble — decaying scorch marks where buildings died
+  // Building wreckage — charred, smouldering ruins that cool over time
   for(const r of rubbles){
     const f=r.life/r.max;
-    ctx.globalAlpha=Math.min(0.85,f*2.5);
-    ctx.fillStyle='rgba(18,16,10,0.82)';
-    ctx.fillRect(r.x-r.w/2+2,r.y-r.h/2+2,r.w-4,r.h-4);
-    ctx.strokeStyle='rgba(55,48,28,0.7)';ctx.lineWidth=1.5;
-    ctx.strokeRect(r.x-r.w/2+4,r.y-r.h/2+4,r.w-8,r.h-8);
+    const rx=r.x-r.w/2,ry=r.y-r.h/2;
+    ctx.save();
+    ctx.globalAlpha=Math.min(0.92,f*3);
+    // charred slab base
+    ctx.fillStyle='#14110a';ctx.fillRect(rx+2,ry+2,r.w-4,r.h-4);
+    // broken concrete chunks + twisted beams (deterministic from seed)
+    let s=(r.seed||1)>>>0;const rnd=()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296};
+    for(let i=0;i<7;i++){const cw=r.w*(.13+rnd()*.17),cx=rx+rnd()*(r.w-cw),cy=ry+rnd()*(r.h-cw*.6);
+      ctx.fillStyle=rnd()<.5?'#241d12':'#2c2417';ctx.fillRect(cx,cy,cw,cw*.58);}
+    ctx.strokeStyle='#3a3322';ctx.lineWidth=2;
+    for(let i=0;i<3;i++){const bx=rx+r.w*(.25+i*.25),by=ry+r.h*.72;
+      ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+(rnd()-.5)*14,by-r.h*(.28+rnd()*.3));ctx.stroke();}
     ctx.globalAlpha=1;
+    // smouldering heat glow + smoke while still hot (first ~45% of life)
+    if(f>0.55){
+      const heat=(f-0.55)/0.45,pulse=0.5+0.5*Math.sin(gtime*5+r.x);
+      ctx.fillStyle='rgba(255,120,40,'+(0.16*heat*pulse)+')';
+      ctx.fillRect(rx+4,ry+4,r.w-8,r.h-8);
+      if(state==='play'&&Math.random()<0.16*heat)
+        addPart({k:'smoke',x:r.x+vrand(-r.w*.3,r.w*.3),y:r.y+vrand(-r.h*.3,r.h*.2),vx:vrand(-6,6),vy:vrand(-26,-12),life:vrand(1,2),max:2,s:vrand(8,16)});
+      if(state==='play'&&Math.random()<0.09*heat)
+        addPart({k:'spark',x:r.x+vrand(-r.w*.3,r.w*.3),y:r.y,vx:vrand(-20,20),vy:vrand(-40,-10),life:.4,max:.4,s:2,c:'#ff8a3a'});
+    }
+    ctx.restore();
   }
   for(const fz of fireZones){
     if(tileVisAt(fz.x,fz.y)<1)continue;

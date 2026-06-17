@@ -6,7 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v38).
+PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v44).
 
 | File | Owns |
 |---|---|
@@ -17,7 +17,7 @@ PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on e
 | `js/buildings.js` | construction, production queues, silo charge, repair-bay aura |
 | `js/projectiles.js` | projectile flight + impact |
 | `js/ai.js` | AI: build order, per-faction doctrine (FACMIX with `fAltR`/`sigFR`/`sigBR`), waves with flank/econ-raid/retreat |
-| `js/render.js` | canvas renderer, procedural sprites (`bSpr`/`uSpr`), animated overlays, minimap, `iconURL()` |
+| `js/render.js` | canvas renderer, procedural sprites (`bSpr`/`uSpr`), animated overlays, minimap, `iconURL()` — **editable master; shipped split into `render.part1–8.js` (see Deployment Notes)** |
 | `js/audio.js` | audio engine v2: music sequencer (calm/intense), layered SFX, volume persistence |
 | `js/ui.js` | command card, pointer/touch input, control groups, HUD buttons |
 | `js/main.js` | menu screens, lobby, init, fixed-timestep game loop, endGame, save/load |
@@ -39,9 +39,14 @@ PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on e
 
 ## Deployment Notes
 
-- Git push to `main` **always 503** via the session proxy — fall back to GitHub MCP `mcp__github__push_files` every time.
-- After every MCP push: verify pushed files with sha256 (local vs `mcp__github__get_file_contents` fetched bytes); retry on mismatch.
+- Git push to `main` **always 503** via the session proxy (the receive-pack endpoint is blocked for any payload size; no GitHub PAT is available to push direct). **MCP `mcp__github__push_files` is the only write path.**
+- After every MCP push: independently verify the remote git **blob SHA** (`git fetch origin main && git rev-parse origin/main:<path>`) against the local blob (`git hash-object <file>`). Do not trust agent/tool self-reports — check the SHA directly.
+- **Do the pushes yourself; do NOT delegate to sub-agents.** Past sub-agents repeatedly pushed truncated/placeholder stubs (652 B / 1105 B) that broke the live game. Reading + emitting file content verbatim in your own `push_files` call, then verifying the blob SHA, is reliable.
+- **render.js is split into 8 load-order parts (`render.part1.js`…`render.part8.js`).** Reason: the full ~95 KB render.js is too token-heavy to emit in a single `push_files` tool-call (the call truncates). Each part is small enough to push reliably. They are plain `<script>` tags sharing global scope, so functions resolve across files at call time.
+  - **`render.js` is the editable master.** To change the renderer: edit `render.js`, then regenerate the parts at top-level function boundaries (cut lines `1,232,443,738,912,1118,1352,1549`), prepend `'use strict';` to parts 2–8, and `node --check` each. Verify reassembly equals the master: concatenate part1 + (parts 2–8 with their first `'use strict';` line stripped) and confirm `git hash-object` matches `render.js`.
+  - Push each part, verify its blob SHA, then push `index.html` (loads the 8 parts in order) + `sw.js` (caches them) last so the live switch only happens once all parts exist.
 - Must reset local git to `origin/main` after MCP push (`git fetch origin main && git reset --hard origin/main`).
+- Commit authorship: use `git -c user.email=noreply@anthropic.com -c user.name=Claude commit …` or the stop hook flags the commit as Unverified.
 - UI theme: military (gunmetal/olive/khaki/stencil-amber, square corners) — do NOT reintroduce neon glows.
 
 ## Map Presets
@@ -68,7 +73,7 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 - Air units skip ground pathfinding; they use a `loiter` point + `updateAir()` loop
 - FACMIX doctrine fields: `fArty` (arty rate), `fAlt`/`fAltR` (faction alt sig + rate), `bRocket` (rocket infantry rate), `sigFR`/`sigBR` (factory/barracks sig override rates), `cadence` (wave timer multiplier)
 - Scan auto-retarget fires every 0.3–0.5 s but only for `ts==='idle'` or units on `'attack-move'` orders; plain `'move'` and `'attack'` orders are immune to scan distraction.
-- BICO icon dict in render.js line ~913: `{command,power,supply,market,barracks,factory,tech,silo,airfield,samsite,repairbay,watchtower}`
+- BICO icon dict in render.js (drawBuilding, render.part6.js): `{command,power,supply,market,barracks,factory,tech,silo,airfield,samsite,repairbay,watchtower}`
 
 ## Completed Features (all shipped to main)
 
@@ -84,6 +89,8 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 - [x] Signature unit ★ badge (ground sig units, faction-coloured pip)
 - [x] Repairbay + watchtower building sprites + animated overlays + BICO icons
 - [x] Fix: restored orderMove/orderAttack/orderGarrison (were missing → all orders threw ReferenceError); scan no longer distracts plain-move or attack orders
+- [x] Art overhaul: faction-distinct buildings (command/power/barracks/factory/supply/tech painters per faction), sub-faction command-center add-ons, progressive battle-damage wear (cracks→scorch→blown panels→embers), real building death explosions + smouldering rubble, distinct per-faction unit sprites
+- [x] render.js split into 8 load-order parts (render.part1–8.js) to fit the MCP push path; render.js kept as editable master (see Deployment Notes)
 
 ## Roadmap
 

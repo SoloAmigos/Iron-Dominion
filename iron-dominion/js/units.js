@@ -156,8 +156,9 @@ function boomkartDeath(u){
   for(let i=0;i<10;i++)addPart({k:'spark',x:u.x,y:u.y,vx:vrand(-80,80),vy:vrand(-100,-20),life:vrand(.3,.6),max:.6,s:vrand(2,4),c:'#ffd27d'});
 }
 
-function entRad(e){return e.kind==='b'?(Math.max(e.t.w,e.t.h)*TILE/2):e.t.r}
-function dist2(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+// entRad/dist2/shQuery live in helpers.js — `const dist2` there collides with a
+// `function dist2` here (SyntaxError across <script> tags → whole file fails to
+// load). Use the helpers.js definitions; do not redeclare dist2 in this file.
 
 function buildingDeathFx(b){
   const W=b.t.w*TILE,H=b.t.h*TILE,big=Math.max(W,H);
@@ -409,6 +410,8 @@ function findEnemyInRange(sh,r){
 function moveUnit(u,dt){
   if(!u.path||u.wpi>=u.path.length){u.moving=false;return}
   const wp=u.path[u.wpi];
+  // findPath/astar/placeBuilding all yield {x,y} world-pixel waypoints (not [tx,ty]
+  // tile arrays). Reading wp[0] gave undefined -> NaN positions -> units vanished.
   const tx=wp.x,ty=wp.y;
   const dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy);
   if(d<6){u.wpi++;return}
@@ -686,7 +689,10 @@ function updateDozer(u,dt){
     const b=u.site;
     if(b.dead||b.built){u.site=null;u.order=null;u.ts='idle';return}
     const d=Math.hypot(b.x-u.x,b.y-u.y);
-    if(d>24){
+    // Footprint is blocked, so the dozer parks just outside it. Build range must
+    // clear the building's half-extent (a flat 24px never reaches multi-tile sites).
+    const reach=Math.max(b.t.w,b.t.h)*TILE*0.5+20;
+    if(d>reach){
       if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),b.tx+Math.floor(b.t.w/2),b.ty+Math.floor(b.t.h/2),blocked);u.wpi=0;u.repath=2}
       moveUnit(u,dt);u.ts='move';return;
     }

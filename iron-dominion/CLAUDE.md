@@ -6,8 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v47).
-PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v46).
+PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v48).
 
 | File | Owns |
 |---|---|
@@ -96,6 +95,7 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 - [x] Batch 5 building art: faction-distinct sprites for market, silo, turret, airfield, radar, samsite (24 new painter functions)
 - [x] Batch 6 unit art: faction-distinct tank/arty hulls (Crusader/Warlord/Marauder/Glacier; Thunderer/Dragonfire/Junk Lobber/Avalanche) + infantry faction body kits (Vanguard olive/Crimson dark armor/Scorpion keffiyeh-tan/Northwind blue parka); `drawSoldier` now takes `fk` param; split points updated to `1,232,831,1033,1264,1509,1743,1940`; cache v46
 - [x] Fix: restored `separation()`, `findEnemyInRange()`, `astar()` shim, and `updateDozer` completion — stale units.js had called 4 dead functions causing every simStep() to throw and freeze the canvas black; cache v47
+- [x] Fix: `moveUnit` path format — `findPath()` returns `[{x,y},...]` pixel objects; old code used `wp[0]*TILE+TILE/2` (tile-array format) → NaN positions → units frozen silently; changed to `wp.x`/`wp.y`; cache v48
 
 ## Roadmap
 

@@ -7,16 +7,13 @@ function genWorld(mapKey,slots,skipNeutrals){
   blocked=new Uint8Array(MAPW*MAPH);vis=new Uint8Array(MAPW*MAPH);
   piles=[];rocks=[];
 
-  // Place gold piles from MAP config
   for(const[tx,ty]of MAP.piles){
     const amt=42000+Math.floor(srandom()*14000);
     piles.push({kind:'p',tx,ty,x:(tx+1)*TILE,y:(ty+1)*TILE,amt,max:amt});
   }
 
-  // A tile sits on (or hugs) a supply stash — keep walls/rocks off it so stashes stay reachable
   const onPile=(tx,ty)=>{for(const p of piles)if(Math.abs(tx-p.tx-1)<2.5&&Math.abs(ty-p.ty-1)<2.5)return true;return false};
 
-  // Helper: is a tile safe from spawns and piles
   const spawn0=MAP.spawns[0],spawn1=MAP.spawns[1];
   const safe=(tx,ty)=>{
     if(Math.hypot(tx-spawn0[0]-2,ty-spawn0[1]-2)<10)return false;
@@ -25,7 +22,6 @@ function genWorld(mapKey,slots,skipNeutrals){
     return true;
   };
 
-  // Random rock clusters
   for(let c=0;c<26;c++){
     let tx=1+Math.floor(srandom()*(MAPW-2)),ty=1+Math.floor(srandom()*(MAPH-2));
     if(!safe(tx,ty))continue;
@@ -36,7 +32,6 @@ function genWorld(mapKey,slots,skipNeutrals){
     }
   }
 
-  // MAP-defined rocks
   for(const r of (MAP.rocks||[])){
     if(inB(r.tx,r.ty)&&!blocked[idx(r.tx,r.ty)]&&!onPile(r.tx,r.ty)){
       blocked[idx(r.tx,r.ty)]=1;
@@ -44,7 +39,6 @@ function genWorld(mapKey,slots,skipNeutrals){
     }
   }
 
-  // MAP-defined wall ridges: each wall is [[x1,y1],[x2,y2]]
   for(const wall of (MAP.walls||[])){
     const[p1,p2]=wall;
     const dx=p2[0]-p1[0],dy=p2[1]-p1[1];
@@ -59,7 +53,6 @@ function genWorld(mapKey,slots,skipNeutrals){
     }
   }
 
-  // Neutral structures from MAP config
   for(const nd of (MAP.neutrals||[])){
     const t=BT[nd.type];let ok=true;
     for(let ny=nd.ty;ny<nd.ty+t.h&&ok;ny++)
@@ -81,7 +74,6 @@ function buildGround(){
   const deco=MAP.deco||'green';
 
   if(deco==='sand'){
-    // ── DESERT ── warm sandy tones
     g.fillStyle='#c4a96a';g.fillRect(0,0,WW,WH);
     for(let i=0;i<1200;i++){
       const x=Math.random()*WW,y=Math.random()*WH,r=vrand(12,65);
@@ -94,12 +86,10 @@ function buildGround(){
       g.fillRect(Math.random()*WW,Math.random()*WH,vrand(2,6),vrand(1,3));
     }
     g.globalAlpha=1;
-    // heat shimmer patches
     for(let i=0;i<60;i++){
       g.fillStyle='rgba(200,160,80,'+vrand(.08,.18)+')';
       g.beginPath();g.ellipse(Math.random()*WW,Math.random()*WH,vrand(30,90),vrand(8,28),vrand(0,3),0,7);g.fill();
     }
-    // sparse dry scrub
     const spawn0=MAP.spawns[0],spawn1=MAP.spawns[1];
     const decoOK=(tx,ty)=>{
       if(!inB(tx,ty)||blocked[idx(tx,ty)])return false;
@@ -117,7 +107,6 @@ function buildGround(){
       g.fillStyle='#7a8a38';g.beginPath();g.arc(x,y-3,r*.7,0,7);g.fill();
       g.fillStyle='#919e42';g.beginPath();g.arc(x-r*.2,y-5,r*.4,0,7);g.fill();
     }
-    // rocks — sandstone colour
     for(const r of rocks){
       const x=r.tx*TILE,y=r.ty*TILE;
       g.fillStyle='#b89060';g.beginPath();
@@ -128,33 +117,27 @@ function buildGround(){
     const vgd=g.createRadialGradient(WW*.38,WH*.32,WH*.3,WW*.5,WH*.5,WW*.72);
     vgd.addColorStop(0,'rgba(255,240,180,.06)');vgd.addColorStop(.6,'rgba(0,0,0,0)');vgd.addColorStop(1,'rgba(80,50,10,.28)');
     g.fillStyle=vgd;g.fillRect(0,0,WW,WH);
-    // border
     g.fillStyle='#8c6030';g.fillRect(0,0,WW,14);g.fillRect(0,WH-14,WW,14);g.fillRect(0,0,14,WH);g.fillRect(WW-14,0,14,WH);
     g.strokeStyle='#6b4820';g.lineWidth=5;g.strokeRect(2,2,WW-4,WH-4);
 
   } else if(deco==='urban'){
-    // ── URBAN ── grey concrete / city rubble
     g.fillStyle='#4a4e48';g.fillRect(0,0,WW,WH);
-    // concrete slab grid
     g.globalAlpha=0.18;
     for(let gx=0;gx<WW;gx+=80){g.strokeStyle='#6a6e66';g.lineWidth=1;g.beginPath();g.moveTo(gx,0);g.lineTo(gx,WH);g.stroke()}
     for(let gy=0;gy<WH;gy+=80){g.beginPath();g.moveTo(0,gy);g.lineTo(WW,gy);g.stroke()}
     g.globalAlpha=1;
-    // concrete variation patches
     for(let i=0;i<900;i++){
       const x=Math.random()*WW,y=Math.random()*WH,r=vrand(10,55);
       g.fillStyle=['#525650','#484c46','#5a5e58','#424642','#5e6259'][i%5];
       g.globalAlpha=vrand(.15,.45);g.beginPath();g.ellipse(x,y,r,r*vrand(.5,.95),vrand(0,3),0,7);g.fill();
     }
     g.globalAlpha=.35;
-    // road markings / cracks
     for(let i=0;i<180;i++){
       const x=Math.random()*WW,y=Math.random()*WH,l=vrand(8,40),a=vrand(0,Math.PI);
       g.strokeStyle='#333836';g.lineWidth=vrand(.8,2.2);g.globalAlpha=vrand(.3,.7);
       g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke();
     }
     g.globalAlpha=1;
-    // rubble & debris
     const spawn0u=MAP.spawns[0],spawn1u=MAP.spawns[1];
     const decoOKu=(tx,ty)=>{
       if(!inB(tx,ty)||blocked[idx(tx,ty)])return false;
@@ -172,7 +155,6 @@ function buildGround(){
       g.fillRect(x,y,vrand(8,22),vrand(6,16));
       g.fillStyle='#727870';g.fillRect(x+2,y+1,4,3);
     }
-    // rocks — grey rubble
     for(const r of rocks){
       const x=r.tx*TILE,y=r.ty*TILE;
       g.fillStyle='#5a6058';g.beginPath();
@@ -187,28 +169,23 @@ function buildGround(){
     g.strokeStyle='#181c16';g.lineWidth=5;g.strokeRect(2,2,WW-4,WH-4);
 
   } else if(deco==='snow'){
-    // ── TUNDRA ── frozen arctic wasteland
     g.fillStyle='#c4d0d8';g.fillRect(0,0,WW,WH);
-    // ice sheet variation patches
     for(let i=0;i<800;i++){
       const x=Math.random()*WW,y=Math.random()*WH,r=vrand(15,75);
       g.fillStyle=['#c8d4dc','#b8c8d4','#d0dae2','#acbcc8','#d4dce4'][i%5];
       g.globalAlpha=vrand(.2,.5);g.beginPath();g.ellipse(x,y,r,r*vrand(.4,.9),vrand(0,3),0,7);g.fill();
     }
     g.globalAlpha=1;
-    // snow drifts
     for(let i=0;i<55;i++){
       g.fillStyle='rgba(240,248,255,'+vrand(.18,.35)+')';
       g.beginPath();g.ellipse(Math.random()*WW,Math.random()*WH,vrand(45,110),vrand(8,22),vrand(0,2),0,7);g.fill();
     }
-    // ice cracks
     for(let i=0;i<90;i++){
       const x=Math.random()*WW,y=Math.random()*WH,l=vrand(10,50),a=vrand(0,Math.PI);
       g.strokeStyle='#8099aa';g.lineWidth=vrand(.5,1.5);g.globalAlpha=vrand(.15,.45);
       g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke();
     }
     g.globalAlpha=1;
-    // frozen scrub (snow-laden dead pines)
     const spawn0sn=MAP.spawns[0],spawn1sn=MAP.spawns[1];
     const decoOKsn=(tx,ty)=>{
       if(!inB(tx,ty)||blocked[idx(tx,ty)])return false;
@@ -226,7 +203,6 @@ function buildGround(){
       g.fillStyle='#aabbc8';g.beginPath();g.moveTo(x,y-12);g.lineTo(x+6,y-2);g.lineTo(x-6,y-2);g.closePath();g.fill();
       g.fillStyle='#c8d8e4';g.beginPath();g.moveTo(x,y-16);g.lineTo(x+4,y-8);g.lineTo(x-4,y-8);g.closePath();g.fill();
     }
-    // frozen boulders (blue-grey, snow-capped)
     for(const r of rocks){
       const x=r.tx*TILE,y=r.ty*TILE;
       g.fillStyle='#6e8090';g.beginPath();
@@ -243,7 +219,6 @@ function buildGround(){
     g.strokeStyle='rgba(150,180,200,.30)';g.lineWidth=1.4;g.strokeRect(16,16,WW-32,WH-32);
 
   } else {
-    // ── VALLEY / GREEN ── lush green with vegetation
     g.fillStyle='#2b3a25';g.fillRect(0,0,WW,WH);
     for(let i=0;i<1100;i++){
       const x=Math.random()*WW,y=Math.random()*WH,r=vrand(14,70);
@@ -373,6 +348,11 @@ function findPath(sx,sy,txw,tyw){
     out.push(pts[j]);a=pts[j];k=j+1;
   }
   return out;
+}
+// Compatibility shim: units.js pathfinds in tile coordinates; findPath() works
+// in world pixels and reads `blocked` directly.
+function astar(stx,sty,gtx,gty){
+  return findPath(stx*TILE+TILE/2,sty*TILE+TILE/2,gtx*TILE+TILE/2,gty*TILE+TILE/2);
 }
 
 /* ================= FOG ================= */

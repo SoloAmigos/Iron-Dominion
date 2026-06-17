@@ -7,6 +7,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
 PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v47).
+PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v46).
 
 | File | Owns |
 |---|---|

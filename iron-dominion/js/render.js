@@ -1813,3 +1813,4 @@ function renderMini(){
   mctx.strokeStyle='#e9f1e2';mctx.lineWidth=1;
   mctx.strokeRect((cam.x-vwW/2)*sx,(cam.y-vwH/2)*sy,vwW*sx,vwH*sy);
 }
+PLACEHOLDER_DO_NOT_PUSH

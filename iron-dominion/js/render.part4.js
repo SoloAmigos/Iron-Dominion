@@ -12,18 +12,45 @@ function uSpr(type,fk){
     case 'tank':return spr('Utank_'+fk,44,30,g=>{
       g.translate(22,15);
       g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(1,2,19,12,0,0,7);g.fill();
-      trackPair(g,38,28);
-      g.fillStyle=C(29);
-      g.beginPath();g.moveTo(-16,-8);g.lineTo(11,-8);g.lineTo(18,-3);g.lineTo(18,3);g.lineTo(11,8);g.lineTo(-16,8);g.closePath();g.fill();
-      g.fillStyle=C(36);
-      g.beginPath();g.moveTo(-16,-8);g.lineTo(11,-8);g.lineTo(18,-3);g.lineTo(18,0);g.lineTo(-16,0);g.closePath();g.fill();
-      g.strokeStyle=C(15);g.lineWidth=1.4;
-      g.beginPath();g.moveTo(-16,-8);g.lineTo(11,-8);g.lineTo(18,-3);g.lineTo(18,3);g.lineTo(11,8);g.lineTo(-16,8);g.closePath();g.stroke();
-      g.fillStyle=C(18);g.fillRect(-15,-5,6,10);
-      g.strokeStyle=C(10);g.lineWidth=1;
-      for(let i=0;i<3;i++){g.beginPath();g.moveTo(-14.4,-3+i*3);g.lineTo(-9.6,-3+i*3);g.stroke()}
-      g.fillStyle='#1d231a';g.fillRect(-18,-6,3,4);
-      g.fillStyle=ac;g.fillRect(7,-7.4,4,14.8);
+      if(fk==='crimson'){
+        // Warlord — wide blocky hull, exhaust stacks, riveted
+        trackPair(g,40,30);
+        g.fillStyle=C(27);g.beginPath();g.moveTo(-18,-10);g.lineTo(12,-10);g.lineTo(18,-3.5);g.lineTo(18,3.5);g.lineTo(12,10);g.lineTo(-18,10);g.closePath();g.fill();
+        g.fillStyle=C(34);g.beginPath();g.moveTo(-18,-10);g.lineTo(12,-10);g.lineTo(18,-3.5);g.lineTo(18,0);g.lineTo(-18,0);g.closePath();g.fill();
+        g.strokeStyle=C(13);g.lineWidth=1.5;g.beginPath();g.moveTo(-18,-10);g.lineTo(12,-10);g.lineTo(18,-3.5);g.lineTo(18,3.5);g.lineTo(12,10);g.lineTo(-18,10);g.closePath();g.stroke();
+        g.fillStyle='#111108';g.fillRect(-20,-9,3.5,5.5);g.fillRect(-20,3.5,3.5,5.5);
+        g.fillStyle='#3a2c18';g.fillRect(-19.8,-8.8,1.8,5);g.fillRect(-19.8,3.7,1.8,5);
+        for(let i=0;i<4;i++){g.fillStyle=C(42);g.beginPath();g.arc(-12+i*7,-9.8,1.6,0,7);g.fill();g.beginPath();g.arc(-12+i*7,9.8,1.6,0,7);g.fill();}
+        g.fillStyle=ac;g.fillRect(8,-9,3.5,18);
+      }else if(fk==='scorpion'){
+        // Marauder — low wedge hull, sand camo stripes
+        trackPair(g,38,26);
+        g.fillStyle=C(31);g.beginPath();g.moveTo(-16,-7);g.lineTo(9,-8);g.lineTo(20,-2.5);g.lineTo(20,2.5);g.lineTo(9,8);g.lineTo(-16,7);g.closePath();g.fill();
+        g.fillStyle=C(38);g.beginPath();g.moveTo(-16,-7);g.lineTo(9,-8);g.lineTo(20,-2.5);g.lineTo(20,0);g.lineTo(-16,0);g.closePath();g.fill();
+        g.strokeStyle=C(15);g.lineWidth=1.3;g.beginPath();g.moveTo(-16,-7);g.lineTo(9,-8);g.lineTo(20,-2.5);g.lineTo(20,2.5);g.lineTo(9,8);g.lineTo(-16,7);g.closePath();g.stroke();
+        g.fillStyle='rgba(0,0,0,.14)';g.beginPath();g.moveTo(-6,-8);g.lineTo(2,-8);g.lineTo(-12,8);g.lineTo(-20,8);g.closePath();g.fill();
+        g.fillStyle='rgba(255,255,255,.07)';g.beginPath();g.moveTo(3,-8);g.lineTo(11,-7);g.lineTo(-3,8);g.lineTo(-12,8);g.closePath();g.fill();
+        g.fillStyle=ac;g.fillRect(9,-6.5,3.5,13);
+      }else if(fk==='northwind'){
+        // Glacier — wide boxy hull, front skirt plates
+        trackPair(g,38,30);
+        g.fillStyle=C(29);g.beginPath();g.moveTo(-18,-10);g.lineTo(8,-10);g.lineTo(14,-3.5);g.lineTo(14,3.5);g.lineTo(8,10);g.lineTo(-18,10);g.closePath();g.fill();
+        g.fillStyle=C(36);g.beginPath();g.moveTo(-18,-10);g.lineTo(8,-10);g.lineTo(14,-3.5);g.lineTo(14,0);g.lineTo(-18,0);g.closePath();g.fill();
+        g.strokeStyle=C(15);g.lineWidth=1.4;g.beginPath();g.moveTo(-18,-10);g.lineTo(8,-10);g.lineTo(14,-3.5);g.lineTo(14,3.5);g.lineTo(8,10);g.lineTo(-18,10);g.closePath();g.stroke();
+        g.fillStyle=C(22);g.fillRect(-17,-13.5,26,3.5);g.fillRect(-17,10,26,3.5);
+        g.strokeStyle=C(12);g.lineWidth=.9;g.strokeRect(-17,-13.5,26,3.5);g.strokeRect(-17,10,26,3.5);
+        g.fillStyle=ac;g.fillRect(5,-9,3.5,18);
+      }else{
+        // Vanguard Crusader — angular hull, louvered engine panel
+        trackPair(g,38,28);
+        g.fillStyle=C(29);g.beginPath();g.moveTo(-16,-8);g.lineTo(11,-8);g.lineTo(18,-3);g.lineTo(18,3);g.lineTo(11,8);g.lineTo(-16,8);g.closePath();g.fill();
+        g.fillStyle=C(36);g.beginPath();g.moveTo(-16,-8);g.lineTo(11,-8);g.lineTo(18,-3);g.lineTo(18,0);g.lineTo(-16,0);g.closePath();g.fill();
+        g.strokeStyle=C(15);g.lineWidth=1.4;g.beginPath();g.moveTo(-16,-8);g.lineTo(11,-8);g.lineTo(18,-3);g.lineTo(18,3);g.lineTo(11,8);g.lineTo(-16,8);g.closePath();g.stroke();
+        g.fillStyle=C(18);g.fillRect(-15,-5,6,10);
+        g.strokeStyle=C(10);g.lineWidth=1;for(let i=0;i<3;i++){g.beginPath();g.moveTo(-14.4,-3+i*3);g.lineTo(-9.6,-3+i*3);g.stroke()}
+        g.fillStyle='#1d231a';g.fillRect(-18,-6,3,4);
+        g.fillStyle=ac;g.fillRect(7,-7.4,4,14.8);
+      }
     });
     case 'dominator':return spr('Udom_'+fk,50,34,g=>{
       g.translate(25,17);
@@ -78,14 +105,44 @@ function uSpr(type,fk){
     case 'arty':return spr('Uarty_'+fk,42,28,g=>{
       g.translate(21,14);
       g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(1,2,17,11,0,0,7);g.fill();
-      trackPair(g,34,26);
-      g.fillStyle=C(28);
-      g.beginPath();g.moveTo(-14,-7);g.lineTo(12,-7);g.lineTo(16,-2);g.lineTo(16,2);g.lineTo(12,7);g.lineTo(-14,7);g.closePath();g.fill();
-      g.fillStyle=C(35);
-      g.beginPath();g.moveTo(-14,-7);g.lineTo(12,-7);g.lineTo(16,-2);g.lineTo(16,0);g.lineTo(-14,0);g.closePath();g.fill();
-      g.strokeStyle=C(14);g.lineWidth=1.4;g.strokeRect(-14,-7,30,14);
-      g.fillStyle=C(20);g.beginPath();g.moveTo(-14,-5);g.lineTo(-20,-7);g.lineTo(-20,7);g.lineTo(-14,5);g.closePath();g.fill();
-      g.fillStyle=ac;g.fillRect(8,-6.4,4,12.8);
+      if(fk==='crimson'){
+        // Dragonfire — heavy siege hull, wide breech, prominent barrel stub
+        trackPair(g,36,28);
+        g.fillStyle=C(26);g.beginPath();g.moveTo(-15,-9);g.lineTo(14,-9);g.lineTo(17,-3);g.lineTo(17,3);g.lineTo(14,9);g.lineTo(-15,9);g.closePath();g.fill();
+        g.fillStyle=C(33);g.beginPath();g.moveTo(-15,-9);g.lineTo(14,-9);g.lineTo(17,-3);g.lineTo(17,0);g.lineTo(-15,0);g.closePath();g.fill();
+        g.strokeStyle=C(12);g.lineWidth=1.5;g.strokeRect(-15,-9,32,18);
+        g.fillStyle=C(18);g.fillRect(-15,-7,5,14);g.strokeStyle=C(10);g.lineWidth=.9;g.strokeRect(-15,-7,5,14);
+        g.fillStyle=C(22);g.fillRect(14,-12,4,24);
+        g.strokeStyle=C(11);g.lineWidth=1.2;g.strokeRect(14,-12,4,24);
+        for(let i=0;i<4;i++){g.fillStyle=C(40);g.beginPath();g.arc(-10+i*8,-9,1.6,0,7);g.fill();}
+        g.fillStyle=ac;g.fillRect(10,-8,3.5,16);
+      }else if(fk==='scorpion'){
+        // Junk Lobber — wheeled chassis, improvised rocket tubes
+        g.fillStyle='#14180f';for(const wx of[-12,10])for(const wy of[-9.5,9.5]){g.beginPath();g.arc(wx,wy,4,0,7);g.fill()}
+        g.fillStyle='#3a4034';for(const wx of[-12,10])for(const wy of[-9.5,9.5]){g.beginPath();g.arc(wx,wy,1.6,0,7);g.fill()}
+        g.fillStyle=C(30);g.fillRect(-16,-6,28,12);g.fillStyle=C(37);g.fillRect(-16,-6,28,5.5);
+        g.strokeStyle=C(13);g.lineWidth=1.2;g.strokeRect(-16,-6,28,12);
+        g.fillStyle='rgba(122,72,32,.5)';g.fillRect(-14,1,5,4);g.fillRect(6,-5.5,4,3);
+        g.fillStyle=C(20);g.fillRect(-22,-5,7,10);
+        g.fillStyle=ac;g.fillRect(7,-5.5,3.5,11);
+      }else if(fk==='northwind'){
+        // Avalanche — wide mortar carrier, enclosed armored cab
+        trackPair(g,36,28);
+        g.fillStyle=C(30);g.beginPath();g.moveTo(-14,-8);g.lineTo(10,-8);g.lineTo(14,-2.5);g.lineTo(14,2.5);g.lineTo(10,8);g.lineTo(-14,8);g.closePath();g.fill();
+        g.fillStyle=C(37);g.beginPath();g.moveTo(-14,-8);g.lineTo(10,-8);g.lineTo(14,-2.5);g.lineTo(14,0);g.lineTo(-14,0);g.closePath();g.fill();
+        g.strokeStyle=C(14);g.lineWidth=1.3;g.beginPath();g.moveTo(-14,-8);g.lineTo(10,-8);g.lineTo(14,-2.5);g.lineTo(14,2.5);g.lineTo(10,8);g.lineTo(-14,8);g.closePath();g.stroke();
+        g.fillStyle=C(24);g.fillRect(-14,-6,6,12);g.strokeStyle=C(12);g.lineWidth=.9;g.strokeRect(-14,-6,6,12);
+        g.fillStyle='#8fb4c4';g.fillRect(-13,-4,4,6);
+        g.fillStyle=ac;g.fillRect(6,-7,3.5,14);
+      }else{
+        // Vanguard Thunderer — tracked SPG
+        trackPair(g,34,26);
+        g.fillStyle=C(28);g.beginPath();g.moveTo(-14,-7);g.lineTo(12,-7);g.lineTo(16,-2);g.lineTo(16,2);g.lineTo(12,7);g.lineTo(-14,7);g.closePath();g.fill();
+        g.fillStyle=C(35);g.beginPath();g.moveTo(-14,-7);g.lineTo(12,-7);g.lineTo(16,-2);g.lineTo(16,0);g.lineTo(-14,0);g.closePath();g.fill();
+        g.strokeStyle=C(14);g.lineWidth=1.4;g.strokeRect(-14,-7,30,14);
+        g.fillStyle=C(20);g.beginPath();g.moveTo(-14,-5);g.lineTo(-20,-7);g.lineTo(-20,7);g.lineTo(-14,5);g.closePath();g.fill();
+        g.fillStyle=ac;g.fillRect(8,-6.4,4,12.8);
+      }
     });
     case 'truck':return spr('Utruck_'+fk,46,28,g=>{
       g.translate(23,14);

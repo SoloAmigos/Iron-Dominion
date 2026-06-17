@@ -1,14 +1,32 @@
 'use strict';
 /* --- soldier painter (shared by world + icons) --- */
-function drawSoldier(g,type,ac,R,moving,ph){
+function drawSoldier(g,type,ac,R,moving,ph,fk){
   if(moving){
     g.strokeStyle='#2c3326';g.lineWidth=2.8;
     const lo=Math.sin(ph)*4.2;
     g.beginPath();g.moveTo(-1,-2.6);g.lineTo(-4+lo,-4.2);g.moveTo(-1,2.6);g.lineTo(-4-lo,4.2);g.stroke();
   }
   g.fillStyle='#11160e';g.beginPath();g.arc(0,0,R+1,0,7);g.fill();
-  g.fillStyle='#3f4a37';g.beginPath();g.arc(0,0,R,0,7);g.fill();
-  g.fillStyle='#535f48';g.beginPath();g.arc(-1,-1,R*.62,0,7);g.fill();
+  if(fk==='northwind'){
+    // Heavy parka — wider body silhouette + visible collar
+    g.fillStyle='#2a3440';g.beginPath();g.arc(0,0,R*1.12,0,7);g.fill();
+    g.fillStyle='#3a4a58';g.beginPath();g.arc(-1,-1,R*.7,0,7);g.fill();
+    g.fillStyle='#4a5c6a';g.beginPath();g.arc(-0.5,-0.5,R*.45,0,7);g.fill();
+  }else if(fk==='crimson'){
+    // Heavy assault armor — dark plates + shoulder pad outline
+    g.fillStyle='#1a1208';g.beginPath();g.arc(0,0,R*1.05,0,7);g.fill();
+    g.fillStyle='#2e1e0e';g.beginPath();g.arc(-1,-1,R*.65,0,7);g.fill();
+    g.fillStyle='#3c2a14';g.beginPath();g.arc(-0.8,-0.8,R*.42,0,7);g.fill();
+  }else if(fk==='scorpion'){
+    // Light desert kit — tan wrap + keffiyeh
+    g.fillStyle='#2e2a16';g.beginPath();g.arc(0,0,R,0,7);g.fill();
+    g.fillStyle='#4a4228';g.beginPath();g.arc(-1,-1,R*.62,0,7);g.fill();
+    g.fillStyle='#5e5432';g.beginPath();g.arc(-0.8,-0.8,R*.4,0,7);g.fill();
+  }else{
+    // Vanguard standard body
+    g.fillStyle='#3f4a37';g.beginPath();g.arc(0,0,R,0,7);g.fill();
+    g.fillStyle='#535f48';g.beginPath();g.arc(-1,-1,R*.62,0,7);g.fill();
+  }
   if(type==='rocket'){
     g.fillStyle='#4a4438';g.fillRect(-4,-R-2.8,15,4.2);
     g.fillStyle='#b8443a';g.fillRect(11,-R-2.8,3.2,4.2);
@@ -50,8 +68,29 @@ function drawSoldier(g,type,ac,R,moving,ph){
     g.strokeStyle='#5d5440';g.lineWidth=1.4;
     g.beginPath();g.moveTo(0,3);g.lineTo(4,3);g.stroke();
   }
-  g.fillStyle=type==='guardian'?'#46565e':'#5b6850';g.beginPath();g.arc(1.2,0,R*.55,0,7);g.fill();
-  g.fillStyle=type==='guardian'?'#5a6c75':'#6d7b60';g.beginPath();g.arc(2,-.9,R*.34,0,7);g.fill();
+  if(type==='guardian'){
+    g.fillStyle='#46565e';g.beginPath();g.arc(1.2,0,R*.55,0,7);g.fill();
+    g.fillStyle='#5a6c75';g.beginPath();g.arc(2,-.9,R*.34,0,7);g.fill();
+  }else if(fk==='northwind'){
+    g.fillStyle='#3a4c5a';g.beginPath();g.arc(1.2,0,R*.55,0,7);g.fill();
+    g.fillStyle='#4e6070';g.beginPath();g.arc(2,-.9,R*.34,0,7);g.fill();
+    // fur collar ring
+    g.strokeStyle='#555e5c';g.lineWidth=2;g.beginPath();g.arc(0,0,R*.9,Math.PI*.6,Math.PI*1.4);g.stroke();
+  }else if(fk==='crimson'){
+    g.fillStyle='#2e2010';g.beginPath();g.arc(1.2,0,R*.55,0,7);g.fill();
+    g.fillStyle='#3e2c18';g.beginPath();g.arc(2,-.9,R*.34,0,7);g.fill();
+    // shoulder armour nubs
+    g.fillStyle='#1a120a';g.fillRect(-R*.2,-R*1.1,R*.5,R*.45);g.fillRect(-R*.2,R*.65,R*.5,R*.45);
+  }else if(fk==='scorpion'){
+    g.fillStyle='#3e3820';g.beginPath();g.arc(1.2,0,R*.55,0,7);g.fill();
+    g.fillStyle='#524a28';g.beginPath();g.arc(2,-.9,R*.34,0,7);g.fill();
+    // keffiyeh tail drape (small hanging cloth)
+    g.fillStyle='#5a5430';g.beginPath();g.moveTo(-R*.3,-R*.8);g.lineTo(-R*.8,-R*.3);g.lineTo(-R*.7,R*.4);g.lineTo(-R*.2,R*.2);g.closePath();g.fill();
+    g.strokeStyle='rgba(0,0,0,.25)';g.lineWidth=.6;g.stroke();
+  }else{
+    g.fillStyle='#5b6850';g.beginPath();g.arc(1.2,0,R*.55,0,7);g.fill();
+    g.fillStyle='#6d7b60';g.beginPath();g.arc(2,-.9,R*.34,0,7);g.fill();
+  }
   g.fillStyle=ac;g.beginPath();g.arc(-R*.5,-R*.42,2.3,0,7);g.fill();
   g.strokeStyle='rgba(0,0,0,.4)';g.lineWidth=.8;
   g.beginPath();g.arc(-R*.5,-R*.42,2.3,0,7);g.stroke();
@@ -69,7 +108,7 @@ function iconURL(kind,type,team){
   }else{
     const t=UT[type];
     g.translate(40,42);g.rotate(-Math.PI/2);
-    if(t.cat==='inf'){g.scale(2.5,2.5);drawSoldier(g,type,FACTIONS[fk].c,t.r*1.3,false,0)}
+    if(t.cat==='inf'){g.scale(2.5,2.5);drawSoldier(g,type,FACTIONS[fk].c,t.r*1.3,false,0,fk)}
     else{
       const s=uSpr(type,fk);
       const sc=Math.min(72/s.lw,60/s.lh);

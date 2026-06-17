@@ -6,7 +6,7 @@ function drawInf(u){
   ctx.save();ctx.translate(u.x,u.y+bob*.3);
   ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(0,3,R*.95,R*.5,0,0,7);ctx.fill();
   ctx.rotate(u.a);
-  drawSoldier(ctx,u.type,TEAMC[u.team],R,u.moving,ph);
+  drawSoldier(ctx,u.type,TEAMC[u.team],R,u.moving,ph,fac[u.team]);
   ctx.restore();
 }
 function drawUnit(u){

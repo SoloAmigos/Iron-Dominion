@@ -1,3 +1,4 @@
+const CACHE='iron-dominion-v43';
 const CACHE='iron-dominion-v47';
 const ASSETS=['.','index.html','css/style.css','manifest.json','icon-192.png','icon-512.png',
   'js/audio.js','js/config.js','js/state.js','js/helpers.js','js/world.js',

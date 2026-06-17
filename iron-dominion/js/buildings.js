@@ -39,7 +39,7 @@ function canPlace(type,tx,ty,team){
 function completeBuilding(b){
   b.built=true;b.prog=1;b.hp=Math.max(b.hp,b.maxhp*.95);
   if(b.team===0){toast('🔧 Construction complete — '+dispName('b',b.type,0));SFX.done()}
-  if(b.type==='supply'&&!b.rebuilt)spawnUnit('truck',b.team,b.rally.x,b.rally.y);
+  if(b.type==='supply'&&!b.rebuilt){const tr=spawnUnit('truck',b.team,b.rally.x,b.rally.y);if(tr)tr.auto=true}
   if(b.team===0){
     if(b.type==='barracks'&&!pw.drop.on){pw.drop.on=true;pw.drop.cd=15;
       toast(pw.drop.unl?'🪂 Reinforcement drop online!':'🪂 Drop zone ready — unlock it in the ⭐ General menu')}
@@ -86,7 +86,7 @@ function updateBuilding(b,dt){
         claimPad(b,nu);
         if(b.team===0&&readyCd<=0){readyCd=1.4;toast(UT[it.type].ic+' '+dispName('u',it.type,b.team)+' ready');SFX.done()}
       }
-      // pad full → hold at 100%, spawn the moment a pad frees
+      // pad full: hold at 100%, spawn the moment a pad frees
     }
   }
 

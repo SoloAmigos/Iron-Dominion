@@ -167,7 +167,7 @@ function buildingDeathFx(b){
   addPart({k:'ring',x:b.x,y:b.y,life:.55,max:.55,s:big*1.6});
   addPart({k:'flash',x:b.x,y:b.y,life:.12,max:.12,s:big*.85});
   addPart({k:'scorch',x:b.x,y:b.y,life:20,max:20,s:big*.62});
-  // secondary blasts across the footprint — chain-explosion feel, no extra SFX
+  // secondary blasts across the footprint
   const sec=3+(big/45|0);
   for(let i=0;i<sec;i++){
     const ex=b.x+vrand(-W*.42,W*.42),ey=b.y+vrand(-H*.42,H*.42);
@@ -230,14 +230,13 @@ function impact(p){
     addPart({k:'flash',x:p.x,y:p.y,life:.6,max:.6,s:520});
     for(let i=0;i<16;i++)addPart({k:'fire',x:p.x+rand(-70,70),y:p.y+rand(-70,70),vx:vrand(-30,30),vy:vrand(-90,-30),life:vrand(.5,1.1),max:1.1,s:vrand(20,46)});
     for(let i=0;i<14;i++)addPart({k:'smoke',x:p.x+rand(-40,40),y:p.y+rand(-30,30),vx:vrand(-16,16),vy:vrand(-70,-25),life:vrand(1.2,2.4),max:2.4,s:vrand(16,34)});
-    // Mushroom cloud — rising stem
+    // Mushroom cloud rising stem
     for(let i=0;i<9;i++)addPart({k:'smoke',x:p.x+vrand(-7,7),y:p.y,vx:vrand(-3,3),vy:-55-i*9,life:vrand(1.5,3.2),max:3.2,s:vrand(14+i*5,26+i*6)});
     // Mushroom cap ring
     for(let i=0;i<12;i++){const a=i/12*6.28;addPart({k:'smoke',x:p.x+Math.cos(a)*58,y:p.y-195,vx:Math.cos(a)*15,vy:vrand(-10,4),life:vrand(2,3.8),max:3.8,s:vrand(26,48)})}
     addPart({k:'scorch',x:p.x,y:p.y,life:18,max:18,s:130});
     SFX.nuke();shake=1.1;
   }else if(p.w===WPN.orbitalLaser){
-    // Beam column from orbit to impact point
     addPart({k:'trace',x:p.x,y:p.y-1200,x2:p.x,y2:p.y,life:.7,max:.7,c:true});
     addPart({k:'trace',x:p.x+4,y:p.y-1200,x2:p.x+4,y2:p.y,life:.4,max:.4,c:true});
     addPart({k:'ring',x:p.x,y:p.y,life:.5,max:.5,s:200,c:'#7deeff'});
@@ -251,15 +250,12 @@ function impact(p){
     for(let i=0;i<8;i++)addPart({k:'fire',x:p.x+rand(-40,40),y:p.y+rand(-40,40),vx:vrand(-20,20),vy:vrand(-60,-20),life:vrand(.4,.9),max:.9,s:vrand(10,28),c:'#4dff88'});
     for(let i=0;i<6;i++)addPart({k:'smoke',x:p.x+rand(-30,30),y:p.y+rand(-20,20),vx:vrand(-10,10),vy:vrand(-50,-15),life:vrand(.8,1.8),max:1.8,s:vrand(10,24),c:'#3aaa55'});
     addPart({k:'scorch',x:p.x,y:p.y,life:20,max:20,s:100});
-    // Lingering toxic cloud zone
     fireZones.push({x:p.x,y:p.y,r:75,life:12,maxLife:12,team:p.team,tickT:0,dmg:6,toxic:true});
     SFX.nuke();shake=0.6;
   }else if(p.w===WPN.barrageMsl){
     boomFx(p.x,p.y,50,false);
-    // Ice-burst visual
     addPart({k:'ring',x:p.x,y:p.y,life:.5,max:.5,s:88,c:'#9ef0ff'});
     for(let i=0;i<9;i++)addPart({k:'spark',x:p.x+rand(-18,18),y:p.y+rand(-18,18),vx:vrand(-55,55),vy:vrand(-75,-8),life:vrand(.3,.65),max:.65,s:2.8,c:'#9ef0ff'});
-    // Brief chill on nearby enemies
     const iceQ=shQuery(p.x,p.y,70);
     for(const e of iceQ){if(e.dead||e.hidden||!isEnemy(p.team,e.team)||e.kind==='b')continue;if(Math.hypot(e.x-p.x,e.y-p.y)-entRad(e)<=62)e.slowT=Math.max(e.slowT||0,2.5)}
     shake=Math.min(shake+0.2,1.0);
@@ -269,16 +265,13 @@ function impact(p){
   const nearby=shQuery(p.x,p.y,rad+24);
   for(const e of nearby){
     if(e.dead||(e.team===p.team&&!p.nuke)||e.hidden)continue;
-    // For non-nuke splash, also skip allies
     if(!p.nuke&&!isEnemy(p.team,e.team))continue;
-    // zHeight gate: AA-only weapons skip non-air, non-AA weapons skip air
     const isAir=e.kind==='u'&&(e.zHeight||0)>10;
     if(isAir&&!p.w.aa)continue;
     const d=dist2(e,p)-entRad(e);
     if(d<=rad){
       const fall=clamp(1-Math.max(0,d)/rad*.5,.5,1);
       dealDamage(e,p.w.dmg*(p.mul||1)*p.w.mult[e.cat]*fall,p.src||null);
-      // Poison splash
       if(p.toxin)applyPoison(e,p.w.dmg*0.08);
       if(p.w.toxicSplash)applyPoison(e,p.w.dmg*0.18);
     }
@@ -294,7 +287,6 @@ function fireFrom(sh,wname,tgt){
   const heroic=sh.unitRank>=3;
   const traceC=heroic?'#ffd95e':(w.laser?'#7ddcff':(w.flame?'#ff9b3d':null));
   addPart({k:'flash',x:mx,y:my,life:.07,max:.07,s:6,c:w.laser?'#9fe9ff':(heroic?'#ffe080':null)});
-  // Check GENMOD toxin
   const toxinActive=sh.team>=0&&GENMOD(sh.team).toxin;
   if(w.kind==='hit'){
     addPart({k:'trace',x:mx,y:my,x2:tgt.x+vrand(-3,3),y2:tgt.y+vrand(-3,3),
@@ -307,7 +299,6 @@ function fireFrom(sh,wname,tgt){
     }
     addPart({k:'spark',x:tgt.x,y:tgt.y,vx:vrand(-40,40),vy:vrand(-60,-5),life:.22,max:.22,s:2,c:w.laser?'#9fe9ff':(heroic?'#ffd95e':'#ffd27d')});
     dealDamage(tgt,w.dmg*mul*w.mult[tgt.cat],sh);
-    // Apply toxin on hit
     if(toxinActive)applyPoison(tgt,w.dmg*0.08);
   }else if(w.kind==='shell'){
     addPart({k:'trace',x:mx,y:my,x2:tgt.x,y2:tgt.y,life:.1,max:.1,c:traceC,fl:false});
@@ -324,7 +315,6 @@ function fireFrom(sh,wname,tgt){
       }
     }
   }else if(w.kind==='rocket'){
-    const tp={x:tgt.x,y:tgt.y,team:tgt.team};
     addProj({kind:'rocket',x:mx,y:my,dx:tgt.x,dy:tgt.y,target:tgt,spd:w.spd||300,w,team:sh.team,src:sh,mul,toxin:toxinActive});
   }else if(w.kind==='arc'){
     const d=Math.hypot(tgt.x-mx,tgt.y-my);
@@ -363,6 +353,28 @@ function shQuery(x,y,r){
   return out;
 }
 
+/* ===== Unit separation (steering) ===== */
+function separation(dt){
+  const MAXPUSH=85;
+  for(const u of units){
+    if(u.dead||u.cat==='air')continue;
+    let fx=0,fy=0;
+    const near=shQuery(u.x,u.y,u.t.r*2.5);
+    for(const e of near){
+      if(e===u||e.dead||e.kind!=='u')continue;
+      const dx=u.x-e.x,dy=u.y-e.y,d2=dx*dx+dy*dy;
+      const minD=(u.t.r+(e.t?e.t.r:12))*1.1;
+      if(d2<minD*minD&&d2>0.01){const d=Math.sqrt(d2);fx+=dx/d*(minD-d);fy+=dy/d*(minD-d)}
+    }
+    const mag=Math.sqrt(fx*fx+fy*fy);
+    if(mag>0){const s=Math.min(mag,MAXPUSH*dt)/mag;u.x+=fx*s;u.y+=fy*s}
+  }
+  for(const u of units){
+    if(u.dead||u.hidden)continue;
+    u.x=clamp(u.x,12,WW-12);u.y=clamp(u.y,12,WH-12);
+  }
+}
+
 /* ===== Unit AI / per-frame update ===== */
 function findEnemy(u){
   let best=null,bd=u.t.sight*TILE+40;
@@ -377,6 +389,20 @@ function findEnemy(u){
     if(!isAir&&w.aaOnly)continue;
     const d=Math.hypot(e.x-u.x,e.y-u.y);
     if(d<bd){bd=d;best=e}
+  }
+  return best;
+}
+// Used by defensive buildings (turret/samsite) to acquire a target within r px.
+function findEnemyInRange(sh,r){
+  let best=null,bd=1e9;
+  const nearby=shQuery(sh.x,sh.y,r+24);
+  const w=sh.t&&sh.t.wpn!==undefined?WPN[sh.t.wpn]:null;
+  for(const e of nearby){
+    if(e===sh||e.dead||e.hidden||e.team<0||!isEnemy(sh.team,e.team))continue;
+    const isAir=e.kind==='u'&&(e.zHeight||0)>10;
+    if(w){if(isAir&&!w.aa)continue;if(!isAir&&w.aaOnly)continue}
+    const d=e.kind==='u'?(Math.hypot(e.x-sh.x,e.y-sh.y)-e.t.r):(Math.hypot(e.x-sh.x,e.y-sh.y)-entRad(e));
+    if(d<r&&d<bd){bd=d;best=e}
   }
   return best;
 }
@@ -402,7 +428,7 @@ function issueOrder(u,order){
     u.wpi=0;
   }
 }
-// Order helpers — thin wrappers used by ui.js, ai.js, buildings.js
+// Order helpers
 function orderMove(u,x,y,kind){
   if(u.cat==='air'){u.loiter={x,y};u.attackTarget=null;u.orbT=0;return}
   u.attackTarget=null;u.anchor=null;
@@ -452,32 +478,22 @@ function doCapture(u,b,dt){
 
 function updateUnit(u,dt){
   if(u.dead)return;
-  // Stun
   if(u.stunT>0){u.stunT-=dt;u.moving=false;return}
-  // Poison
   tickPoison(u,dt);
   if(u.dead)return;
-  // Slow timer
   if(u.slowT>0)u.slowT-=dt;
-  // Rally timer
   if(u.rallyT>0)u.rallyT-=dt;
-  // Flash
   if(u.flash>0)u.flash=Math.max(0,u.flash-dt*4);
-  // Smoke damage aura (damaged vehicles)
   if(u.cat==='veh'&&u.hp<u.maxhp*.4&&state==='play'){
     u.smkT=(u.smkT||0)-dt;
     if(u.smkT<=0){u.smkT=0.22;addPart({k:'smoke',x:u.x+vrand(-8,8),y:u.y+vrand(-4,4),vx:vrand(-4,4),vy:vrand(-14,-4),life:.55,max:.55,s:vrand(4,8)})}
   }
-  // Scarab suicide check
   scarabCheck(u,dt);
   if(u.dead)return;
-  // Aircraft update
   if(u.cat==='air'){updateAir(u,dt);return}
-  // Garrison logic
   if(u.hidden){
     const b=u.garrisonBuilding;
     if(!b||b.dead){leaveGarrison(u);return}
-    // Garrison fires at nearby enemies
     const w=u.t.wpn?WPN[u.t.wpn]:null;
     if(!w||w.kind!=='hit')return;
     u.cd=(u.cd||0)-dt;
@@ -488,22 +504,16 @@ function updateUnit(u,dt){
     fireFrom(u,u.t.wpn,tgt);u.cd=w.rel;
     return;
   }
-  // Healing aura (repair bay)
   if(u.healT>0){u.healT-=dt;if(u.hp<u.maxhp)u.hp=Math.min(u.maxhp,u.hp+u.maxhp*.005*dt*60)}
-  // Weapon cooldown
   u.cd=Math.max(0,u.cd-dt);
-  // Scan timer
   u.scan-=dt;
   if(u.scan<0){
     u.scan=0.3+Math.random()*.2;
-    // Auto-retarget: idle or attack-move only — plain move and attack orders are not distracted
     const _ot=u.order&&u.order.type;
     if(u.ts==='idle'||(_ot==='attack-move'))u.attackTarget=findEnemy(u);
   }
-  // Repath
   u.repath-=dt;
 
-  // ORDER HANDLING
   if(u.order){
     const o=u.order;
     if(o.type==='stop'){u.order=null;u.ts='idle';u.path=null;return}
@@ -583,18 +593,14 @@ function updateUnit(u,dt){
     }
   }
 
-  // IDLE LOGIC
   u.ts='idle';
   const w=u.t.wpn?WPN[u.t.wpn]:null;
-  // Supply truck
   if(u.type==='truck'&&u.auto){
     updateTruck(u,dt);return;
   }
-  // Dozer
   if(u.type==='dozer'){
     updateDozer(u,dt);return;
   }
-  // Auto-attack (attack-move anchor)
   if(u.anchor){
     const e=findEnemy(u);
     if(e){
@@ -605,7 +611,6 @@ function updateUnit(u,dt){
           if(u.cd<=0){fireFrom(u,u.t.wpn,e);u.cd=w.rel}
           return;
         }else{
-          // Chase if within anchor radius (but don't stray too far)
           const da=Math.hypot(e.x-u.anchor.x,e.y-u.anchor.y);
           if(da<200){
             if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),TT(e.x),TT(e.y),blocked);u.wpi=0;u.repath=1.5}
@@ -614,7 +619,6 @@ function updateUnit(u,dt){
         }
       }
     }
-    // Return to anchor
     const da2=Math.hypot(u.x-u.anchor.x,u.y-u.anchor.y);
     if(da2>32){
       if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),TT(u.anchor.x),TT(u.anchor.y),blocked);u.wpi=0;u.repath=2}
@@ -623,7 +627,6 @@ function updateUnit(u,dt){
     return;
   }
   if(!w)return;
-  // Weapon range-gated combat
   const minRng=w.minRng||0;
   if(!u.attackTarget||u.attackTarget.dead)u.attackTarget=findEnemy(u);
   if(!u.attackTarget)return;
@@ -634,7 +637,6 @@ function updateUnit(u,dt){
     if(u.cd<=0){fireFrom(u,u.t.wpn,tgt);u.cd=w.rel}
     return;
   }
-  // Out of range — step toward
   if(d>w.rng*1.1){
     if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),TT(tgt.x),TT(tgt.y),blocked);u.wpi=0;u.repath=1.2}
     moveUnit(u,dt);u.ts='move';
@@ -642,7 +644,6 @@ function updateUnit(u,dt){
 }
 
 function updateTruck(u,dt){
-  // Supply truck: auto-drive to nearest pile, collect gold, deliver to command center
   const w=u.t.wpn?WPN[u.t.wpn]:null;
   if(w&&!u.hidden){
     const e=findEnemy(u);
@@ -652,7 +653,6 @@ function updateTruck(u,dt){
     }
   }
   if(u.cargo>0){
-    // Deliver
     const cmd=builds.find(b=>!b.dead&&b.built&&b.team===u.team&&b.type==='command');
     if(!cmd){return}
     const d=Math.hypot(cmd.x-u.x,cmd.y-u.y);
@@ -666,7 +666,6 @@ function updateTruck(u,dt){
     if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),TT(cmd.x),TT(cmd.y),blocked);u.wpi=0;u.repath=3}
     moveUnit(u,dt);u.ts='move';return;
   }
-  // Find pile
   let best=null,bd=9999;
   for(const p of piles){if(p.amt<=0)continue;const d=Math.hypot(p.x-u.x,p.y-u.y);if(d<bd){bd=d;best=p}}
   if(!best){u.moving=false;return}
@@ -693,13 +692,7 @@ function updateDozer(u,dt){
     }
     b.prog=Math.min(1,b.prog+dt/b.t.bt);
     if(b.prog>=1){
-      b.built=true;
-      if(b.type==='supply'){
-        const tr=spawnUnit('truck',b.team,b.x+vrand(-16,16),(b.ty+b.t.h)*TILE+16);
-        if(tr)tr.auto=true;
-      }
-      if(b.type==='power')powerTick(b.team);
-      setBlocked(b,true);
+      completeBuilding(b);
       u.site=null;
     }
     u.moving=false;u.ts='build';
@@ -712,7 +705,6 @@ function updateDozer(u,dt){
 function updateAir(u,dt){
   u.cd=Math.max(0,u.cd-dt);
   if(u.flash>0)u.flash=Math.max(0,u.flash-dt*4);
-  // On-pad: rearm + repair
   if(u.ts==='rearming'){
     u.rearmT=(u.rearmT||0)-dt;
     if(u.rearmT<=0){
@@ -722,7 +714,6 @@ function updateAir(u,dt){
     }
     u.moving=false;return;
   }
-  // Bomber RTB when out of ammo
   if(u.ammo<=0&&u.home){
     const pp=padPos(u.home,u.padI);
     const d=Math.hypot(pp.x-u.x,pp.y-u.y);
@@ -738,11 +729,9 @@ function updateAir(u,dt){
     u.moving=true;u.zHeight=30;
     return;
   }
-  // Attack logic
   const w=u.t.wpn?WPN[u.t.wpn]:null;
   if(!w){u.moving=false;return}
   if(!u.attackTarget||u.attackTarget.dead){
-    // Seek nearest enemy (air units prefer ground targets unless aaOnly)
     let best=null,bd=u.t.sight*TILE+60;
     for(const e of units){
       if(e.dead||!isEnemy(u.team,e.team))continue;
@@ -763,7 +752,6 @@ function updateAir(u,dt){
       u.cd=w.rel;
       u.ammo=Math.max(0,u.ammo-1);
     }
-    // Circle the target
     const perp=u.a+Math.PI*.5;
     u.px=u.x;u.py=u.y;
     u.x+=Math.cos(perp)*u.spd*dt*.6;
@@ -777,7 +765,6 @@ function updateAir(u,dt){
     u.y+=Math.sin(ang)*u.spd*dt;
     u.moving=true;u.zHeight=30;
   }
-  // Drone: runs out of ammo and disappears
   if(u.type==='drone'&&u.ammo<=0){
     u.dead=true;
     addPart({k:'smoke',x:u.x,y:u.y,vx:vrand(-8,8),vy:vrand(-20,-6),life:.8,max:.8,s:8});
@@ -791,7 +778,6 @@ function updateUnits(dt){
     if(u.dead)continue;
     updateUnit(u,dt);
   }
-  // Repair bay aura
   for(const b of builds){
     if(b.dead||!b.built||!b.t.repairAura)continue;
     b.repT=(b.repT||0)-dt;
@@ -803,9 +789,7 @@ function updateUnits(dt){
       u.healT=1;
     }
   }
-  // Purge dead
   for(let i=units.length-1;i>=0;i--)if(units[i].dead)units.splice(i,1);
-  // Blood/scrap cleanup
   for(let i=scraps.length-1;i>=0;i--)if(scraps[i].dead)scraps.splice(i,1);
   for(let i=rubbles.length-1;i>=0;i--){
     rubbles[i].life-=dt;
@@ -833,7 +817,6 @@ function garrisonFire(b,dt){
     if(!best)continue;
     fireFrom(u,u.t.wpn,best);u.cd=w.rel;
   }
-  // Remove dead garrison members
   b.garrison=gc.filter(u=>!u.dead);
   if(!b.garrison.length)b.garrison=[];
 }

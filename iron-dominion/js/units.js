@@ -409,7 +409,7 @@ function findEnemyInRange(sh,r){
 function moveUnit(u,dt){
   if(!u.path||u.wpi>=u.path.length){u.moving=false;return}
   const wp=u.path[u.wpi];
-  const tx=wp[0]*TILE+TILE/2,ty=wp[1]*TILE+TILE/2;
+  const tx=wp.x,ty=wp.y;
   const dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy);
   if(d<6){u.wpi++;return}
   const spd=u.spd*(u.stunT>0?0:(u.slowT>0?.5:1));

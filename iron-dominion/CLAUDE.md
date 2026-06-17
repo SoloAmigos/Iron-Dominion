@@ -6,7 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v44).
+PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v45).
 
 | File | Owns |
 |---|---|
@@ -43,7 +43,7 @@ PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on e
 - After every MCP push: independently verify the remote git **blob SHA** (`git fetch origin main && git rev-parse origin/main:<path>`) against the local blob (`git hash-object <file>`). Do not trust agent/tool self-reports — check the SHA directly.
 - **Do the pushes yourself; do NOT delegate to sub-agents.** Past sub-agents repeatedly pushed truncated/placeholder stubs (652 B / 1105 B) that broke the live game. Reading + emitting file content verbatim in your own `push_files` call, then verifying the blob SHA, is reliable.
 - **render.js is split into 8 load-order parts (`render.part1.js`…`render.part8.js`).** Reason: the full ~95 KB render.js is too token-heavy to emit in a single `push_files` tool-call (the call truncates). Each part is small enough to push reliably. They are plain `<script>` tags sharing global scope, so functions resolve across files at call time.
-  - **`render.js` is the editable master.** To change the renderer: edit `render.js`, then regenerate the parts at top-level function boundaries (cut lines `1,232,443,738,912,1118,1352,1549`), prepend `'use strict';` to parts 2–8, and `node --check` each. Verify reassembly equals the master: concatenate part1 + (parts 2–8 with their first `'use strict';` line stripped) and confirm `git hash-object` matches `render.js`.
+  - **`render.js` is the editable master.** To change the renderer: edit `render.js`, then regenerate the parts at top-level function boundaries (cut lines `1,232,831,1034,1208,1414,1648,1845`), prepend `'use strict';` to parts 2–8, and `node --check` each. Verify reassembly equals the master: concatenate part1 + (parts 2–8 with their first `'use strict';` line stripped) and confirm `git hash-object` matches `render.js`. Note: part4 starts at line 1034 with the `/* --- vehicle sprites --- */` comment (not line 1035).
   - Push each part, verify its blob SHA, then push `index.html` (loads the 8 parts in order) + `sw.js` (caches them) last so the live switch only happens once all parts exist.
 - Must reset local git to `origin/main` after MCP push (`git fetch origin main && git reset --hard origin/main`).
 - Commit authorship: use `git -c user.email=noreply@anthropic.com -c user.name=Claude commit …` or the stop hook flags the commit as Unverified.
@@ -91,6 +91,7 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 - [x] Fix: restored orderMove/orderAttack/orderGarrison (were missing → all orders threw ReferenceError); scan no longer distracts plain-move or attack orders
 - [x] Art overhaul: faction-distinct buildings (command/power/barracks/factory/supply/tech painters per faction), sub-faction command-center add-ons, progressive battle-damage wear (cracks→scorch→blown panels→embers), real building death explosions + smouldering rubble, distinct per-faction unit sprites
 - [x] render.js split into 8 load-order parts (render.part1–8.js) to fit the MCP push path; render.js kept as editable master (see Deployment Notes)
+- [x] Batch 5 building art: faction-distinct sprites for market, silo, turret, airfield, radar, samsite (24 new painter functions; split points updated to `1,232,831,1034,1208,1414,1648,1845`)
 
 ## Roadmap
 

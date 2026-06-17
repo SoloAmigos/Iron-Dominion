@@ -323,36 +323,12 @@ function fireFrom(sh,wname,tgt){
   }
 }
 
-/* ===== SPATIAL HASH ===== */
-const SH_CELL=80;
-let _shMap=new Map();
-function shKey(x,y){return((x/SH_CELL|0)<<16)|((y/SH_CELL|0)&0xffff)}
-function shUpdate(){
-  _shMap.clear();
-  for(const e of units){
-    if(e.dead||e.hidden)continue;
-    const k=shKey(e.x,e.y);
-    if(!_shMap.has(k))_shMap.set(k,[]);
-    _shMap.get(k).push(e);
-  }
-  for(const b of builds){
-    if(b.dead||!b.built)continue;
-    const k=shKey(b.x,b.y);
-    if(!_shMap.has(k))_shMap.set(k,[]);
-    _shMap.get(k).push(b);
-  }
-}
-function shQuery(x,y,r){
-  const out=[];
-  const cx=x/SH_CELL|0,cy=y/SH_CELL|0;
-  const cr=Math.ceil(r/SH_CELL)+1;
-  for(let dx=-cr;dx<=cr;dx++)for(let dy=-cr;dy<=cr;dy++){
-    const k=((cx+dx)<<16)|((cy+dy)&0xffff);
-    const arr=_shMap.get(k);
-    if(arr)for(const e of arr)out.push(e);
-  }
-  return out;
-}
+/* ===== SPATIAL HASH =====
+   The live spatial hash lives in helpers.js (_SH, shClear/shInsert/shQuery,
+   120px cells) and is rebuilt every tick by simStep(). A stale copy used to live
+   here with its own _shMap that simStep never populated — overriding helpers'
+   shQuery so findEnemy() always saw an empty world (units never engaged, AI just
+   piled up). Use the helpers.js hash; do not redeclare shQuery here. */
 
 /* ===== Unit separation (steering) ===== */
 function separation(dt){
@@ -779,7 +755,7 @@ function updateAir(u,dt){
 
 /* ===== Main unit update loop ===== */
 function updateUnits(dt){
-  shUpdate();
+  // (spatial hash is rebuilt by simStep via helpers.shClear/shInsert)
   for(const u of units){
     if(u.dead)continue;
     updateUnit(u,dt);

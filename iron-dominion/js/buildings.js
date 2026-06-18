@@ -37,7 +37,10 @@ function canPlace(type,tx,ty,team){
   return true;
 }
 function completeBuilding(b){
-  b.built=true;b.prog=1;b.hp=Math.max(b.hp,b.maxhp*.95);
+  b.built=true;b.prog=1;b.hp=b.maxhp;
+  // If this building is currently selected, rebuild its card so the stale
+  // "Cancel build" button is replaced immediately (refreshCard only ticks progress).
+  if(typeof updateCard==='function'&&typeof sel!=='undefined'&&sel.includes(b))updateCard();
   if(b.team===0){toast('🔧 Construction complete — '+dispName('b',b.type,0));SFX.done()}
   if(b.type==='supply'&&!b.rebuilt){const tr=spawnUnit('truck',b.team,b.rally.x,b.rally.y);if(tr)tr.auto=true}
   if(b.team===0){
@@ -97,6 +100,7 @@ function updateBuilding(b,dt){
       b.queue.shift();
       const ex={x:b.x,y:(b.ty+b.t.h)*TILE+16};
       const nu=spawnUnit(it.type,b.team,ex.x,ex.y);
+      if(it.type==='truck')nu.auto=true; // produced trucks auto-harvest like the free one
       if(Math.hypot(b.rally.x-ex.x,b.rally.y-ex.y)>TILE)orderMove(nu,b.rally.x+vrand(-14,14),b.rally.y+vrand(-14,14),'move');
       if(b.team===0&&readyCd<=0){readyCd=1.4;toast(UT[it.type].ic+' '+dispName('u',it.type,b.team)+' ready');SFX.done()}
     }

@@ -123,6 +123,7 @@ function genPanel(){
 }
 function updateCard(){
   cardEl.innerHTML='';cardQ=null;
+  delete cardEl.dataset.cmode;delete cardEl.dataset.dozerSite;
   if(state!=='play')return;
   if(placing){
     const t=BT[placing.type];
@@ -137,6 +138,7 @@ function updateCard(){
   if(sel.length===1&&e.kind==='b'){
     const b=e;
     if(!b.built){
+      cardEl.dataset.cmode='building';
       const working=units.some(x=>!x.dead&&x.team===0&&x.type==='dozer'&&x.site===b);
       cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+dispName('b',b.type,0)+'</b>'+(working?'Building… ':'⚠️ Halted at ')+Math.floor(b.prog*100)+'%'));
       if(!working)cardEl.appendChild(mkBtn('▶','Resume',0,'confirm',()=>resumeSite(b)));
@@ -250,6 +252,7 @@ function updateCard(){
   if(dz){
     if(dz.site&&!dz.site.dead){
       const s=dz.site;
+      cardEl.dataset.dozerSite=String(s.id);
       cardEl.appendChild(mkInfo('<b>🔧 Building:</b> '+s.t.ic+' '+dispName('b',s.type,0)+' — '+Math.floor(s.prog*100)+'%'));
       cardEl.appendChild(mkBtn('🗑','Cancel',0,'warn',()=>cancelSite(s)));
     } else if(dz.fix&&!dz.fix.dead){
@@ -316,6 +319,15 @@ function updateCard(){
   cardEl.appendChild(mkBtn('✕','Deselect',0,'cancel',()=>{sel=[];updateCard()}));
 }
 function refreshCard(){
+  // Rebuild when building completes while its card is open (either selected directly or via dozer)
+  if(sel&&sel.length===1){
+    const e=sel[0];
+    if(e.kind==='b'&&e.built&&cardEl.dataset.cmode==='building'){updateCard();return}
+    if(e.kind==='u'&&e.type==='dozer'){
+      const sid=cardEl.dataset.dozerSite;
+      if(sid&&(!e.site||e.site.dead||String(e.site.id)!==sid)){updateCard();return}
+    }
+  }
   for(const b of cardEl.querySelectorAll('.cbtn[data-cost]'))b.disabled=money[0]<+b.dataset.cost;
   if(cardQ){
     if(!cardQ.b.queue.length||cardQ.b.dead){updateCard();return}

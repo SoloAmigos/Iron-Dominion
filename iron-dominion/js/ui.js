@@ -3,9 +3,9 @@
 const overlay=document.getElementById('overlay');
 const cardEl=document.getElementById('card');
 const toastsEl=document.getElementById('toasts');
-let cardQ=null; // queue progress element ref
+let cardQ=null;
 let selMode=false,lpTimer=null,dozI=-1;
-let openCat=null; // which dozer build category is expanded
+let openCat=null;
 function setSelMode(v){
   selMode=v;
   document.getElementById('selBtn').classList.toggle('on',v);
@@ -20,6 +20,7 @@ function resumeSite(site){
   return true;
 }
 function cancelSite(b){
+  if(b.dead||b.built){updateCard();return}
   blockRect(b.tx,b.ty,b.t.w,b.t.h,0);
   b.dead=true;
   const refund=Math.floor(costOf('b',b.type,0)*(1-b.prog));
@@ -40,7 +41,6 @@ function updateHUD(){
   const pe=document.getElementById('power');
   pe.textContent='⚡ '+powerU[0]+'/'+powerP[0];
   pe.classList.toggle('low',lowPow[0]);
-  // Truck count HUD
   const te=document.getElementById('trucks');
   if(te&&state==='play'){
     const trks=units.filter(u=>!u.dead&&u.team===0&&u.type==='truck').length;
@@ -54,7 +54,7 @@ function updateHUD(){
       let ch=0,ready=0;
       for(const b of builds)if(!b.dead&&b.built&&b.team===0&&b.t.silo){ch=Math.max(ch,b.charge||0);if((b.charge||0)>=1)ready++}
       el.disabled=ch<1;
-      el.innerHTML='☢️<span class="pcd">'+(ready>1?'FIRE ×'+ready:(ch>=1?'FIRE':Math.floor(ch*100)+'%'))+'</span>';
+      el.innerHTML='☢️<span class="pcd">'+(ready>1?'FIRE \xd7'+ready:(ch>=1?'FIRE':Math.floor(ch*100)+'%'))+'</span>';
     }else{
       const P=pw[k];
       el.disabled=P.cd>0;
@@ -105,7 +105,7 @@ function genPanel(){
   const next=rank[0]<MAXRANK?XPL[rank[0]]:null;
   const prog=next?Math.floor(xp[0])+'/'+next+' XP':'MAX RANK';
   const unlocked=Object.keys(pw).filter(k=>k!=='nuke'&&pw[k].unl).length;
-  cardEl.appendChild(mkInfo('<b>⭐ General — Rank '+rank[0]+'</b> '+prog+'<br>Skill pts: '+skp[0]+' · Abilities: '+unlocked+'/5 — choose wisely (max 5 of 7)'));
+  cardEl.appendChild(mkInfo('<b>⭐ General — Rank '+rank[0]+'</b> '+prog+'<br>Skill pts: '+skp[0]+' \xb7 Abilities: '+unlocked+'/5 — choose wisely (max 5 of 7)'));
   const facPows=(FACTION_POWERS[fac[0]]||[]);
   for(const fp of facPows){
     const k=fp.id,P=POWERS[k],st=pw[k];
@@ -174,7 +174,7 @@ function updateCard(){
           const img=document.createElement('img');img.className='qimg';img.src=iconURL('u',it.type,0);
           chip.appendChild(img);
           if(i===0){const sp=document.createElement('span');sp.id='qp';chip.appendChild(sp)}
-          const _i=i; // capture index
+          const _i=i;
           chip.onclick=()=>{
             const cost=costOf('u',it.type,0);
             const refund=_i===0?Math.floor(cost*(1-Math.min(1,it.p/(UT[it.type].bt||1)))):cost;
@@ -185,10 +185,9 @@ function updateCard(){
           qrow.appendChild(chip);
         }
         d.appendChild(qrow);
-        const lbl=document.createElement('span');lbl.style.fontSize='11px';lbl.textContent='Queue '+b.queue.length+'/'+(b.type==='airfield'?4:5)+' · tap to cancel';
+        const lbl=document.createElement('span');lbl.style.fontSize='11px';lbl.textContent='Queue '+b.queue.length+'/'+(b.type==='airfield'?4:5)+' \xb7 tap to cancel';
         d.appendChild(lbl);
         cardEl.appendChild(d);cardQ={b,el:null};
-        // Cancel-all button when queue has more than one item
         if(b.queue.length>1){
           cardEl.appendChild(mkBtn('🗑','Cancel All',0,'warn',()=>{
             let total=0;
@@ -224,7 +223,7 @@ function updateCard(){
     }else if(b.t.garrison){
       const gn=b.garrison?b.garrison.length:0,gmax=b.t.garrisonMax;
       const owner=b.team===0?'Friendly':b.team<0?'Neutral':'Enemy';
-      cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+b.t.name+'</b>'+owner+' · Garrison: '+gn+'/'+gmax+'<br>'+b.t.desc));
+      cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+b.t.name+'</b>'+owner+' \xb7 Garrison: '+gn+'/'+gmax+'<br>'+b.t.desc));
       if(b.team===0&&gn>0){
         cardEl.appendChild(mkBtn('🚪','Evacuate',0,'warn',()=>{
           if(b.garrison)for(const gu of b.garrison.slice()){gu.hidden=false;gu.garrisonBuilding=null;gu.x=b.x+rand(-24,24);gu.y=b.y+rand(-24,24)}
@@ -246,11 +245,9 @@ function updateCard(){
     cardEl.appendChild(mkBtn('✕','Deselect',0,'cancel',()=>{sel=[];updateCard()}));
     return;
   }
-  // units selected
   const myUnits=sel.filter(s=>s.kind==='u');
   const dz=myUnits.find(u=>u.type==='dozer');
   if(dz){
-    // Show active assignment with a cancel shortcut
     if(dz.site&&!dz.site.dead){
       const s=dz.site;
       cardEl.appendChild(mkInfo('<b>🔧 Building:</b> '+s.t.ic+' '+dispName('b',s.type,0)+' — '+Math.floor(s.prog*100)+'%'));
@@ -277,9 +274,7 @@ function updateCard(){
           toast('Tap the map to position, then ✓ PLACE');
         }));
     };
-    // Power — standalone priority button (hidden for factions that need no power)
     if(!FAC(0).noPower)_bldBtn('power');
-    // Collapsible category sections
     for(const cat of BUILD_CATEGORIES){
       const isOpen=openCat===cat.id;
       const cb=document.createElement('button');
@@ -291,8 +286,7 @@ function updateCard(){
     }
   }else{
     const names=myUnits.length===1?UT[myUnits[0].type].ic+' '+dispName('u',myUnits[0].type,0):'⚔ '+myUnits.length+' units';
-    cardEl.appendChild(mkInfo('<b>'+names+'</b>Tap ground to move · tap enemy to attack'));
-    // Veterancy XP bar for single unit selection
+    cardEl.appendChild(mkInfo('<b>'+names+'</b>Tap ground to move \xb7 tap enemy to attack'));
     if(myUnits.length===1){
       const u=myUnits[0];
       if(u.unitRank<3&&(u.unitXp>0||u.unitRank>0)){
@@ -338,7 +332,6 @@ function confirmPlace(){
     toast('⚡ Warning: this will drain your power grid — build a Power Plant soon');
   money[0]-=bc;
   const site=placeBuilding(placing.type,0,placing.tx,placing.ty,false);
-  // assign a dozer: prefer selected, else nearest free
   let dz=sel.find(u=>u.kind==='u'&&u.type==='dozer'&&!u.dead);
   if(!dz){
     let bd=1e9;
@@ -398,7 +391,6 @@ function commandTarget(hit){
     for(const u of sel)if(u.kind==='u'&&u.type==='dozer'&&!u.dead){u.fix=hit;u.site=null;u.order=null;u.attackTarget=null;u.path=null;u.repath=0;n++}
     if(n){SFX.click();toast('🔧 Dozer repairing '+dispName('b',hit.type,0));return true}
   }
-  // Garrison: infantry into a civil structure (neutral or friendly)
   if(hit.kind==='b'&&hit.t&&hit.t.garrison&&!isEnemy(0,hit.team)){
     const inf=sel.filter(u=>u.kind==='u'&&!u.dead&&u.cat==='inf'&&u.team===0);
     if(inf.length){
@@ -406,7 +398,6 @@ function commandTarget(hit){
       SFX.click();toast('🏠 Infantry moving to garrison');return true;
     }
   }
-  // Capture: infantry capture a neutral oil derrick
   if(hit.kind==='b'&&hit.t&&hit.t.capturable&&hit.team!==0){
     const inf=sel.filter(u=>u.kind==='u'&&!u.dead&&u.cat==='inf'&&u.team===0);
     if(inf.length){
@@ -438,11 +429,10 @@ function commandTarget(hit){
 function selectEnt(e){
   genOpen=false;
   sel=[e];SFX.sel();updateCard();
-  // double tap: select all of same type on screen
   const now=performance.now();
   if(e.kind==='u'&&e.id===lastTapId&&now-lastTapT<380){
     sel=units.filter(u=>!u.dead&&u.team===0&&u.type===e.type&&Math.abs(u.x-cam.x)<vw/2/cam.z+40&&Math.abs(u.y-cam.y)<vh/2/cam.z+40);
-    toast(UT[e.type].ic+' Selected '+sel.length+' × '+dispName('u',e.type,0));
+    toast(UT[e.type].ic+' Selected '+sel.length+' \xd7 '+dispName('u',e.type,0));
     updateCard();
   }
   lastTapId=e.id;lastTapT=now;
@@ -462,16 +452,14 @@ function tap(px,py,isCmd){
     return;
   }
   const hit=hitTest(wx,wy);
-  if(isCmd){ // right-click style command
+  if(isCmd){
     if(hit&&commandTarget(hit))return;
     if(sel.length===1&&sel[0].kind==='b'&&sel[0].team===0&&sel[0].t.trains&&sel[0].built){
       sel[0].rally={x:wx,y:wy};SFX.click();return;
     }
-    // RMB on empty ground: deselect rather than issue a move command
     if(sel.length){sel=[];updateCard();SFX.click()}
     return;
   }
-  // contextual tap (touch) / left click
   if(hit){
     if(hit.kind==='p'){
       if(!commandTarget(hit))toast('📦 Supplies: $'+hit.amt+' — send a Supply Truck');
@@ -479,11 +467,10 @@ function tap(px,py,isCmd){
     }
     if(hit.team===0){
       if(hit.kind==='b'&&!hit.built&&sel.some(x=>x.kind==='u'&&x.type==='dozer'&&!x.dead)){resumeSite(hit);return}
-      // Let commandTarget handle repair/garrison before falling back to selection
       if(sel.some(s=>s.kind==='u')&&commandTarget(hit))return;
       selectEnt(hit);return;
     }
-    if(hit.team<0){  // neutral building
+    if(hit.team<0){
       if(commandTarget(hit))return;
       selectEnt(hit);return;
     }
@@ -491,7 +478,6 @@ function tap(px,py,isCmd){
     toast('Enemy '+dispName(hit.kind==='u'?'u':'b',hit.type,1));
     return;
   }
-  // ground
   if(sel.length===1&&sel[0].kind==='b'&&sel[0].team===0&&sel[0].t.trains&&sel[0].built){
     sel[0].rally={x:wx,y:wy};SFX.click();toast('🚩 Rally point set');return;
   }
@@ -514,7 +500,6 @@ cv.addEventListener('pointerdown',e=>{
       boxStart={x:e.clientX,y:e.clientY};
     }else{
       boxStart=null;
-      // long-press starts box select on touch
       if(e.pointerType!=='mouse'&&canBox){
         const px=e.clientX,py=e.clientY,pid=e.pointerId;
         lpTimer=setTimeout(()=>{
@@ -586,14 +571,12 @@ cv.addEventListener('wheel',e=>{
   e.preventDefault();
   const w=screenToWorld(e.clientX,e.clientY);
   cam.z=clamp(cam.z*(e.deltaY<0?1.12:.89),.45,1.7);
-  // Snap to common zoom levels when passing close enough
   const ZLEVELS=[0.5,0.75,1.0,1.25,1.5];
   for(const zl of ZLEVELS){if(Math.abs(cam.z-zl)<0.055){cam.z=zl;break}}
   cam.x=w.x-(e.clientX-vw/2)/cam.z;
   cam.y=w.y-(e.clientY-vh/2)/cam.z;
   clampCam();
 },{passive:false});
-// minimap
 function miniJump(e){
   const r=mcv.getBoundingClientRect();
   cam.x=clamp((e.clientX-r.left)/r.width*WW,0,WW);
@@ -602,7 +585,6 @@ function miniJump(e){
 }
 mcv.addEventListener('pointerdown',e=>{e.preventDefault();mcv.setPointerCapture(e.pointerId);miniJump(e)});
 mcv.addEventListener('pointermove',e=>{if(e.buttons)miniJump(e)});
-// keyboard
 const ctrlGroups={};
 addEventListener('keydown',e=>{
   keys[e.key.toLowerCase()]=true;
@@ -611,7 +593,6 @@ addEventListener('keydown',e=>{
     else if(targetPower)targetPower=null,updateHUD();
     else sel=[],updateCard();
   }
-  // S = stop all selected units
   if(state==='play'&&e.key.toLowerCase()==='s'&&!e.ctrlKey&&!e.metaKey){
     const my=sel.filter(s=>s.kind==='u');
     if(my.length){
@@ -619,7 +600,6 @@ addEventListener('keydown',e=>{
       SFX.click();
     }
   }
-  // H = hold position (unit stays put, only attacks targets within range)
   if(state==='play'&&e.key.toLowerCase()==='h'&&!e.ctrlKey&&!e.metaKey){
     const my=sel.filter(s=>s.kind==='u'&&!s.dead&&s.cat!=='air');
     if(my.length){
@@ -627,7 +607,6 @@ addEventListener('keydown',e=>{
       SFX.click();toast('⏸ Hold position');
     }
   }
-  // Control groups: Ctrl+1..5 assign, 1..5 recall
   if(state==='play'&&/^[1-5]$/.test(e.key)){
     if(e.ctrlKey){
       e.preventDefault();
@@ -637,7 +616,6 @@ addEventListener('keydown',e=>{
       const g=(ctrlGroups[e.key]||[]).filter(u=>!u.dead);
       if(g.length){
         sel=g;updateCard();SFX.sel();
-        // double-tap the key to also center the camera
         const now=performance.now();
         if(ctrlGroups['_t'+e.key]&&now-ctrlGroups['_t'+e.key]<400){cam.x=g[0].x;cam.y=g[0].y;clampCam()}
         ctrlGroups['_t'+e.key]=now;
@@ -646,7 +624,6 @@ addEventListener('keydown',e=>{
   }
 });
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
-// buttons
 document.getElementById('armyBtn').onclick=()=>{
   const a=units.filter(u=>!u.dead&&u.team===0&&COMBAT.includes(u.type));
   if(!a.length){SFX.err();toast('No combat units yet — build a Barracks');return}
@@ -676,7 +653,7 @@ document.getElementById('rankBtn').onclick=()=>{
 document.getElementById('speedBtn').onclick=function(){
   if(state!=='play')return;
   gameSpeed=gameSpeed<1?1.5:gameSpeed<2?3:0.75;
-  this.textContent=gameSpeed<1?'1×':gameSpeed<2?'2×':'4×';SFX.click();
+  this.textContent=gameSpeed<1?'1\xd7':gameSpeed<2?'2\xd7':'4\xd7';SFX.click();
 };
 document.getElementById('muteBtn').onclick=function(){muted=!muted;this.textContent=muted?'🔇':'🔊';applyMute()};
 document.getElementById('muteBtn').textContent=muted?'🔇':'🔊';

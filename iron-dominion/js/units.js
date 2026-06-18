@@ -157,7 +157,7 @@ function boomkartDeath(u){
 }
 
 // entRad/dist2/shQuery live in helpers.js — `const dist2` there collides with a
-// `function dist2` here (SyntaxError across <script> tags → whole file fails to
+// `function dist2` here (SyntaxError across <script> tags -> whole file fails to
 // load). Use the helpers.js definitions; do not redeclare dist2 in this file.
 
 function buildingDeathFx(b){
@@ -632,17 +632,24 @@ function updateTruck(u,dt){
     }
   }
   if(u.cargo>0){
-    const cmd=builds.find(b=>!b.dead&&b.built&&b.team===u.team&&b.type==='command');
-    if(!cmd){return}
-    const d=Math.hypot(cmd.x-u.x,cmd.y-u.y);
-    if(d<30){
+    // Deliver to the nearest Supply Center (drop-off); fall back to the command
+    // center only if no supply depot exists.
+    let drop=null,dd=1e9;
+    for(const b of builds){
+      if(b.dead||!b.built||b.team!==u.team||b.type!=='supply')continue;
+      const d=Math.hypot(b.x-u.x,b.y-u.y);if(d<dd){dd=d;drop=b}
+    }
+    if(!drop){drop=builds.find(b=>!b.dead&&b.built&&b.team===u.team&&b.type==='command')||null}
+    if(!drop){u.ts='idle';return}
+    const d=Math.hypot(drop.x-u.x,drop.y-u.y);
+    if(d<Math.max(drop.t.w,drop.t.h)*TILE*0.5+16){
       const earned=u.cargo*upMk(u.team);
       money[u.team]+=earned;
       if(u.team===0){gameStats.moneyEarned+=earned;updateHUD()}
       addPart({k:'txt',x:u.x,y:u.y-26,life:1.5,max:1.5,s:0,txt:'+$'+earned});
-      u.cargo=0;return;
+      u.cargo=0;u.ts='idle';return;
     }
-    if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),TT(cmd.x),TT(cmd.y),blocked);u.wpi=0;u.repath=3}
+    if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),TT(drop.x),TT(drop.y),blocked);u.wpi=0;u.repath=3}
     moveUnit(u,dt);u.ts='move';return;
   }
   let best=null,bd=9999;

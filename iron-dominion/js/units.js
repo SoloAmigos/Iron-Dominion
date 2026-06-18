@@ -6,7 +6,6 @@ function spawnUnit(type,team,x,y){
   if(ft){x=ft.x*TILE+TILE/2+rand(-6,6);y=ft.y*TILE+TILE/2+rand(-6,6)}
   let hp=t.hp*f.uhp*upArm(team);
   if(type==='tank'&&f.tankHp)hp*=f.tankHp;
-  // Apply GENMOD infantry HP bonus (Infantry General)
   const gm=GENMOD(team);
   if(gm.infHp&&t.cat==='inf')hp*=gm.infHp;
   if(gm.uhpMul)hp*=gm.uhpMul;
@@ -18,18 +17,13 @@ function spawnUnit(type,team,x,y){
     poisonT:0,poisonDps:0,
     cd:0,scan:Math.random()*.4,repath:0,path:null,wpi:0,order:null,attackTarget:null,site:null,
     pile:null,ts:'idle',lt:0,retry:0,cargo:0,flash:0,dead:false,stT:0,lx:x,ly:y,anchor:null,auto:false,smkT:0,fix:null,healT:0,
-    // Veterancy
     unitXp:0,unitRank:0,kills:0,
-    // Scrap (Scorpion faction)
     scrapLevel:0,
-    // Garrison
     hidden:false,garrisonBuilding:null,
-    // Capture
     isCapturing:false,captureTarget:null,captureProgress:0};
   units.push(u);return u;
 }
 
-/* ===== Veterancy ===== */
 function checkVeterancy(u){
   if(!u||u.dead||u.cat==='veh'&&(u.type==='truck'||u.type==='dozer'))return;
   const old=u.unitRank;
@@ -49,10 +43,8 @@ function checkVeterancy(u){
   }
 }
 
-/* ===== Scrap pickup (Scorpion) ===== */
 function pickupScrap(u){
   if(u.scrapLevel>=2)return;
-  // Find nearest unclaimed scrap within 120px
   let best=null,bd=120;
   for(const s of scraps){if(s.dead||s.claimed)continue;const d=Math.hypot(s.x-u.x,s.y-u.y);if(d<bd){bd=d;best=s}}
   if(!best)return;
@@ -61,19 +53,15 @@ function pickupScrap(u){
   addPart({k:'txt',x:u.x,y:u.y-24,life:1.4,max:1.4,s:0,txt:'⚙️ SCRAP LV'+u.scrapLevel});
 }
 
-/* ===== Unit death ===== */
 function kill(e){
   if(e.dead)return;
   e.dead=true;
-  // Eject from garrison
   if(e.hidden&&e.garrisonBuilding){
     const gb=e.garrisonBuilding;
     if(gb.garrison)gb.garrison=gb.garrison.filter(u=>u!==e);
     e.hidden=false;e.garrisonBuilding=null;
   }
-  // Release airfield pad
   if(e.home&&e.padI>=0){e.home.padUnits[e.padI]=null;e.home=null;e.padI=-1}
-  // Drop scrap for Scorpion vehicles
   if(e.cat==='veh'&&e.type!=='dozer'&&e.type!=='truck'){
     scraps.push({x:e.x+vrand(-8,8),y:e.y+vrand(-8,8),dead:false,claimed:false,id:ids++});
   }
@@ -98,10 +86,8 @@ function kill(e){
   }
 }
 
-/* ===== Damage ===== */
 function dealDamage(e,dmg,src){
   if(!e||e.dead)return;
-  // Fortress mode: buildings take 40% less damage
   if(e.kind==='b'&&e.fortressT>0)dmg*=0.6;
   e.hp-=dmg;
   e.flash=0.12;
@@ -112,14 +98,12 @@ function dealDamage(e,dmg,src){
     if(e.dead&&src.kills!==undefined){
       src.kills++;
       if(isEnemy(0,e.team)&&src.team===0){
-        // Scorpion scrap pickup on kill (for vehicles)
         if(fac[0]==='scorpion'&&src.cat==='veh'&&src.type!=='dozer'&&src.type!=='truck')pickupScrap(src);
       }
     }
   }
 }
 
-/* ===== Poison DOT tick ===== */
 function tickPoison(u,dt){
   if(!u.poisonT||u.poisonT<=0)return;
   u.poisonT-=dt;
@@ -128,7 +112,6 @@ function tickPoison(u,dt){
   if(Math.random()<dt*3)addPart({k:'spark',x:u.x+vrand(-6,6),y:u.y+vrand(-6,6),vx:vrand(-8,8),vy:vrand(-18,-4),life:.3,max:.3,s:2.2,c:'#4dff88'});
 }
 
-/* ===== Suicide unit (Scarab) ===== */
 function scarabCheck(u,dt){
   if(u.type!=='scarab'||!u.t.suicide)return;
   const w=WPN[u.t.suicide];
@@ -142,7 +125,6 @@ function scarabCheck(u,dt){
   }
 }
 
-/* ===== Boomkart splash on death ===== */
 function boomkartDeath(u){
   const w=WPN.boomkart;
   const nearby=shQuery(u.x,u.y,w.splash+20);
@@ -163,12 +145,10 @@ function boomkartDeath(u){
 function buildingDeathFx(b){
   const W=b.t.w*TILE,H=b.t.h*TILE,big=Math.max(W,H);
   rubbles.push({x:b.x,y:b.y,w:W,h:H,life:26,max:26,seed:((b.id+1)*2654435761)>>>0});
-  // main blast (plays the boom SFX once)
   boomFx(b.x,b.y,big*.7,true);
   addPart({k:'ring',x:b.x,y:b.y,life:.55,max:.55,s:big*1.6});
   addPart({k:'flash',x:b.x,y:b.y,life:.12,max:.12,s:big*.85});
   addPart({k:'scorch',x:b.x,y:b.y,life:20,max:20,s:big*.62});
-  // secondary blasts across the footprint
   const sec=3+(big/45|0);
   for(let i=0;i<sec;i++){
     const ex=b.x+vrand(-W*.42,W*.42),ey=b.y+vrand(-H*.42,H*.42);
@@ -176,9 +156,7 @@ function buildingDeathFx(b){
     for(let k=0;k<3;k++)addPart({k:'fire',x:ex+vrand(-6,6),y:ey+vrand(-6,6),vx:vrand(-18,18),vy:vrand(-44,-10),life:vrand(.3,.6),max:.6,s:vrand(big*.12,big*.22)});
     for(let k=0;k<4;k++)addPart({k:'spark',x:ex,y:ey,vx:vrand(-90,90),vy:vrand(-110,-20),life:vrand(.2,.5),max:.5,s:vrand(1.5,3),c:k%2?'#ff9a4d':'#ffd27d'});
   }
-  // hurled debris chunks
   for(let i=0;i<14;i++)addPart({k:'deb',x:b.x+vrand(-W*.3,W*.3),y:b.y+vrand(-H*.3,H*.3),vx:vrand(-180,180),vy:vrand(-240,-60),rot:vrand(0,7),vr:vrand(-12,12),life:vrand(.5,1.1),max:1.1,s:vrand(3,7)});
-  // rising smoke pillar
   for(let i=0;i<10;i++)addPart({k:'smoke',x:b.x+vrand(-W*.35,W*.35),y:b.y+vrand(-H*.35,H*.35),vx:vrand(-10,10),vy:vrand(-36,-12),life:vrand(1.2,2.4),max:2.4,s:vrand(12,26)});
 }
 function boomFx(x,y,s,big){
@@ -201,14 +179,12 @@ function boomFx(x,y,s,big){
   SFX.boom(big);
 }
 
-/* ===== Poison DOT ===== */
 function applyPoison(e,dps){
   if(!e||e.dead)return;
   e.poisonT=Math.max(e.poisonT||0,4);
   e.poisonDps=Math.max(e.poisonDps||0,dps);
 }
 
-/* ===== Aircraft helpers ===== */
 function padPos(b,i){
   const off=b.t.pads[i];
   return{x:(b.tx+b.t.w/2+off[0]*1.2)*TILE,y:(b.ty+b.t.h/2+off[1]*1.2)*TILE};
@@ -231,9 +207,7 @@ function impact(p){
     addPart({k:'flash',x:p.x,y:p.y,life:.6,max:.6,s:520});
     for(let i=0;i<16;i++)addPart({k:'fire',x:p.x+rand(-70,70),y:p.y+rand(-70,70),vx:vrand(-30,30),vy:vrand(-90,-30),life:vrand(.5,1.1),max:1.1,s:vrand(20,46)});
     for(let i=0;i<14;i++)addPart({k:'smoke',x:p.x+rand(-40,40),y:p.y+rand(-30,30),vx:vrand(-16,16),vy:vrand(-70,-25),life:vrand(1.2,2.4),max:2.4,s:vrand(16,34)});
-    // Mushroom cloud rising stem
     for(let i=0;i<9;i++)addPart({k:'smoke',x:p.x+vrand(-7,7),y:p.y,vx:vrand(-3,3),vy:-55-i*9,life:vrand(1.5,3.2),max:3.2,s:vrand(14+i*5,26+i*6)});
-    // Mushroom cap ring
     for(let i=0;i<12;i++){const a=i/12*6.28;addPart({k:'smoke',x:p.x+Math.cos(a)*58,y:p.y-195,vx:Math.cos(a)*15,vy:vrand(-10,4),life:vrand(2,3.8),max:3.8,s:vrand(26,48)})}
     addPart({k:'scorch',x:p.x,y:p.y,life:18,max:18,s:130});
     SFX.nuke();shake=1.1;
@@ -330,7 +304,6 @@ function fireFrom(sh,wname,tgt){
    shQuery so findEnemy() always saw an empty world (units never engaged, AI just
    piled up). Use the helpers.js hash; do not redeclare shQuery here. */
 
-/* ===== Unit separation (steering) ===== */
 function separation(dt){
   const MAXPUSH=85;
   for(const u of units){
@@ -352,7 +325,6 @@ function separation(dt){
   }
 }
 
-/* ===== Unit AI / per-frame update ===== */
 function findEnemy(u){
   let best=null,bd=u.t.sight*TILE+40;
   const cands=shQuery(u.x,u.y,bd+40);
@@ -369,7 +341,6 @@ function findEnemy(u){
   }
   return best;
 }
-// Used by defensive buildings (turret/samsite) to acquire a target within r px.
 function findEnemyInRange(sh,r){
   let best=null,bd=1e9;
   const nearby=shQuery(sh.x,sh.y,r+24);
@@ -407,7 +378,6 @@ function issueOrder(u,order){
     u.wpi=0;
   }
 }
-// Order helpers
 function orderMove(u,x,y,kind){
   if(u.cat==='air'){u.loiter={x,y};u.attackTarget=null;u.orbT=0;return}
   u.attackTarget=null;u.anchor=null;
@@ -632,8 +602,6 @@ function updateTruck(u,dt){
     }
   }
   if(u.cargo>0){
-    // Deliver to the nearest Supply Center (drop-off); fall back to the command
-    // center only if no supply depot exists.
     let drop=null,dd=1e9;
     for(const b of builds){
       if(b.dead||!b.built||b.team!==u.team||b.type!=='supply')continue;
@@ -687,10 +655,23 @@ function updateDozer(u,dt){
     u.moving=false;u.ts='build';
     return;
   }
+  if(u.fix){
+    const b=u.fix;
+    if(b.dead||b.hp>=b.maxhp){u.fix=null;u.ts='idle';return}
+    const d=Math.hypot(b.x-u.x,b.y-u.y);
+    const reach=Math.max(b.t.w,b.t.h)*TILE*0.5+20;
+    if(d>reach){
+      if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),b.tx+Math.floor(b.t.w/2),b.ty+Math.floor(b.t.h/2),blocked);u.wpi=0;u.repath=2}
+      moveUnit(u,dt);u.ts='move';return;
+    }
+    b.hp=Math.min(b.maxhp,b.hp+b.maxhp*0.06*dt);
+    if(b.hp>=b.maxhp){b.hp=b.maxhp;u.fix=null;if(u.team===0)toast('🔩 Repair complete!')}
+    u.moving=false;u.ts='build';
+    return;
+  }
   u.moving=false;
 }
 
-/* ===== Air unit update ===== */
 function updateAir(u,dt){
   u.cd=Math.max(0,u.cd-dt);
   if(u.flash>0)u.flash=Math.max(0,u.flash-dt*4);
@@ -760,9 +741,7 @@ function updateAir(u,dt){
   }
 }
 
-/* ===== Main unit update loop ===== */
 function updateUnits(dt){
-  // (spatial hash is rebuilt by simStep via helpers.shClear/shInsert)
   for(const u of units){
     if(u.dead)continue;
     updateUnit(u,dt);
@@ -786,7 +765,6 @@ function updateUnits(dt){
   }
 }
 
-/* ===== Garrison fire from buildings ===== */
 function garrisonFire(b,dt){
   if(!b.garrison||!b.garrison.length)return;
   const gc=b.garrison;
@@ -810,7 +788,6 @@ function garrisonFire(b,dt){
   if(!b.garrison.length)b.garrison=[];
 }
 
-/* ===== Unit kill check (boomkart) ===== */
 function checkBoomkartKill(u){
   if(u.type==='scarab'&&u.dead&&u.t.suicide){
     boomkartDeath(u);

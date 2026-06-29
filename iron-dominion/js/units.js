@@ -297,15 +297,27 @@ function fireFrom(sh,wname,tgt){
   addPart({k:'flash',x:mx,y:my,life:.07,max:.07,s:6,c:w.laser?'#9fe9ff':(heroic?'#ffe080':null)});
   const toxinActive=sh.team>=0&&GENMOD(sh.team).toxin;
   if(w.kind==='hit'){
-    addPart({k:'trace',x:mx,y:my,x2:tgt.x+vrand(-3,3),y2:tgt.y+vrand(-3,3),
-      life:w.laser?.12:(w.flame?.16:.07),max:w.laser?.12:(w.flame?.16:.07),c:traceC,fl:!!w.flame});
     if(w.flame){
-      for(let i=0;i<2;i++)addPart({k:'fire',x:tgt.x+vrand(-8,8),y:tgt.y+vrand(-8,8),vx:vrand(-10,10),vy:vrand(-26,-8),life:vrand(.18,.3),max:.3,s:vrand(5,9)});
+      // Flamethrower: spray a short, widening cone of fire from the muzzle toward
+      // the target. (Previously drew a clean beam 'trace', which read as a laser.)
+      const fdx=tgt.x-mx,fdy=tgt.y-my,fd=Math.hypot(fdx,fdy)||1,ux=fdx/fd,uy=fdy/fd;
+      const reach=Math.min(fd,w.rng);
+      const n=4+(reach/22|0);
+      for(let i=0;i<n;i++){
+        const tt=i/n,px=mx+ux*reach*tt,py=my+uy*reach*tt,spread=5+tt*15;
+        addPart({k:'fire',x:px+vrand(-spread,spread),y:py+vrand(-spread,spread),
+          vx:ux*vrand(20,70)+vrand(-10,10),vy:uy*vrand(20,70)+vrand(-10,10)-8,life:vrand(.18,.38),max:.38,s:vrand(5,11)});
+      }
+      for(let i=0;i<3;i++)addPart({k:'fire',x:tgt.x+vrand(-9,9),y:tgt.y+vrand(-9,9),vx:vrand(-14,14),vy:vrand(-30,-8),life:vrand(.2,.4),max:.4,s:vrand(6,12)});
+      if(Math.random()<.5)addPart({k:'smoke',x:tgt.x+vrand(-8,8),y:tgt.y+vrand(-8,8),vx:vrand(-8,8),vy:vrand(-22,-6),life:vrand(.4,.8),max:.8,s:vrand(6,12)});
       if(tgt.kind==='b'&&tgt.garrison&&tgt.garrison.length){
         for(const gu of tgt.garrison)if(!gu.dead)dealDamage(gu,w.dmg*mul*w.mult.inf,sh);
       }
+    }else{
+      addPart({k:'trace',x:mx,y:my,x2:tgt.x+vrand(-3,3),y2:tgt.y+vrand(-3,3),
+        life:w.laser?.12:.07,max:w.laser?.12:.07,c:traceC,fl:false});
+      addPart({k:'spark',x:tgt.x,y:tgt.y,vx:vrand(-40,40),vy:vrand(-60,-5),life:.22,max:.22,s:2,c:w.laser?'#9fe9ff':(heroic?'#ffd95e':'#ffd27d')});
     }
-    addPart({k:'spark',x:tgt.x,y:tgt.y,vx:vrand(-40,40),vy:vrand(-60,-5),life:.22,max:.22,s:2,c:w.laser?'#9fe9ff':(heroic?'#ffd95e':'#ffd27d')});
     dealDamage(tgt,w.dmg*mul*w.mult[tgt.cat],sh);
     if(toxinActive)applyPoison(tgt,w.dmg*0.08);
   }else if(w.kind==='shell'){

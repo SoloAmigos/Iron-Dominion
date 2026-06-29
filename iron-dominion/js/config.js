@@ -351,7 +351,7 @@ const WPN={
   mgT:     {dmg:20, rel:.5, rng:200, kind:'hit',                 splash:0,  mult:{inf:1.3, veh:.5, bld:.25,air:.3}},
   gmg:     {dmg:16, rel:.55,rng:175, kind:'hit',                 splash:0,  mult:{inf:1.35,veh:.45,bld:.3, air:.35}},
   dgun:    {dmg:12, rel:.4, rng:190, kind:'hit',                 splash:0,  mult:{inf:.9, veh:.5, bld:.2,  air:.55}},
-  flame:   {dmg:30, rel:.4, rng:175, kind:'hit',  flame:true,   splash:0,  mult:{inf:1.6, veh:.5, bld:.95,air:.1}},
+  flame:   {dmg:14, rel:.5, rng:120, kind:'hit',  flame:true,   splash:0,  mult:{inf:1.6, veh:.5, bld:.95,air:.1}},
   mortar:  {dmg:55, rel:3.6,rng:280, kind:'arc',   spd:240, minRng:80, splash:36, mult:{inf:.7, veh:.6,bld:.9, air:.2}},
   boomkart:{dmg:260,rel:1,  rng:1,   kind:'hit',                 splash:60, mult:{inf:.75, veh:1,  bld:1.1,air:.2}},
   nuke:        {dmg:1500,rel:1,rng:1,kind:'arc',  spd:300,splash:165,mult:{inf:1,  veh:1,  bld:1,  air:1}},

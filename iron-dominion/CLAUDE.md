@@ -6,7 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v48).
+PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v54).
 
 | File | Owns |
 |---|---|
@@ -39,15 +39,14 @@ PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on e
 
 ## Deployment Notes
 
-- Git push to `main` **always 503** via the session proxy (the receive-pack endpoint is blocked for any payload size; no GitHub PAT is available to push direct). **MCP `mcp__github__push_files` is the only write path.**
-- After every MCP push: independently verify the remote git **blob SHA** (`git fetch origin main && git rev-parse origin/main:<path>`) against the local blob (`git hash-object <file>`). Do not trust agent/tool self-reports — check the SHA directly.
-- **Do the pushes yourself; do NOT delegate to sub-agents.** Past sub-agents repeatedly pushed truncated/placeholder stubs (652 B / 1105 B) that broke the live game. Reading + emitting file content verbatim in your own `push_files` call, then verifying the blob SHA, is reliable.
-- **render.js is split into 8 load-order parts (`render.part1.js`…`render.part8.js`).** Reason: the full ~95 KB render.js is too token-heavy to emit in a single `push_files` tool-call (the call truncates). Each part is small enough to push reliably. They are plain `<script>` tags sharing global scope, so functions resolve across files at call time.
-  - **`render.js` is the editable master.** To change the renderer: edit `render.js`, then regenerate the parts at the boundaries below. Prepend `'use strict';` to parts 2–8 and `node --check` each. Reassemble: `cat part1 + (parts 2–8 with first 'use strict' line stripped)` and diff against `render.js`. Origin parts lack trailing newlines so local SHA will differ by 1 byte from origin — this is harmless (browser JS). Note: part4 starts at line 1033 with `/* --- vehicle sprites --- */` comment.
+- **Normal `git push` to `main` works** — deploy with `git commit` + `git push origin main`. GitHub Pages serves from `main`. (Historical note: earlier sessions believed push "always 503s" and used `mcp__github__push_files` as the only write path. That was outdated — re-tested and confirmed working. The 503s were transient, tied to the window when the repo was being renamed. Don't reintroduce the MCP-only workaround.)
+- Canonical remote: `SoloAmigos/ai-projects` (lowercase). The repo was renamed from a capitalized form; an outdated remote URL triggers a "this repository moved" redirect. Keep `origin` pointed at the lowercase name.
+- Sanity-check after a deploy if desired: `git fetch origin main && git rev-parse origin/main:<path>` vs `git hash-object <file>` — but a clean `git push` exit is authoritative.
+- **render.js is split into 8 load-order parts (`render.part1.js`…`render.part8.js`).** They are plain `<script>` tags sharing global scope, so functions resolve across files at call time. (The split originated as a workaround for the MCP push path's token limit; it's retained because it keeps individual files small and edits cheap.)
+  - **`render.js` is the editable master.** To change the renderer: edit `render.js`, then regenerate the parts at the boundaries below. Prepend `'use strict';` to parts 2–8 and `node --check` each. Reassemble: `cat part1 + (parts 2–8 with first 'use strict' line stripped)` and diff against `render.js`. Note: part4 starts at line 1033 with `/* --- vehicle sprites --- */` comment.
   - **Current render.js split boundaries (lines in render.js → part file):** `1→part1`, `232→part2`, `831→part3`, `1033→part4`, `1264→part5`, `1509→part6`, `1743→part7`, `1940→part8`.
-  - Push each part, verify its blob SHA, then push `index.html` (loads the 8 parts in order) + `sw.js` (caches them) last so the live switch only happens once all parts exist.
-- Must reset local git to `origin/main` after MCP push (`git fetch origin main && git reset --hard origin/main`).
-- Commit authorship: use `git -c user.email=noreply@anthropic.com -c user.name=Claude commit …` or the stop hook flags the commit as Unverified.
+  - When changing the renderer, commit all changed parts together with `index.html` (loads the 8 parts in order) + `sw.js` (cache bump) in one push.
+- Commit authorship: set `git config user.email noreply@anthropic.com` and `git config user.name Claude` (already configured locally) so the stop hook doesn't flag commits as Unverified.
 - UI theme: military (gunmetal/olive/khaki/stencil-amber, square corners) — do NOT reintroduce neon glows.
 
 ## Map Presets

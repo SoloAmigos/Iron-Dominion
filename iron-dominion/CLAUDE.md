@@ -6,7 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v55).
+PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v56) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
 
 | File | Owns |
 |---|---|
@@ -77,6 +77,7 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 
 ## Completed Features (all shipped to main)
 
+- [x] Version badge: `js/version.js` `GAME_VERSION` single source (SW cache + always-visible main-menu badge, hidden in-game via `hideVerBadge()`)
 - [x] AIR OVERHAUL: updateAir rewritten as a full state machine — obeys move/attack orders (was frozen ignoring `loiter`), returns to pad and LANDS when idle, parks (slow heal) until ordered, rearms landed (10s) and resumes its order; stable strafe orbit with radial correction; legality-aware `airScan` sees units AND buildings
 - [x] AA layer: central air-targeting legality (ground guns can never shoot airborne craft, manual orders included, with UI refusal toasts); raptor→`aam` air-superiority missiles; new `flak` AA vehicle (faction names Avenger/Gattling Crawler/Quad Cannon/Hailstorm); SAM buffed (80dmg/300rng); flak tracer + air-burst `flakpuff` fx
 - [x] Bomber balance: bigbomb 220/185/1.4→200/120/1.15, rng 250 (inside SAM envelope) — one sortie (690) can no longer one-pass a SAM site (900); AI builds flak vs enemy air, 2nd samsite in bo, hard AI fields up to 2 bombers

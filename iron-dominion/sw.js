@@ -1,4 +1,5 @@
-const CACHE='iron-dominion-v55';
+importScripts('js/version.js');
+const CACHE='iron-dominion-'+GAME_VERSION;
 const ASSETS=['.','index.html','css/style.css','manifest.json','icon-192.png','icon-512.png',
   'js/audio.js','js/config.js','js/state.js','js/helpers.js','js/world.js',
   'js/units.js','js/buildings.js','js/projectiles.js','js/ai.js',

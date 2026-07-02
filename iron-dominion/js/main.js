@@ -56,6 +56,17 @@ function wireGens(){
 function showMenu(){showMainMenu()}
 function showMainMenu(){
   state='menu';overlay.style.display='flex';
+  // build version badge — always visible at the bottom of the main menu so a
+  // deployed push is verifiable at a glance (reads the same GAME_VERSION the SW cache uses)
+  let _vb=document.getElementById('verBadge');
+  if(!_vb){
+    _vb=document.createElement('div');
+    _vb.id='verBadge';
+    _vb.style.cssText='position:fixed;bottom:calc(6px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;font-size:11px;letter-spacing:1px;color:#8a9478;opacity:.75;z-index:60;pointer-events:none;font-family:inherit';
+    document.body.appendChild(_vb);
+  }
+  _vb.textContent='IRON DOMINION '+(typeof GAME_VERSION!=='undefined'?GAME_VERSION:'dev')+' · build by Claude';
+  _vb.style.display='block';
   const _si=getSaveInfo();
   const _loadBtn=_si?'<button class="big-btn" id="loadBtn" style="font-size:14px;padding:12px">💾 CONTINUE<br><span style="font-size:11px;font-weight:400;opacity:.75">'+(_si.fac[0]?FACTIONS[_si.fac[0]].name:'')+(numSlots>2?' +more':'')+' · '+_si.map+' · '+_si.time+' · '+_si.ago+'</span></button>':'';
   overlay.innerHTML=panel(
@@ -584,7 +595,9 @@ function loadGame(){
 }
 
 /* ---------- init ---------- */
+function hideVerBadge(){const b=document.getElementById('verBadge');if(b)b.style.display='none'}
 function init(name){
+  hideVerBadge();
   // name is optional (used by campaign); arcade uses slotType/slotAlliance from lobby
   diffName=name||'normal';D=DIFF[diffName]||DIFF.normal;
   // numSlots is set by the lobby (or campaign); ensure slot arrays are sized correctly

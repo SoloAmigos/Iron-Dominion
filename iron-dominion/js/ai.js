@@ -19,6 +19,7 @@ function makeAI(diff){
     {b:'power',o:[5,-1]},
     {b:'radar',o:[-5,11]},
     {b:'samsite',o:[0,13]},
+    {b:'samsite',o:[9,12]},
     {b:'airfield',o:[9,7]},
   ];
   if(aiD.silo)bo.push({b:'silo',o:[7,9]},{b:'power',o:[-2,13]});
@@ -114,6 +115,10 @@ function aiTick(tick){
     const padAvail=b.padUnits&&b.padUnits.some(p=>p===null||p===undefined);
     if(!padAvail)continue;
     const airRoster=['raptor'];
+    if(diffName==='hard'&&money[t]>5500){
+      const myBombers=units.reduce((n,u)=>n+(!u.dead&&u.team===t&&u.type==='bomber'?1:0),0);
+      if(myBombers<2)airRoster.push('bomber');
+    }
     for(const sg of FAC(t).sigs)if(sg.at==='airfield'&&!airRoster.includes(sg.unit))airRoster.push(sg.unit);
     for(const sg of GENMOD(t).sigs||[])if(sg.at==='airfield'&&!airRoster.includes(sg.unit))airRoster.push(sg.unit);
     const pick=airRoster[Math.floor(Math.random()*airRoster.length)];
@@ -133,6 +138,10 @@ function aiTick(tick){
     const sigs=FAC(t).sigs,mix=aiMix(t);
     if(b.type==='factory'){
       let pick=Math.random()<mix.fArty?'arty':'tank';
+      // counter-air doctrine: enemy planes in the sky → build flak tracks
+      const enemyAir=units.reduce((n,u)=>n+(!u.dead&&u.cat==='air'&&isEnemy(t,u.team)?1:0),0);
+      const myFlak=units.reduce((n,u)=>n+(!u.dead&&u.team===t&&u.type==='flak'?1:0),0);
+      if(enemyAir>0&&myFlak<Math.min(4,1+enemyAir)&&Math.random()<.5)pick='flak';
       if(Math.random()<(mix.fAltR||.22)&&UT[mix.fAlt]&&!isLocked(mix.fAlt,t))pick=mix.fAlt;
       if(isLocked(pick,t))pick='arty';
       if(isLocked(pick,t))pick=null;

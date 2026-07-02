@@ -14,15 +14,18 @@ function drawUnit(u){
   if(isEnemy(0,u.team)&&tileVisAt(u.x,u.y)!==2)return;
   // Aircraft rendering
   if(u.cat==='air'||u.zHeight>10){
-    const zh=u.zHeight||30;
-    const drawY=u.y-zh;
-    // Ground shadow
-    ctx.save();
-    ctx.globalAlpha=0.28*(1-zh/80);
-    ctx.fillStyle='rgba(0,0,0,.7)';
-    ctx.beginPath();ctx.ellipse(u.x+zh*.15,u.y+zh*.08,u.t.r*1.1,u.t.r*.5,0,0,Math.PI*2);ctx.fill();
-    ctx.globalAlpha=1;
-    ctx.restore();
+    const zh=(u.zHeight!==undefined&&u.zHeight!==null)?u.zHeight:30;
+    const bob=zh>10?Math.sin(gtime*2.2+u.id)*2:0;
+    const drawY=u.y-zh-bob;
+    // Ground shadow — tightens under the craft as it lands
+    if(zh>2){
+      ctx.save();
+      ctx.globalAlpha=0.28*(1-zh/90)+0.08;
+      ctx.fillStyle='rgba(0,0,0,.7)';
+      ctx.beginPath();ctx.ellipse(u.x+zh*.15,u.y+zh*.08,u.t.r*(0.7+zh/75),u.t.r*(0.32+zh/160),0,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=1;
+      ctx.restore();
+    }
     // Selection ring at ground level
     if(sel.includes(u)){
       ctx.strokeStyle='rgba(159,226,124,.7)';ctx.lineWidth=1.6;ctx.setLineDash([6,4]);

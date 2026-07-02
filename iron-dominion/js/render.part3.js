@@ -127,6 +127,28 @@ function bSpr(type,fk,gen){
         else if(fk==='northwind')radNorthwind(g,X,Y,W,H,C,ac);
         else radVanguard(g,X,Y,W,H,C,ac);
         break;}
+      case 'tunnel':{
+        pFoundation(g,X,Y,W,H);
+        // sandbag ring
+        g.fillStyle='#6b5a3a';
+        for(let i=0;i<10;i++){const a2=i/10*Math.PI*2;g.beginPath();g.ellipse(X+W/2+Math.cos(a2)*W*.42,Y+H/2+Math.sin(a2)*H*.42,7,4.5,a2,0,7);g.fill()}
+        g.fillStyle='#7d6a44';
+        for(let i=0;i<10;i++){const a2=(i+.5)/10*Math.PI*2;g.beginPath();g.ellipse(X+W/2+Math.cos(a2)*W*.42,Y+H/2+Math.sin(a2)*H*.42-2,6,3.6,a2,0,7);g.fill()}
+        // dark shaft
+        const tg=g.createRadialGradient(X+W/2,Y+H/2,2,X+W/2,Y+H/2,W*.34);
+        tg.addColorStop(0,'#05070a');tg.addColorStop(.7,'#141a12');tg.addColorStop(1,'#2a3024');
+        g.fillStyle=tg;g.beginPath();g.ellipse(X+W/2,Y+H/2,W*.34,H*.3,0,0,7);g.fill();
+        g.strokeStyle='#0c100a';g.lineWidth=2;
+        g.beginPath();g.ellipse(X+W/2,Y+H/2,W*.34,H*.3,0,0,7);g.stroke();
+        // ladder hint + support beams
+        g.strokeStyle='#8a7a52';g.lineWidth=2;
+        g.beginPath();g.moveTo(X+W/2-6,Y+H/2-H*.28);g.lineTo(X+W/2-6,Y+H/2);g.moveTo(X+W/2+6,Y+H/2-H*.28);g.lineTo(X+W/2+6,Y+H/2);g.stroke();
+        g.strokeStyle='#5a4a2e';g.lineWidth=1.2;
+        for(let i=0;i<3;i++){g.beginPath();g.moveTo(X+W/2-6,Y+H/2-H*.24+i*7);g.lineTo(X+W/2+6,Y+H/2-H*.24+i*7);g.stroke()}
+        // camo tarp corner + faction trim
+        g.fillStyle=C(26);g.beginPath();g.moveTo(X+4,Y+4);g.lineTo(X+W*.42,Y+4);g.lineTo(X+4,Y+H*.42);g.closePath();g.fill();
+        g.fillStyle=ac;g.fillRect(X+4,Y+H-8,W*.3,4);
+        break;}
       case 'samsite':{
         if(fk==='crimson')samCrimson(g,X,Y,W,H,C,ac);
         else if(fk==='scorpion')samScorpion(g,X,Y,W,H,C,ac);

@@ -219,6 +219,14 @@ function updateCard(){
         if(done)btn.disabled=false;
         cardEl.appendChild(btn);
       }
+    }else if(b.isHole){
+      cardEl.appendChild(mkInfo('<b>🕳️ Collapsed '+dispName('b',b.type,0)+'</b>Rebuilding crew arrives in '+Math.ceil(b.holeT)+'s — the hole rebuilds itself unless destroyed'));
+    }else if(b.t.tunnel){
+      const inNet=tunnelCount(0),cap=b.t.garrisonMax||10;
+      cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+dispName('b',b.type,0)+'</b>Network: '+inNet+'/'+cap+' underground<br>Tap this tunnel with troops selected to enter'));
+      if(inNet>0){
+        cardEl.appendChild(mkBtn('⬆️','Exit here ('+inNet+')',0,'confirm',()=>{tunnelExitAt(b,0);updateCard()}));
+      }
     }else if(b.t.silo){
       const ch=Math.floor((b.charge||0)*100);
       cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+dispName('b',b.type,0)+'</b>'+(ch>=100?'☢️ MISSILE READY — use the LAUNCH button':'Charging… '+ch+'%'+(lowPow[0]?' (slowed: LOW POWER)':''))));
@@ -395,6 +403,15 @@ function commandGround(wx,wy){
   if(i){SFX.click();if(catBlip&&SFX.voice)SFX.voice(catBlip)}
 }
 function commandTarget(hit){
+  // tunnels: tapping your own tunnel with ground troops selected sends them in
+  if(hit.kind==='b'&&hit.team===0&&hit.built&&!hit.isHole&&hit.t.tunnel){
+    const movers=sel.filter(u=>u.kind==='u'&&!u.dead&&u.cat!=='air');
+    if(movers.length){
+      for(const u of movers)orderGarrison(u,hit);
+      SFX.click();toast('🕳️ Heading underground ('+tunnelCount(0)+'/'+(hit.t.garrisonMax||10)+' in network)');
+      return true;
+    }
+  }
   if(hit.kind==='b'&&hit.team===0&&!hit.built&&sel.some(x=>x.kind==='u'&&x.type==='dozer'&&!x.dead)){
     return resumeSite(hit);
   }
@@ -433,7 +450,10 @@ function commandTarget(hit){
   }
   if(isEnemy(0,hit.team)){
     let n=0;
-    for(const u of sel)if(u.kind==='u'&&!u.dead&&(COMBAT.includes(u.type)))orderAttack(u,hit),n++;
+    _aaRefused=false;
+    for(const u of sel)if(u.kind==='u'&&!u.dead&&(COMBAT.includes(u.type))){if(orderAttack(u,hit)!==false)n++}
+    if(_aaRefused&&n===0){SFX.err();toast('🚫 Selected units can\'t hit aircraft — use Rockets, Flak, Raptors or SAMs');_aaRefused=false;return true}
+    if(_aaRefused){toast('⚠️ Some units can\'t hit aircraft and will hold fire');_aaRefused=false}
     if(n){SFX.click();return true}
   }
   return false;

@@ -270,7 +270,7 @@ const FACTIONS={
     strikeCd:80,bombs:4,sigs:[{unit:'paladin',at:'factory'},{unit:'drone',at:'airfield'}],h:140,sat:9,
     names:{dozer:'Pioneer',truck:'Hauler',ranger:'Trooper',rocket:'Javelin Team',tank:'Crusader',arty:'Thunderer',
       command:'Field HQ',power:'Fusion Plant',supply:'Logistics Center',barracks:'Training Camp',factory:'Assembly Bay',
-      turret:'Sentry Gun',market:'Supply Pad',tech:'Strategy Lab',silo:'Orbital Uplink'}},
+      turret:'Sentry Gun',market:'Supply Pad',tech:'Strategy Lab',silo:'Orbital Uplink',flak:'Avenger',tunnel:'Metro Link',airfield:'Airbase Echo',raptor:'F-Raptor',bomber:'Stratofortress',samsite:'Patriot Battery'}},
   crimson:{key:'crimson',name:'Crimson Legion',c:'#ff5147',d:'#6e2424',
     tag:'Overwhelm with numbers',
     desc:'Tanks & infantry cost −15% · tanks +10% HP · Signatures: Dominator heavy tank & Inferno flame trooper',
@@ -278,7 +278,7 @@ const FACTIONS={
     strikeCd:110,bombs:3,sigs:[{unit:'dominator',at:'factory'},{unit:'inferno',at:'barracks'}],h:8,sat:15,
     names:{dozer:'Worker Rig',truck:'Ox Hauler',ranger:'Conscript',rocket:'Tank Hunter',tank:'Warlord',arty:'Dragonfire',
       command:'War Council',power:'Coal Plant',supply:'Quartermaster Depot',barracks:'Red Garrison',factory:'Iron Works',
-      turret:'Bunker Gun',market:'State Foundry',tech:'Doctrine Bureau',silo:'Hellstorm Silo'}},
+      turret:'Bunker Gun',market:'State Foundry',tech:'Doctrine Bureau',silo:'Hellstorm Silo',flak:'Gattling Crawler',tunnel:'Undermine',airfield:'Red Airstrip',raptor:'MiG Lancer',bomber:'Dragonwing',samsite:'Iron Arrow'}},
   scorpion:{key:'scorpion',name:'Scorpion Cartel',c:'#ffb02e',d:'#7a5210',
     tag:'Scavengers of the wastes',
     desc:'Needs NO power at all · buildings cost −10% · Signatures: Technical raider & Scarab bomb kart · units −10% HP · Vehicles scavenge wreck scraps for bonus damage',
@@ -286,7 +286,7 @@ const FACTIONS={
     strikeCd:110,bombs:3,sigs:[{unit:'technical',at:'factory'},{unit:'scarab',at:'factory'}],h:45,sat:20,
     names:{dozer:'Scrap Rig',truck:'Smuggler Van',ranger:'Raider',rocket:'Stinger Cell',tank:'Marauder',arty:'Junk Lobber',
       command:'Warlord Den',power:'Generator Shack',supply:'Stash House',barracks:'Recruit Tents',factory:'Chop Shop',
-      turret:'Gun Nest',market:'Black Market',tech:'Smuggler Guild',silo:'Rocket Pit'}},
+      turret:'Gun Nest',market:'Black Market',tech:'Smuggler Guild',silo:'Rocket Pit',flak:'Quad Cannon',tunnel:'Tunnel Network',airfield:'Dust Strip',raptor:'Sky Jackal',bomber:'Vulture',samsite:'Stinger Pit'}},
   northwind:{key:'northwind',name:'Northwind Pact',c:'#3fe0c8',d:'#176358',
     tag:'The unbreakable wall',
     desc:'Buildings +25% HP · turrets +25% damage · units +15% HP but −10% speed · Signatures: Guardian trooper & Mortar team',
@@ -294,7 +294,7 @@ const FACTIONS={
     strikeCd:110,bombs:3,sigs:[{unit:'guardian',at:'barracks'},{unit:'mortar',at:'barracks'}],h:200,sat:13,
     names:{dozer:'Drift Dozer',truck:'Ice Hauler',ranger:'Watchman',rocket:'Pike Team',tank:'Glacier',arty:'Avalanche',
       command:'Citadel',power:'Geothermal Plant',supply:'Stockpile',barracks:'Garrison Hall',factory:'Forge Hall',
-      turret:'Bastion Gun',market:'Trade Hub',tech:'Polar Institute',silo:'Aurora Battery'}},
+      turret:'Bastion Gun',market:'Trade Hub',tech:'Polar Institute',silo:'Aurora Battery',flak:'Hailstorm',tunnel:'Glacier Pass',airfield:'Frost Runway',raptor:'Ice Falcon',bomber:'Avalanche Wing',samsite:'Aurora Lance'}},
 };
 const FACKEYS=['vanguard','crimson','scorpion','northwind'];
 let fac=['vanguard','crimson'];
@@ -358,9 +358,11 @@ const WPN={
   toxicNuke:   {dmg:600, rel:1,rng:1,kind:'arc',  spd:280,splash:120,mult:{inf:1.0,veh:.8, bld:.7, air:.5},toxicSplash:true},
   barrageMsl:  {dmg:420, rel:1,rng:1,kind:'rocket',spd:360,splash:70, mult:{inf:.65,veh:.9, bld:.8, air:.6}},
   orbitalLaser:{dmg:1800,rel:1,rng:1,kind:'arc',  spd:900,splash:90, mult:{inf:1, veh:1.3,bld:1.2, air:1},orbital:true},
-  agm:     {dmg:90, rel:3.5,rng:280, kind:'rocket',spd:420,      splash:28, mult:{inf:.7, veh:1.2,bld:1,   air:0},aa:false},
-  sam:     {dmg:65, rel:2.8,rng:260, kind:'rocket',spd:500,      splash:15, mult:{inf:.3, veh:.8, bld:.4,  air:1},aa:true,aaOnly:true},
-  bigbomb: {dmg:220,rel:6.5,rng:310, kind:'arc',   spd:260,      splash:185,mult:{inf:.5, veh:1.1,bld:1.4, air:.5},aa:false},
+  agm:     {dmg:90, rel:3.5,rng:280, kind:'rocket',spd:420,      splash:28, mult:{inf:.7, veh:1.2,bld:1,   air:.4},aa:false},
+  aam:     {dmg:72, rel:2.1,rng:300, kind:'rocket',spd:540,      splash:12, mult:{inf:.5, veh:.85,bld:.55, air:1.35},aa:true},
+  flakgun: {dmg:26, rel:.7, rng:270, kind:'hit',  flak:true,    splash:0,  mult:{inf:.5, veh:.25,bld:.1,  air:1.35},aa:true},
+  sam:     {dmg:80, rel:2.4,rng:300, kind:'rocket',spd:540,      splash:15, mult:{inf:.3, veh:.8, bld:.4,  air:1.1},aa:true,aaOnly:true},
+  bigbomb: {dmg:200,rel:6.5,rng:250, kind:'arc',   spd:260,      splash:120,mult:{inf:.5, veh:1.05,bld:1.15,air:.4},aa:false},
   napalmBomb:{dmg:90,rel:1, rng:1,   kind:'arc',   spd:300,      splash:55, mult:{inf:1.2, veh:.4, bld:.5,  air:.2},flame:true},
 };
 const UT={
@@ -373,21 +375,22 @@ const UT={
   paladin:   {name:'Paladin',       ic:'🔷', cost:1000,bt:10,hp:300,spd:92, r:14,sight:7,cat:'veh', wpn:'laser', desc:'Laser tank — melts armor',sig:true,wc:3},
   dominator: {name:'Dominator',     ic:'🐗', cost:1200,bt:13,hp:520,spd:64, r:15,sight:6,cat:'veh', wpn:'twin',  desc:'Heavy twin-cannon tank',sig:true,wc:3},
   technical: {name:'Technical',     ic:'🛻', cost:450, bt:5, hp:200,spd:130,r:13,sight:6,cat:'veh', wpn:'mgT',   desc:'Fast raider gun-truck',sig:true,wc:2},
+  flak:      {name:'Flak Track',    ic:'✴️', cost:700, bt:8, hp:240,spd:96, r:13,sight:7,cat:'veh', wpn:'flakgun',desc:'Dedicated anti-air — weak vs ground',aaSpec:true},
   guardian:  {name:'Guardian',      ic:'🛡', cost:450, bt:6, hp:230,spd:54, r:8, sight:6,cat:'inf', wpn:'gmg',   desc:'Shielded heavy trooper',sig:true,wc:1},
   drone:     {name:'Falcon Drone',  ic:'🛸', cost:500, bt:6, hp:130,spd:142,r:11,sight:8,cat:'air', wpn:'dgun', desc:'Light attack drone — trains from Airfield',sig:true,wc:2,ammo:8},
   inferno:   {name:'Inferno Trooper',ic:'🔥',cost:375,bt:5, hp:180,spd:58, r:7, sight:6,cat:'inf', wpn:'flame',desc:'Close-range flamethrower',sig:true,wc:1},
   scarab:    {name:'Scarab Kart',   ic:'💥', cost:400, bt:5, hp:110,spd:150,r:11,sight:6,cat:'veh', suicide:'boomkart',desc:'Rams & explodes!',sig:true,wc:2},
   mortar:    {name:'Mortar Team',   ic:'🎇', cost:500, bt:6, hp:90, spd:52, r:8, sight:7,cat:'inf', wpn:'mortar',desc:'Long-range mortar',sig:true,wc:1},
-  raptor:    {name:'Raptor',        ic:'✈️', cost:1400,bt:14,hp:220,spd:240,r:12,sight:9,cat:'air', wpn:'agm',   desc:'Jet fighter — RTB to rearm',sig:false,wc:2,ammo:4},
+  raptor:    {name:'Raptor',        ic:'✈️', cost:1400,bt:14,hp:220,spd:240,r:12,sight:9,cat:'air', wpn:'aam',   desc:'Air-superiority jet — hits air & ground',sig:false,wc:2,ammo:6},
   gunship:   {name:'Gunship',       ic:'🚁', cost:1800,bt:16,hp:420,spd:115,r:14,sight:9,cat:'air', wpn:'agm',   desc:'Attack helicopter — Air General only',sig:true,wc:3,ammo:6},
-  bomber:    {name:'Heavy Bomber',  ic:'🛩️', cost:2800,bt:22,hp:320,spd:62, r:20,sight:8,cat:'air', wpn:'bigbomb',desc:'Slow strategic bomber — devastating area payload',wc:4,ammo:3},
+  bomber:    {name:'Heavy Bomber',  ic:'🛩️', cost:2800,bt:22,hp:300,spd:62, r:20,sight:8,cat:'air', wpn:'bigbomb',desc:'Strategic bomber — attacks only ordered targets',wc:4,ammo:3,noScan:true},
 };
 const BT={
   command:  {name:'Command Center', ic:'🏢', cost:2000,bt:20,hp:2600,w:4,h:4,pow:2,  trains:['dozer'],          desc:'HQ — trains Dozers'},
   power:    {name:'Power Plant',    ic:'⚡', cost:600, bt:8, hp:650, w:2,h:2,pow:-10,                            desc:'+10 power'},
   supply:   {name:'Supply Center',  ic:'📦', cost:1400,bt:10,hp:1300,w:3,h:3,pow:2,  trains:['truck'],          desc:'Drop-off + free truck'},
   barracks: {name:'Barracks',       ic:'🪖', cost:500, bt:8, hp:1100,w:3,h:2,pow:1,  trains:['ranger','rocket'],desc:'Trains infantry'},
-  factory:  {name:'War Factory',    ic:'🏭', cost:2000,bt:14,hp:1600,w:4,h:3,pow:3,  trains:['tank','arty'],    desc:'Builds vehicles'},
+  factory:  {name:'War Factory',    ic:'🏭', cost:2000,bt:14,hp:1600,w:4,h:3,pow:3,  trains:['tank','arty','flak'],    desc:'Builds vehicles'},
   turret:   {name:'Guard Turret',   ic:'🗼', cost:900, bt:8, hp:950, w:2,h:2,pow:2,  wpn:'mg',                  desc:'Base defense — needs power'},
   market:   {name:'Market',         ic:'💰', cost:1500,bt:10,hp:900, w:2,h:2,pow:2,  income:180,                desc:'+$180 every 5s — passive income'},
   tech:     {name:'Tech Lab',       ic:'🔬', cost:1500,bt:12,hp:1000,w:3,h:2,pow:3,  lab:true,                  desc:'Unlocks army upgrades'},
@@ -398,15 +401,16 @@ const BT={
   watchtower:{name:'Watchtower',    ic:'🔭', cost:0,   bt:0, hp:380, w:2,h:2,pow:0,  capturable:true,sight:14,   desc:'Capture to reveal a large area of fog'},
   airfield: {name:'Airfield',       ic:'✈️', cost:2500,bt:18,hp:1800,w:5,h:4,pow:4,  trains:['raptor','bomber'],pads:[[-1,-1],[1,-1],[-1,1],[1,1]],desc:'Trains & launches Raptors and Bombers'},
   samsite:  {name:'SAM Site',       ic:'🚀', cost:1200,bt:10,hp:900, w:2,h:2,pow:3,  wpn:'sam',                 desc:'Anti-air defense'},
+  tunnel:   {name:'Tunnel Network', ic:'🕳️', cost:800, bt:8, hp:950, w:2,h:2,pow:1,  tunnel:true,garrison:true,garrisonMax:10,desc:'Units enter here, exit at ANY tunnel'},
   radar:    {name:'Radar Tower',    ic:'📡', cost:1100,bt:10,hp:700, w:2,h:2,pow:2,  sight:20,                  desc:'Wide-area sensors — reveals fog in a large radius'},
 };
 const BUILD_ORDER_UI=['power','barracks','factory','airfield','tech','turret','samsite','radar','silo','supply','market','command'];
 const BUILD_CATEGORIES=[
   {id:'production', label:'Production', ic:'🏭', items:['barracks','factory','airfield','tech']},
-  {id:'combat',     label:'Combat',     ic:'⚔️',  items:['turret','samsite','radar','silo']},
+  {id:'combat',     label:'Combat',     ic:'⚔️',  items:['turret','samsite','tunnel','radar','silo']},
   {id:'economy',    label:'Economy',    ic:'💰',  items:['supply','market','command']},
 ];
-const COMBAT=['ranger','rocket','tank','arty','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar','raptor','gunship','bomber'];
+const COMBAT=['ranger','rocket','tank','arty','flak','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar','raptor','gunship','bomber'];
 const DIFF={
   easy:  {trickle:3, wave:120,first:220,cap:12,label:'EASY',silo:false},
   normal:{trickle:9, wave:95, first:160,cap:20,label:'NORMAL',silo:true},

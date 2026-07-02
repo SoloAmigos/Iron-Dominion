@@ -55,22 +55,26 @@ function completeBuilding(b){
 function updateBuilding(b,dt){
   b.flash=Math.max(0,b.flash-dt);
 
-  // GLA hole mechanic (Scorpion buildings)
+  // GLA hole mechanic (Scorpion buildings): countdown, then the hole rebuilds ITSELF —
+  // no dozer required. Kill the hole to stop it.
   if(b.isHole){
     b.holeT-=dt;
     if(b.holeT<=0){
-      b.selfBuild=true;b.isHole=false;b.built=false;b.hp=b.maxhp*.1;b.prog=0;
+      b.isHole=false;b.built=false;b.prog=0;b.selfBuild=true;b.rebuilt=true;
+      b.hp=Math.max(b.hp,b.maxhp*.1);
+      if(isEnemy(0,b.team)&&tileVisAt(b.x,b.y)===2)toast('⚠️ Enemy hole is rebuilding!');
     }
     return;
   }
 
   if(!b.built){
-    // selfBuild (GLA rebuild): try to assign a free dozer
+    // GLA self-rebuild: internal crew reconstructs without a dozer (slower than dozer work)
     if(b.selfBuild){
-      const dz=units.find(u=>!u.dead&&u.team===b.team&&u.type==='dozer'&&!u.site);
-      if(dz){dz.site=b;dz.path=null;b.selfBuild=false}
+      b.prog=Math.min(1,b.prog+dt/(b.t.bt*1.8));
+      b.hp=Math.min(b.maxhp,Math.max(b.hp,b.maxhp*(.1+.9*b.prog)));
+      if(Math.random()<dt*2)addPart({k:'dust',x:b.x+vrand(-b.t.w*14,b.t.w*14),y:b.y+vrand(-b.t.h*10,b.t.h*14),life:.5,max:.5,s:vrand(4,8)});
     }
-    if(b.prog>=1)completeBuilding(b);
+    if(b.prog>=1){b.selfBuild=false;completeBuilding(b)}
     return;
   }
 

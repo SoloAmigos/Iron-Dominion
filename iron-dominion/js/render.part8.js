@@ -27,6 +27,7 @@ function drawProj(p){
   }
 }
 function drawPart(p){
+  const PDT=1/60;
   if(!p.active)return;
   if((p.k==='dust'||p.k==='spark')&&tileVisAt(p.x,p.y)<2)return;
   const f=p.life/p.max;
@@ -48,6 +49,32 @@ function drawPart(p){
       ctx.fillRect(p.x-p.s/2,p.y-yo-1.7,p.s,3.4);
       ctx.fillStyle='rgba(125,255,154,'+(f*.2)+')';
       ctx.beginPath();ctx.arc(p.x,p.y-yo,p.s*.9,0,7);ctx.fill();break;}
+    case 'wreck':{
+      // falling aircraft: ballistic drop, spin, flame+smoke trail, crash boom at ground
+      p.x+=p.vx*PDT;p.y+=p.vy*PDT;
+      p.vz=(p.vz||-30)-160*PDT;p.z=Math.max(0,(p.z||30)+p.vz*PDT);
+      p.rot=(p.rot||0)+(p.vrot||5)*PDT;
+      if(Math.random()<.6)addPart({k:'fire',x:p.x+vrand(-4,4),y:p.y-p.z+vrand(-4,4),vx:vrand(-10,10),vy:vrand(-6,10),life:.25,max:.25,s:vrand(4,8)});
+      if(Math.random()<.5)addPart({k:'smoke',x:p.x+vrand(-4,4),y:p.y-p.z+vrand(-4,4),vx:vrand(-8,8),vy:vrand(-14,-2),life:vrand(.5,.9),max:.9,s:vrand(6,12)});
+      ctx.save();ctx.translate(p.x,p.y-p.z);ctx.rotate(p.rot);
+      ctx.fillStyle=TEAMD[p.team]||'#444';
+      ctx.beginPath();ctx.moveTo(p.s,0);ctx.lineTo(-p.s*.7,-p.s*.55);ctx.lineTo(-p.s*.5,0);ctx.lineTo(-p.s*.7,p.s*.55);ctx.closePath();ctx.fill();
+      ctx.fillStyle='rgba(255,140,40,.8)';ctx.beginPath();ctx.arc(vrand(-3,3),vrand(-3,3),p.s*.3,0,7);ctx.fill();
+      ctx.restore();
+      if(p.z<=0||p.life<=PDT){ // crash
+        boomFx(p.x,p.y,26,true);
+        addPart({k:'scorch',x:p.x,y:p.y,life:14,max:14,s:20});
+        p.life=0;
+      }
+      return;}
+    case 'flakpuff':{
+      const g2=1-f;
+      ctx.fillStyle='rgba(60,58,52,'+(f*.75)+')';
+      ctx.beginPath();ctx.arc(p.x,p.y-g2*6,p.s*(0.6+g2*.9),0,7);ctx.fill();
+      ctx.fillStyle='rgba(120,116,104,'+(f*.5)+')';
+      ctx.beginPath();ctx.arc(p.x-p.s*.3,p.y-g2*6-p.s*.3,p.s*(0.35+g2*.5),0,7);ctx.fill();
+      if(f>.8){ctx.fillStyle='rgba(255,220,150,'+((f-.8)*4)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.s*.5,0,7);ctx.fill()}
+      return;}
     case 'chute':{
       const yo=-(f)*22; // descends as life runs out
       ctx.fillStyle='rgba(225,228,210,'+Math.min(1,f*2)+')';

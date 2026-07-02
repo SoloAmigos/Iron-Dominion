@@ -29,6 +29,15 @@ function spawnUnit(type,team,x,y){
   units.push(u);return u;
 }
 
+/* ===== Air targeting legality ===== */
+function isAirborne(e){return e&&e.kind==='u'&&e.cat==='air'&&(e.zHeight||0)>10}
+function weaponCanHit(w,tgt){
+  if(!w)return false;
+  if(isAirborne(tgt))return !!w.aa;
+  return !w.aaOnly;
+}
+function unitCanHit(u,tgt){return weaponCanHit(u.t&&u.t.wpn?WPN[u.t.wpn]:null,tgt)}
+
 /* ===== Veterancy ===== */
 function checkVeterancy(u){
   if(!u||u.dead||u.cat==='veh'&&(u.type==='truck'||u.type==='dozer'))return;
@@ -64,7 +73,46 @@ function pickupScrap(u){
 /* ===== Unit death ===== */
 function kill(e){
   if(e.dead)return;
+  /* --- Scorpion GLA holes: a finished building collapses into a targetable hole instead of dying --- */
+  if(e.kind==='b'&&e.team>=0&&fac[e.team]==='scorpion'&&e.built&&!e.isHole&&!e.t.capturable&&!e.t.tunnel){
+    e.isHole=true;e.holeT=15;e.built=false;e.selfBuild=false;
+    e.hp=Math.round(e.maxhp*.3);       // the hole's own hp pool — shoot it to finish the job
+    e.queue.length=0;e.attackTarget=null;
+    if(e.garrison)while(e.garrison.length)leaveGarrison(e.garrison[0]);
+    if(e.padUnits)for(let i=0;i<e.padUnits.length;i++){const pu=e.padUnits[i];if(pu){pu.home=null;pu.padI=-1}e.padUnits[i]=null}
+    buildingDeathFx(e);
+    recomputePower();
+    if(isEnemy(0,e.team)){gameStats.bldgs++;xpGain(0,300)}
+    if(e.team===0)toast('🕳️ '+dispName('b',e.type,0)+' collapsed — hole will rebuild unless destroyed!');
+    else if(tileVisAt(e.x,e.y)===2)toast('🕳️ Enemy building reduced to a hole — destroy it before it rebuilds!');
+    if(typeof sel!=='undefined'&&sel.includes(e)&&typeof updateCard==='function')updateCard();
+    return; // NOT dead
+  }
   e.dead=true;
+  /* --- tunnel death: tenants transfer to another tunnel, or die with the last one --- */
+  if(e.kind==='b'&&e.t.tunnel&&e.garrison&&e.garrison.length){
+    const other=builds.find(b=>!b.dead&&b!==e&&b.built&&!b.isHole&&b.team===e.team&&b.t.tunnel);
+    while(e.garrison.length){
+      const u=e.garrison[0];
+      if(other){
+        e.garrison.shift();
+        u.garrisonBuilding=other;other.garrison=other.garrison||[];other.garrison.push(u);
+      }else{
+        e.garrison.shift();
+        u.hidden=false;u.garrisonBuilding=null;kill(u); // buried
+      }
+    }
+    if(e.team===0&&!other)toast('🕳️ Tunnel network destroyed — everyone inside was lost!');
+    else if(e.team===0)toast('🕳️ Tunnel lost — units rerouted through the network');
+  }
+  /* --- aircraft die as falling wrecks, not ground booms --- */
+  if(e.kind==='u'&&e.cat==='air'&&(e.zHeight||0)>10){
+    addPart({k:'wreck',x:e.x,y:e.y,vx:Math.cos(e.a||0)*(e.spd||80)*.55+vrand(-20,20),vy:Math.sin(e.a||0)*(e.spd||80)*.55+vrand(-10,30),
+      z:e.zHeight||30,vz:-30,rot:e.a||0,vrot:vrand(-7,7),life:1.4,max:1.4,s:e.type==='bomber'?14:10,team:e.team});
+    if(e.home&&e.padI>=0){e.home.padUnits[e.padI]=null}
+    if(isEnemy(0,e.team)){gameStats.kills++;xpGain(0,350)}
+    return; // wreck particle handles the crash boom
+  }
   // Eject from garrison
   if(e.hidden&&e.garrisonBuilding){
     const gb=e.garrisonBuilding;
@@ -216,6 +264,18 @@ function applyPoison(e,dps){
 }
 
 /* ===== Aircraft helpers ===== */
+function steerDirect(u,tx,ty,dt){
+  const ang=Math.atan2(ty-u.y,tx-u.x);
+  const sp=(u.spd||u.t.spd)*dt;
+  let nx=u.x+Math.cos(ang)*sp,ny=u.y+Math.sin(ang)*sp;
+  const bl=(x,y)=>{const gx=TT(x),gy=TT(y);return !inB(gx,gy)||blocked[idx(gx,gy)]};
+  if(bl(nx,ny)){
+    if(!bl(nx,u.y))ny=u.y;            // slide on x
+    else if(!bl(u.x,ny))nx=u.x;       // slide on y
+    else return;                       // boxed in — hold
+  }
+  u.px=u.x;u.py=u.y;u.x=nx;u.y=ny;u.a=ang;u.moving=true;
+}
 function padPos(b,i){
   const off=b.t.pads[i];
   return{x:(b.tx+b.t.w/2+off[0]*1.2)*TILE,y:(b.ty+b.t.h/2+off[1]*1.2)*TILE};
@@ -287,6 +347,7 @@ function impact(p){
 }
 function fireFrom(sh,wname,tgt){
   const w=WPN[wname];
+  if(!weaponCanHit(w,tgt))return; // ground guns never fire at airborne craft; sams never fire at ground
   const scrapMul=SCRAP_DMG[sh.scrapLevel||0]||1;
   const mul=(sh.dmgMul||1)*upDmg(sh.team)*scrapMul*((sh.rallyT||0)>0?1.25:1);
   const ang=Math.atan2(tgt.y-sh.y,tgt.x-sh.x);sh.ta=ang;
@@ -297,6 +358,12 @@ function fireFrom(sh,wname,tgt){
   addPart({k:'flash',x:mx,y:my,life:.07,max:.07,s:6,c:w.laser?'#9fe9ff':(heroic?'#ffe080':null)});
   const toxinActive=sh.team>=0&&GENMOD(sh.team).toxin;
   if(w.kind==='hit'){
+    if(w.flak){
+      const tz=(tgt.zHeight||0);
+      addPart({k:'trace',x:mx,y:my,x2:tgt.x+vrand(-6,6),y2:tgt.y-tz+vrand(-6,6),life:.06,max:.06,c:'#ffd98a'});
+      addPart({k:'flakpuff',x:tgt.x+vrand(-10,10),y:tgt.y-tz+vrand(-10,10),life:.5,max:.5,s:vrand(6,10)});
+      if(Math.random()<.35)addPart({k:'flakpuff',x:tgt.x+vrand(-16,16),y:tgt.y-tz+vrand(-14,6),life:.45,max:.45,s:vrand(4,7)});
+    }
     if(w.flame){
       // Flamethrower: spray a short, widening cone of fire from the muzzle toward
       // the target. (Previously drew a clean beam 'trace', which read as a laser.)
@@ -428,18 +495,48 @@ function issueOrder(u,order){
 }
 // Order helpers
 function orderMove(u,x,y,kind){
-  if(u.cat==='air'){u.loiter={x,y};u.attackTarget=null;u.orbT=0;return}
+  if(u.cat==='air'){u.loiter={x,y};u.attackTarget=null;u.orbT=0;u.order=kind==='am'?{type:'attack-move'}:null;if(u.ts==='parked')u.ts='engage';return}
   u.attackTarget=null;u.anchor=null;
   issueOrder(u,{type:kind==='am'?'attack-move':'move',x,y});
 }
 function orderAttack(u,tgt){
-  if(u.cat==='air'){u.attackTarget=tgt;if(tgt)u.loiter={x:tgt.x,y:tgt.y};u.orbT=0;return}
+  if(u.cat==='air'){
+    if(!unitCanHit(u,tgt)){if(u.team===0)_aaRefused=true;return false}
+    u.attackTarget=tgt;if(tgt)u.loiter=null;u.orbT=0;u.order={type:'attack',target:tgt};if(u.ts==='parked')u.ts='engage';return true;
+  }
+  if(isAirborne(tgt)&&!unitCanHit(u,tgt)){if(u.team===0)_aaRefused=true;return false}
   u.anchor=null;
   issueOrder(u,{type:'attack',x:tgt.x,y:tgt.y,target:tgt});
+  return true;
+}
+let _aaRefused=false; // ui reads+clears this to toast once per command
+function tunnelCount(team){
+  let n=0;
+  for(const b of builds)if(!b.dead&&b.team===team&&b.t.tunnel&&b.garrison)n+=b.garrison.length;
+  return n;
+}
+function tunnelExitAt(b,team){
+  // pull every networked unit out at THIS tunnel
+  let moved=0;
+  for(const tb of builds){
+    if(tb.dead||tb.team!==team||!tb.t.tunnel||!tb.garrison)continue;
+    while(tb.garrison.length){
+      const u=tb.garrison[0];
+      tb.garrison.shift();
+      u.hidden=false;u.garrisonBuilding=null;
+      u.x=b.x+vrand(-18,18);u.y=(b.ty+b.t.h)*TILE+10+vrand(0,14);
+      u.order=null;u.path=null;u.ts='idle';
+      moved++;
+    }
+  }
+  if(moved&&team===0){SFX.click();toast('🕳️ '+moved+' unit'+(moved>1?'s':'')+' surfaced')}
+  return moved;
 }
 function orderGarrison(u,b){
   if(!b.t||!b.t.garrison)return;
-  if((b.garrison||[]).length>=(b.t.garrisonMax||4)){if(u.team===0){SFX.err();toast('🏠 Building full')}return}
+  if(u.cat==='air'){if(u.team===0){SFX.err();toast('✈️ Aircraft can\'t enter')}return}
+  if(b.t.tunnel&&tunnelCount(b.team)>=(b.t.garrisonMax||10)){if(u.team===0){SFX.err();toast('🕳️ Tunnel network full')}return}
+  if(!b.t.tunnel&&(b.garrison||[]).length>=(b.t.garrisonMax||4)){if(u.team===0){SFX.err();toast('🏠 Building full')}return}
   u.attackTarget=null;u.anchor=null;
   issueOrder(u,{type:'garrison',x:b.x,y:b.y,target:b});
 }
@@ -492,6 +589,10 @@ function updateUnit(u,dt){
   if(u.hidden){
     const b=u.garrisonBuilding;
     if(!b||b.dead){leaveGarrison(u);return}
+    if(b.t.tunnel){ // safe underground: slow heal, no firing
+      if(u.hp<u.maxhp)u.hp=Math.min(u.maxhp,u.hp+u.maxhp*.015*dt);
+      return;
+    }
     const w=u.t.wpn?WPN[u.t.wpn]:null;
     if(!w||w.kind!=='hit')return;
     u.cd=(u.cd||0)-dt;
@@ -518,8 +619,13 @@ function updateUnit(u,dt){
     if(o.type==='garrison'){
       const b=o.target;
       if(!b||b.dead){u.order=null;return}
-      if(Math.hypot(u.x-b.x,u.y-b.y)<20){doGarrison(u,b);return}
-      if(!u.path||u.repath<=0){u.path=astar(TT(u.x),TT(u.y),b.tx+1,b.ty+1,blocked);u.wpi=0;u.repath=2}
+      const _rx=b.tx*TILE,_ry=b.ty*TILE,_cx=clamp(u.x,_rx,_rx+b.t.w*TILE),_cy=clamp(u.y,_ry,_ry+b.t.h*TILE);
+      if(Math.hypot(u.x-_cx,u.y-_cy)<28){doGarrison(u,b);return}
+      if(!u.path||u.repath<=0){
+        const ft=freeNear(b.tx+Math.floor(b.t.w/2),b.ty+b.t.h); // door side
+        u.path=ft?astar(TT(u.x),TT(u.y),ft.x,ft.y,blocked):astar(TT(u.x),TT(u.y),b.tx+Math.floor(b.t.w/2),b.ty+b.t.h,blocked);
+        u.wpi=0;u.repath=2;
+      }
       moveUnit(u,dt);u.ts='move';return;
     }
     if(o.type==='capture'){
@@ -558,14 +664,17 @@ function updateUnit(u,dt){
     if(o.type==='attack'){
       const tgt=o.target;
       if(!tgt||tgt.dead){u.order=null;u.ts='idle';return}
-      u.attackTarget=tgt;
       const w=u.t.wpn?WPN[u.t.wpn]:null;
-      if(!w){u.order=null;return}
+      if(!w||!weaponCanHit(w,tgt)){u.order=null;u.attackTarget=null;u.ts='idle';return} // target took off / illegal
+      u.attackTarget=tgt;
       const d=Math.hypot(tgt.x-u.x,tgt.y-u.y);
       if(d<=w.rng*1.05){
         u.moving=false;
         if(u.cd<=0){fireFrom(u,u.t.wpn,tgt);u.cd=w.rel}
         return;
+      }
+      if(isAirborne(tgt)){ // planes fly over rocks — chase by direct steering, not tile paths
+        steerDirect(u,tgt.x,tgt.y,dt);u.ts='move';return;
       }
       if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),TT(tgt.x),TT(tgt.y),blocked);u.wpi=0;u.repath=1.5}
       moveUnit(u,dt);u.ts='move';
@@ -636,6 +745,7 @@ function updateUnit(u,dt){
     return;
   }
   if(d>w.rng*1.1){
+    if(isAirborne(tgt)){steerDirect(u,tgt.x,tgt.y,dt);u.ts='move';return}
     if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),TT(tgt.x),TT(tgt.y),blocked);u.wpi=0;u.repath=1.2}
     moveUnit(u,dt);u.ts='move';
   }
@@ -727,70 +837,168 @@ function updateDozer(u,dt){
 function updateAir(u,dt){
   u.cd=Math.max(0,u.cd-dt);
   if(u.flash>0)u.flash=Math.max(0,u.flash-dt*4);
+  const CRUISE=30,LAND_RATE=42;
+  const climb=()=>{u.zHeight=Math.min(CRUISE,(u.zHeight||0)+LAND_RATE*dt)};
+  const descend=()=>{u.zHeight=Math.max(0,(u.zHeight||0)-LAND_RATE*dt)};
+  const flyTo=(tx,ty,sp)=>{
+    const d=Math.hypot(tx-u.x,ty-u.y);
+    if(d<4)return 0;
+    const ang=Math.atan2(ty-u.y,tx-u.x);
+    const st=Math.min(d,(sp||u.spd)*dt);
+    u.px=u.x;u.py=u.y;
+    u.x+=Math.cos(ang)*st;u.y+=Math.sin(ang)*st;
+    u.a=ang;u.moving=true;
+    return d-st;
+  };
+  const w=u.t.wpn?WPN[u.t.wpn]:null;
+
+  /* --- landed & rearming on a pad --- */
   if(u.ts==='rearming'){
+    descend();u.moving=false;
+    if(!u.home||u.home.dead||u.home.isHole){u.ts='idle';return} // field destroyed mid-rearm: abort
     u.rearmT=(u.rearmT||0)-dt;
-    if(u.rearmT<=0){
+    if(u.rearmT<=0&&(u.zHeight||0)<=0){
       u.ammo=u.t.ammo||4;
-      u.hp=Math.min(u.maxhp,u.hp+u.maxhp*.5);
-      u.ts='idle';
+      u.hp=Math.min(u.maxhp,u.hp+u.maxhp*.4);
+      u.ts=u.attackTarget&&!u.attackTarget.dead?'engage':'parked';
+      if(u.team===0&&sel.includes(u))updateCard();
     }
-    u.moving=false;return;
-  }
-  if(u.ammo<=0&&u.home){
-    const pp=padPos(u.home,u.padI);
-    const d=Math.hypot(pp.x-u.x,pp.y-u.y);
-    if(d<16){
-      u.x=pp.x;u.y=pp.y;
-      u.ts='rearming';u.rearmT=8;
-      return;
-    }
-    const ang=Math.atan2(pp.y-u.y,pp.x-u.x);
-    u.a=ang;u.px=u.x;u.py=u.y;
-    u.x+=Math.cos(ang)*u.spd*dt;
-    u.y+=Math.sin(ang)*u.spd*dt;
-    u.moving=true;u.zHeight=30;
     return;
   }
-  const w=u.t.wpn?WPN[u.t.wpn]:null;
-  if(!w){u.moving=false;return}
-  if(!u.attackTarget||u.attackTarget.dead){
-    let best=null,bd=u.t.sight*TILE+60;
-    for(const e of units){
-      if(e.dead||!isEnemy(u.team,e.team))continue;
-      if(w.aaOnly&&(e.zHeight||0)<=10)continue;
-      if(!w.aa&&(e.zHeight||0)>10)continue;
-      const d=Math.hypot(e.x-u.x,e.y-u.y);
-      if(d<bd){bd=d;best=e}
+  /* --- parked on pad: stay landed, heal slowly, wait for orders/targets --- */
+  if(u.ts==='parked'){
+    descend();u.moving=false;
+    if(u.hp<u.maxhp)u.hp=Math.min(u.maxhp,u.hp+u.maxhp*.01*dt);
+    // takeoff triggers: order set, loiter set, or (scanners) enemy near the base
+    const wants=(u.order&&u.order.type)||u.loiter||(u.attackTarget&&!u.attackTarget.dead);
+    if(wants){u.ts='engage';climb();return}
+    if(!u.t.noScan&&w){
+      u.scan-=dt;
+      if(u.scan<=0){u.scan=.5;
+        const e=airScan(u,u.t.sight*TILE+140);
+        if(e){u.attackTarget=e;u.ts='engage';return}
+      }
     }
-    u.attackTarget=best;
+    return;
   }
-  if(!u.attackTarget){u.moving=false;return}
-  const tgt=u.attackTarget;
-  const d=Math.hypot(tgt.x-u.x,tgt.y-u.y);
-  const ang=Math.atan2(tgt.y-u.y,tgt.x-u.x);
-  if(d<=w.rng*.9&&d>=(w.minRng||0)){
-    if(u.cd<=0&&u.ammo>0){
-      fireFrom(u,u.t.wpn,tgt);
-      u.cd=w.rel;
-      u.ammo=Math.max(0,u.ammo-1);
+  /* --- out of ammo: return to base --- */
+  if(u.ammo<=0&&w){
+    if(u.type==='drone'){ // expendable strike drone burns out
+      kill(u);return;
     }
-    const perp=u.a+Math.PI*.5;
-    u.px=u.x;u.py=u.y;
-    u.x+=Math.cos(perp)*u.spd*dt*.6;
-    u.y+=Math.sin(perp)*u.spd*dt*.6;
-    u.a=Math.atan2(u.y-tgt.y,u.x-tgt.x)+Math.PI;
-    u.moving=true;u.zHeight=30;
-  }else{
-    u.a=ang;
-    u.px=u.x;u.py=u.y;
-    u.x+=Math.cos(ang)*u.spd*dt;
-    u.y+=Math.sin(ang)*u.spd*dt;
-    u.moving=true;u.zHeight=30;
+    if(!u.home||u.home.dead||u.home.isHole){u.home=null;u.padI=-1;findPad(u)}
+    if(u.home){
+      const pp=padPos(u.home,u.padI);
+      const d=Math.hypot(pp.x-u.x,pp.y-u.y);
+      if(d<90)descend();else climb();
+      if(d<8&&(u.zHeight||0)<=2){
+        u.x=pp.x;u.y=pp.y;
+        u.ts='rearming';u.rearmT=u.t.rearmT||10;
+        return;
+      }
+      flyTo(pp.x,pp.y);
+      return;
+    }
+    // no airfield left anywhere: hover empty
+    climb();u.moving=false;return;
   }
-  if(u.type==='drone'&&u.ammo<=0){
-    u.dead=true;
-    addPart({k:'smoke',x:u.x,y:u.y,vx:vrand(-8,8),vy:vrand(-20,-6),life:.8,max:.8,s:8});
+
+  /* --- validate current target --- */
+  if(u.attackTarget&&(u.attackTarget.dead||u.attackTarget.hidden||!weaponCanHit(w,u.attackTarget)))u.attackTarget=null;
+  if(u.order&&u.order.type==='attack'){
+    const t=u.order.target;
+    if(!t||t.dead)u.order=null;
+    else if(weaponCanHit(w,t))u.attackTarget=t;
   }
+
+  /* --- engage --- */
+  if(u.attackTarget&&w){
+    climb();
+    const tgt=u.attackTarget;
+    const d=Math.hypot(tgt.x-u.x,tgt.y-u.y);
+    if(d<=w.rng*.92&&d>=(w.minRng||0)){
+      if(u.cd<=0&&u.ammo>0){
+        fireFrom(u,u.t.wpn,tgt);
+        u.cd=w.rel;
+        u.ammo=Math.max(0,u.ammo-1);
+        if(u.team===0&&sel.includes(u)&&typeof refreshCard==='function')refreshCard();
+      }
+      // stable orbit: strafe + gentle radial correction toward .72*rng
+      const want=w.rng*.72,rad=Math.atan2(u.y-tgt.y,u.x-tgt.x);
+      const perp=rad+Math.PI*.5;
+      const corr=(d-want)*.9;
+      u.px=u.x;u.py=u.y;
+      u.x+=Math.cos(perp)*u.spd*dt*.62-Math.cos(rad)*Math.sign(corr)*Math.min(Math.abs(corr),u.spd*dt*.4);
+      u.y+=Math.sin(perp)*u.spd*dt*.62-Math.sin(rad)*Math.sign(corr)*Math.min(Math.abs(corr),u.spd*dt*.4);
+      u.a=Math.atan2(tgt.y-u.y,tgt.x-u.x);
+      u.moving=true;
+    }else{
+      flyTo(tgt.x,tgt.y);
+    }
+    return;
+  }
+
+  /* --- follow a move / attack-move order to its loiter point --- */
+  if(u.loiter){
+    climb();
+    const rem=flyTo(u.loiter.x,u.loiter.y);
+    if(rem<=36){
+      // arrived
+      if(u.order&&u.order.type==='attack-move'){u.order=null} // convert to guard-at-loiter
+      u.orbT=(u.orbT||0)+dt;
+      // lazy circle on station
+      const oa=u.orbT*1.2;
+      u.px=u.x;u.py=u.y;
+      u.x=u.loiter.x+Math.cos(oa)*26;u.y=u.loiter.y+Math.sin(oa)*26;
+      u.a=oa+Math.PI*.5;u.moving=true;
+      // guard scan while on station
+      if(!u.t.noScan&&w){
+        u.scan-=dt;
+        if(u.scan<=0){u.scan=.45;
+          const e=airScan(u,u.t.sight*TILE+80);
+          if(e)u.attackTarget=e;
+        }
+      }
+    }
+    return;
+  }
+
+  /* --- nothing to do: auto-scan (fighters), else RTB and park --- */
+  if(!u.t.noScan&&w){
+    u.scan-=dt;
+    if(u.scan<=0){u.scan=.5;
+      const e=airScan(u,u.t.sight*TILE+60);
+      if(e){u.attackTarget=e;return}
+    }
+  }
+  // return to pad and land
+  if(!u.home||u.home.dead||u.home.isHole){u.home=null;u.padI=-1;findPad(u)}
+  if(u.home){
+    const pp=padPos(u.home,u.padI);
+    const d=Math.hypot(pp.x-u.x,pp.y-u.y);
+    if(d<90)descend();else climb();
+    if(d<8&&(u.zHeight||0)<=2){u.x=pp.x;u.y=pp.y;u.ts='parked';u.moving=false;return}
+    flyTo(pp.x,pp.y,d<90?u.spd*.55:u.spd); // slow final approach
+    return;
+  }
+  climb();u.moving=false; // homeless: hover
+}
+/* legality-aware air target scan: enemy units AND buildings in radius */
+function airScan(u,rad){
+  const w=u.t.wpn?WPN[u.t.wpn]:null;if(!w)return null;
+  let best=null,bd=rad;
+  for(const e of units){
+    if(e.dead||e.hidden||!isEnemy(u.team,e.team))continue;
+    if(!weaponCanHit(w,e))continue;
+    const d=Math.hypot(e.x-u.x,e.y-u.y);
+    if(d<bd){bd=d;best=e}
+  }
+  if(!w.aaOnly)for(const b of builds){
+    if(b.dead||!isEnemy(u.team,b.team))continue;
+    const d=Math.hypot(b.x-u.x,b.y-u.y);
+    if(d<bd){bd=d;best=b}
+  }
+  return best;
 }
 
 /* ===== Main unit update loop ===== */

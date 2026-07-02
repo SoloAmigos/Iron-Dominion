@@ -8,13 +8,32 @@ function drawBuilding(b){
   const ac=b.team>=0?TEAMC[b.team]:'#9aa48c';
   // GLA hole rendering (Scorpion)
   if(b.isHole){
-    ctx.save();ctx.globalAlpha=0.85;
-    ctx.fillStyle='#1a0a00';ctx.beginPath();ctx.arc(bx,by,Math.max(btw,bth)*.4,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#ff6600';ctx.globalAlpha=0.4+0.2*Math.sin(Date.now()*.005);
+    const R=Math.max(btw,bth)*.4;
+    ctx.save();
+    // crater bowl
+    ctx.globalAlpha=0.9;
+    ctx.fillStyle='#171008';ctx.beginPath();ctx.ellipse(bx,by,R+6,R*.82+6,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#0a0703';ctx.beginPath();ctx.ellipse(bx,by,R,R*.8,0,0,Math.PI*2);ctx.fill();
+    // debris chunks around the rim
+    ctx.fillStyle='#3a3226';
+    for(let i=0;i<7;i++){const a2=i/7*Math.PI*2+b.id;
+      ctx.save();ctx.translate(bx+Math.cos(a2)*(R+4),by+Math.sin(a2)*(R*.8+4));ctx.rotate(a2*1.7);
+      ctx.fillRect(-4,-2.5,8,5);ctx.restore();}
+    // smoulder glow
+    ctx.fillStyle='#ff6600';ctx.globalAlpha=0.35+0.2*Math.sin(gtime*4+b.id);
     ctx.beginPath();ctx.arc(bx,by,8,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='#ffaa00';ctx.lineWidth=3;ctx.globalAlpha=0.7;
-    ctx.beginPath();ctx.arc(bx,by,Math.max(btw,bth)*.4,0,Math.PI*2*(1-b.holeT/15));ctx.stroke();
+    // rebuild timer arc
+    ctx.strokeStyle='#ffaa00';ctx.lineWidth=3;ctx.globalAlpha=0.75;
+    ctx.beginPath();ctx.arc(bx,by,R,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-b.holeT/15));ctx.stroke();
     ctx.restore();
+    // rising smoke wisps
+    if(state==='play'&&Math.random()<.05)addPart({k:'smoke',x:bx+vrand(-R*.5,R*.5),y:by+vrand(-6,6),vx:vrand(-4,4),vy:vrand(-18,-8),life:vrand(.8,1.4),max:1.4,s:vrand(6,11)});
+    // hp bar — the hole can be shot to finish it off
+    drawHPBar(b,x0+4,y0-7,w-8);
+    if(sel.includes(b)){
+      ctx.strokeStyle='rgba(159,226,124,.8)';ctx.lineWidth=1.6;ctx.setLineDash([6,4]);
+      ctx.strokeRect(x0+1,y0+1,w-2,h-2);ctx.setLineDash([]);
+    }
     return;
   }
   if(!b.built){
@@ -174,7 +193,7 @@ function drawBuilding(b){
       break;}
   }
   // Building type icon badge
-  {const BICO={command:'🏢',power:'⚡',supply:'📦',market:'💰',barracks:'🪖',factory:'⚙️',tech:'🔬',silo:'☢️',airfield:'✈️',samsite:'🚀',repairbay:'🔩',watchtower:'🔭'};
+  {const BICO={command:'🏢',power:'⚡',supply:'📦',market:'💰',barracks:'🪖',factory:'⚙️',tech:'🔬',silo:'☢️',airfield:'✈️',samsite:'🚀',tunnel:'🕳️',repairbay:'🔩',watchtower:'🔭'};
   const bic=BICO[b.type];
   if(bic){ctx.save();const icx=x0+w/2,icy=y0+7;ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.ellipse(icx,icy,11,9,0,0,7);ctx.fill();ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(bic,icx,icy);ctx.restore()}}
   // Progressive battle damage — cracks, scorch, blown panels, embers

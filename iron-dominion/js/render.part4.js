@@ -82,6 +82,27 @@ function uSpr(type,fk){
       g.fillStyle='rgba(125,220,255,.35)';g.beginPath();g.arc(-9,0,5,0,7);g.fill();
       g.fillStyle=ac;g.fillRect(6,-6.4,4,12.8);
     });
+    case 'flak':return spr('Uflak_'+fk,40,26,g=>{
+      g.translate(20,13);
+      g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(1,2,16,9,0,0,7);g.fill();
+      // tracked chassis
+      g.fillStyle='#14180f';g.fillRect(-15,-10,30,6);g.fillRect(-15,4,30,6);
+      g.fillStyle='#3a4034';for(let i=0;i<5;i++){g.fillRect(-13+i*6.4,-9,3,4);g.fillRect(-13+i*6.4,5,3,4)}
+      // hull
+      g.fillStyle=C(32);g.fillRect(-13,-6,26,12);
+      g.fillStyle=C(40);g.fillRect(-13,-6,26,5);
+      g.strokeStyle=C(14);g.lineWidth=1.2;g.strokeRect(-13,-6,26,12);
+      // radar dish (spins live in drawUnit? keep baked)
+      g.fillStyle='#c8cec0';g.beginPath();g.ellipse(-8,0,4,2.6,-.5,0,7);g.fill();
+      g.strokeStyle='#5a6052';g.lineWidth=1;g.beginPath();g.ellipse(-8,0,4,2.6,-.5,0,7);g.stroke();
+      // quad AA barrels angled up
+      g.strokeStyle='#1d221a';g.lineWidth=2.2;
+      for(const off of[-3.4,-1.2,1.2,3.4]){g.beginPath();g.moveTo(2,off);g.lineTo(15,off*.7-3);g.stroke()}
+      g.fillStyle=C(24);g.fillRect(-1,-4.5,7,9);
+      g.fillStyle=ac;g.fillRect(-12,-4.6,3,9.2);
+      // muzzle tips
+      g.fillStyle='#ffd98a';for(const off of[-3.4,-1.2,1.2,3.4]){g.beginPath();g.arc(15,off*.7-3,1,0,7);g.fill()}
+    });
     case 'technical':return spr('Utec_'+fk,42,24,g=>{
       g.translate(21,12);
       g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(1,2,17,9,0,0,7);g.fill();

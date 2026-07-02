@@ -6,7 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v54).
+PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on every change batch** or players get stale files; current: v55).
 
 | File | Owns |
 |---|---|
@@ -44,7 +44,7 @@ PWA: `manifest.json` + `sw.js` (network-first SW — **bump `CACHE` version on e
 - Sanity-check after a deploy if desired: `git fetch origin main && git rev-parse origin/main:<path>` vs `git hash-object <file>` — but a clean `git push` exit is authoritative.
 - **render.js is split into 8 load-order parts (`render.part1.js`…`render.part8.js`).** They are plain `<script>` tags sharing global scope, so functions resolve across files at call time. (The split originated as a workaround for the MCP push path's token limit; it's retained because it keeps individual files small and edits cheap.)
   - **`render.js` is the editable master.** To change the renderer: edit `render.js`, then regenerate the parts at the boundaries below. Prepend `'use strict';` to parts 2–8 and `node --check` each. Reassemble: `cat part1 + (parts 2–8 with first 'use strict' line stripped)` and diff against `render.js`. Note: part4 starts at line 1033 with `/* --- vehicle sprites --- */` comment.
-  - **Current render.js split boundaries (lines in render.js → part file):** `1→part1`, `232→part2`, `831→part3`, `1033→part4`, `1264→part5`, `1509→part6`, `1743→part7`, `1940→part8`.
+  - **Current render.js split boundaries (lines in render.js → part file):** `1→part1`, `233→part2`, `832→part3`, `1058→part4`, `1310→part5`, `1555→part6`, `1809→part7`, `2009→part8`.
   - When changing the renderer, commit all changed parts together with `index.html` (loads the 8 parts in order) + `sw.js` (cache bump) in one push.
 - Commit authorship: set `git config user.email noreply@anthropic.com` and `git config user.name Claude` (already configured locally) so the stop hook doesn't flag commits as Unverified.
 - UI theme: military (gunmetal/olive/khaki/stencil-amber, square corners) — do NOT reintroduce neon glows.
@@ -76,6 +76,14 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 - BICO icon dict in render.js (drawBuilding, render.part6.js): `{command,power,supply,market,barracks,factory,tech,silo,airfield,samsite,repairbay,watchtower}`
 
 ## Completed Features (all shipped to main)
+
+- [x] AIR OVERHAUL: updateAir rewritten as a full state machine — obeys move/attack orders (was frozen ignoring `loiter`), returns to pad and LANDS when idle, parks (slow heal) until ordered, rearms landed (10s) and resumes its order; stable strafe orbit with radial correction; legality-aware `airScan` sees units AND buildings
+- [x] AA layer: central air-targeting legality (ground guns can never shoot airborne craft, manual orders included, with UI refusal toasts); raptor→`aam` air-superiority missiles; new `flak` AA vehicle (faction names Avenger/Gattling Crawler/Quad Cannon/Hailstorm); SAM buffed (80dmg/300rng); flak tracer + air-burst `flakpuff` fx
+- [x] Bomber balance: bigbomb 220/185/1.4→200/120/1.15, rng 250 (inside SAM envelope) — one sortie (690) can no longer one-pass a SAM site (900); AI builds flak vs enemy air, 2nd samsite in bo, hard AI fields up to 2 bombers
+- [x] GLA holes WIRED (were dead code — kill() never created them): finished Scorpion buildings collapse into targetable holes (30% hp pool) instead of dying, rebuild THEMSELVES after 15s with no dozer (attackable during rebuild), second kill is permanent; crater render + rebuild arc + HP bar + cards
+- [x] Tunnel Network (new building, all factions, faction-named): ground units enter any tunnel (tap-to-enter), exit at ANY tunnel (`tunnelExitAt`), 10-unit network cap, tenants heal underground, tenants transfer when a tunnel dies and die with the last one; sandbagged shaft sprite + BICO
+- [x] Fixes: garrison approach now works for 2×2 buildings (rect-distance acceptance); landed aircraft render on the ground (`zHeight||30` draw bug); air wrecks spin/burn/crash with scorch
+- [x] render.js master/parts drift REPAIRED: master had a stray `PLACEHOLDER_DO_NOT_PUSH` line and was missing Batch 5 art that existed only in the shipped parts — parts were reassembled as the new canonical master, then re-split (new boundaries below)
 
 - [x] Save/load (localStorage, pause Save / menu Continue)
 - [x] Map presets: river, frontline, snowpass, highlands, archipelago

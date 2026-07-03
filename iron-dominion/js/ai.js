@@ -114,6 +114,7 @@ function aiTick(tick){
     if(fac[t]==='scorpion')continue;
     const padAvail=b.padUnits&&b.padUnits.some(p=>p===null||p===undefined);
     if(!padAvail)continue;
+    if(gtime<(aiD.airAt||0)*.7)continue; // no early air spam — planes arrive with the mid-game
     const airRoster=['raptor'];
     if(diffName==='hard'&&money[t]>5500){
       const myBombers=units.reduce((n,u)=>n+(!u.dead&&u.team===t&&u.type==='bomber'?1:0),0);
@@ -208,7 +209,7 @@ function aiTick(tick){
       if(tgt){
         const sorted=army.slice().sort((a,b2)=>dist2(a,ref)-dist2(b2,ref));
         const guards=Math.ceil(sorted.length*.22);
-        const strike=sorted.slice(guards);
+        const strike=sorted.slice(guards).slice(0,aiD.waveMax||99); // easy sends probes, hard sends the horde
         ai.lastWave={units:strike.slice(),size:strike.length};
         if(strat===1||strat===3){
           // Flank: stage at a waypoint perpendicular to the attack axis
@@ -227,8 +228,9 @@ function aiTick(tick){
       }
     }
   }
-  // Air patrols: aircraft with no orders auto-attack nearest enemy — independent of wave timer
-  {
+  // Air patrols: aircraft with no orders auto-attack nearest enemy —
+  // but never before the difficulty's air timer, so easy players get to breathe
+  if(gtime>=(aiD.airAt||0)){
     let airTgt=null,ad=1e9;
     for(const b2 of builds){if(b2.dead||!isEnemy(t,b2.team))continue;const d=dist2(b2,ai.cc||builds[0]);if(d<ad){ad=d;airTgt=b2}}
     if(airTgt){

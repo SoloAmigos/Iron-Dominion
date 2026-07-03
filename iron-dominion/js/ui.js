@@ -135,6 +135,12 @@ function updateCard(){
   if(genOpen){genPanel();return}
   if(!sel.length)return;
   const e=sel[0];
+  if(sel.length===1&&e.kind==='u'&&e.hidden&&e.garrisonBuilding&&e.garrisonBuilding.t.tunnel){
+    const gb=e.garrisonBuilding;
+    cardEl.appendChild(mkInfo('<b>🕳️ '+dispName('u',e.type,0)+'</b>Underground in the tunnel network'));
+    cardEl.appendChild(mkBtn('⬆️','Surface here',0,'confirm',()=>{if(tunnelExitOne(gb,e)){SFX.click();updateCard()}}));
+    return;
+  }
   if(sel.length===1&&e.kind==='b'){
     const b=e;
     if(!b.built){
@@ -222,11 +228,17 @@ function updateCard(){
     }else if(b.isHole){
       cardEl.appendChild(mkInfo('<b>🕳️ Collapsed '+dispName('b',b.type,0)+'</b>Rebuilding crew arrives in '+Math.ceil(b.holeT)+'s — the hole rebuilds itself unless destroyed'));
     }else if(b.t.tunnel){
-      const inNet=tunnelCount(0),cap=b.t.garrisonMax||10;
-      cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+dispName('b',b.type,0)+'</b>Network: '+inNet+'/'+cap+' underground<br>Tap this tunnel with troops selected to enter'));
-      if(inNet>0){
-        cardEl.appendChild(mkBtn('⬆️','Exit here ('+inNet+')',0,'confirm',()=>{tunnelExitAt(b,0);updateCard()}));
+      const cap=b.t.garrisonMax||10;
+      const net=[];
+      for(const tb of builds)if(!tb.dead&&tb.team===0&&tb.t.tunnel&&tb.garrison)for(const gu of tb.garrison)net.push(gu);
+      cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+dispName('b',b.type,0)+'</b>Network: '+net.length+'/'+cap+' underground'+(net.length?'<br>Tap a unit to surface it HERE':'<br>Select troops, then tap this tunnel to enter')));
+      for(const gu of net){
+        const hpPct=Math.round(gu.hp/gu.maxhp*100);
+        cardEl.appendChild(mkBtn(iconURL('u',gu.type,0),dispName('u',gu.type,0)+' · '+hpPct+'%',0,'',()=>{
+          if(tunnelExitOne(b,gu)){SFX.click();toast('⬆️ '+dispName('u',gu.type,0)+' surfaced');updateCard()}
+        }));
       }
+      if(net.length>1)cardEl.appendChild(mkBtn('⬆️','EXIT ALL HERE ('+net.length+')',0,'confirm',()=>{tunnelExitAt(b,0);updateCard()}));
     }else if(b.t.silo){
       const ch=Math.floor((b.charge||0)*100);
       cardEl.appendChild(mkInfo('<b>'+b.t.ic+' '+dispName('b',b.type,0)+'</b>'+(ch>=100?'☢️ MISSILE READY — use the LAUNCH button':'Charging… '+ch+'%'+(lowPow[0]?' (slowed: LOW POWER)':''))));
@@ -405,12 +417,13 @@ function commandGround(wx,wy){
 function commandTarget(hit){
   // tunnels: tapping your own tunnel with ground troops selected sends them in
   if(hit.kind==='b'&&hit.team===0&&hit.built&&!hit.isHole&&hit.t.tunnel){
-    const movers=sel.filter(u=>u.kind==='u'&&!u.dead&&u.cat!=='air');
+    const movers=sel.filter(u=>u.kind==='u'&&!u.dead&&!u.hidden&&u.cat!=='air');
     if(movers.length){
       for(const u of movers)orderGarrison(u,hit);
-      SFX.click();toast('🕳️ Heading underground ('+tunnelCount(0)+'/'+(hit.t.garrisonMax||10)+' in network)');
+      SFX.click();toast('🕳️ Heading underground — select the tunnel to bring them back up');
       return true;
     }
+    // nothing enterable selected → let the tap select the tunnel itself
   }
   if(hit.kind==='b'&&hit.team===0&&!hit.built&&sel.some(x=>x.kind==='u'&&x.type==='dozer'&&!x.dead)){
     return resumeSite(hit);

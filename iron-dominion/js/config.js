@@ -22,11 +22,16 @@ const GAME_MODES={
 let gameMode='1v1', numSlots=2, slotAlliance=[0,1];
 let slotType=['human','medium'];  // per-slot: 'human'|'easy'|'medium'|'hard'
 
-/* Per-AI difficulty presets */
+/* Per-AI difficulty presets — THIS is the live table every skirmish AI reads (ai.js: aiD).
+   first    = seconds before the FIRST ground wave may launch
+   wave     = cadence between waves after that
+   waveMax  = max units committed per wave (easy probes, hard floods)
+   airAt    = seconds before this AI may produce/patrol aircraft
+   trickle  = cheat income $/s on top of harvesting (start cash = trickle*60+2000) */
 const SLOT_DIFFS={
-  easy:  {trickle:45,  cap:5,  wave:45, first:65, silo:false},
-  medium:{trickle:100, cap:10, wave:25, first:35, silo:true},
-  hard:  {trickle:175, cap:16, wave:16, first:20, silo:true},
+  easy:  {trickle:8,  cap:8,  wave:130, first:250, waveMax:6,  airAt:300, silo:false},
+  medium:{trickle:25, cap:14, wave:80,  first:150, waveMax:12, airAt:200, silo:true},
+  hard:  {trickle:60, cap:22, wave:50,  first:95,  waveMax:99, airAt:120, silo:true},
 };
 function isEnemy(a,b){if(a===b||a<0||b<0)return false;if(!slotAlliance.length)return a!==b;return slotAlliance[a]!==slotAlliance[b]}
 
@@ -411,9 +416,11 @@ const BUILD_CATEGORIES=[
   {id:'economy',    label:'Economy',    ic:'💰',  items:['supply','market','command']},
 ];
 const COMBAT=['ranger','rocket','tank','arty','flak','paladin','dominator','technical','guardian','drone','inferno','scarab','mortar','raptor','gunship','bomber'];
+/* ⚠️ LEGACY: kept only because main.js/state.js reference D/diffName labels.
+   Skirmish AI behavior does NOT read this — tune SLOT_DIFFS above instead. */
 const DIFF={
-  easy:  {trickle:3, wave:120,first:220,cap:12,label:'EASY',silo:false},
-  normal:{trickle:9, wave:95, first:160,cap:20,label:'NORMAL',silo:true},
+  easy:  {trickle:3, wave:140,first:260,cap:9, label:'EASY',silo:false},
+  normal:{trickle:9, wave:95, first:175,cap:20,label:'NORMAL',silo:true},
   hard:  {trickle:18,wave:75, first:125,cap:28,label:'HARD',silo:true},
 };
 

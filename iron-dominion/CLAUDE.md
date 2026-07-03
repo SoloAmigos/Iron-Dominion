@@ -6,7 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v56) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
+PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v57) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
 
 | File | Owns |
 |---|---|
@@ -77,6 +77,8 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 
 ## Completed Features (all shipped to main)
 
+- [x] Tunnel UX fixed: entering deselects the unit (taps then reach the tunnel card), card lists EVERY networked occupant with icon/hp (tap a row = surface HERE), EXIT ALL button, hidden units' own card offers "Surface here"; hidden units excluded from enter-orders
+- [x] AI pacing fixed: ⚠️ `SLOT_DIFFS` in config.js is the LIVE per-slot AI table (the old `DIFF` is legacy/labels only — do NOT tune it). Was first:35s/wave:25s/trickle:100 on medium (attacks at ~1-2 min on all difficulties). Now easy 250s first/6-unit probes/no air before 300s, medium 150s/12/200s, hard 95s/horde/120s; sane trickle (8/25/60) and start cash; ai.js reads waveMax + airAt from it (air production AND patrols gated)
 - [x] Version badge: `js/version.js` `GAME_VERSION` single source (SW cache + always-visible main-menu badge, hidden in-game via `hideVerBadge()`)
 - [x] AIR OVERHAUL: updateAir rewritten as a full state machine — obeys move/attack orders (was frozen ignoring `loiter`), returns to pad and LANDS when idle, parks (slow heal) until ordered, rearms landed (10s) and resumes its order; stable strafe orbit with radial correction; legality-aware `airScan` sees units AND buildings
 - [x] AA layer: central air-targeting legality (ground guns can never shoot airborne craft, manual orders included, with UI refusal toasts); raptor→`aam` air-superiority missiles; new `flak` AA vehicle (faction names Avenger/Gattling Crawler/Quad Cannon/Hailstorm); SAM buffed (80dmg/300rng); flak tracer + air-burst `flakpuff` fx

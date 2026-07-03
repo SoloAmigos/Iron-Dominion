@@ -542,10 +542,27 @@ function orderGarrison(u,b){
 }
 function doGarrison(u,b){
   if(!b.garrison)b.garrison=[];
-  if(b.garrison.length>=(b.t.garrisonMax||4))return;
+  if(!b.t.tunnel&&b.garrison.length>=(b.t.garrisonMax||4))return;
+  if(b.t.tunnel&&tunnelCount(b.team)>=(b.t.garrisonMax||10))return;
   b.garrison.push(u);
   u.hidden=true;u.garrisonBuilding=b;
-  u.path=null;u.order=null;u.ts='idle';
+  u.path=null;u.order=null;u.ts='idle';u.attackTarget=null;
+  if(u.team===0&&typeof sel!=='undefined'&&sel.includes(u)){
+    sel=sel.filter(x=>x!==u);
+    if(typeof updateCard==='function')updateCard();
+  }
+}
+function tunnelExitOne(b,u){
+  // surface one specific networked unit at tunnel b
+  const tb=u.garrisonBuilding;
+  if(!tb||!tb.garrison)return false;
+  const i=tb.garrison.indexOf(u);
+  if(i<0)return false;
+  tb.garrison.splice(i,1);
+  u.hidden=false;u.garrisonBuilding=null;
+  u.x=b.x+vrand(-18,18);u.y=(b.ty+b.t.h)*TILE+10+vrand(0,14);
+  u.order=null;u.path=null;u.ts='idle';
+  return true;
 }
 function leaveGarrison(u){
   const b=u.garrisonBuilding;

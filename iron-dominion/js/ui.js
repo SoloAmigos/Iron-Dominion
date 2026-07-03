@@ -135,6 +135,16 @@ function updateCard(){
   if(genOpen){genPanel();return}
   if(!sel.length)return;
   const e=sel[0];
+  if(sel.length===1&&e.kind==='u'&&e.type==='truck'&&!e.hidden){
+    cardEl.appendChild(mkInfo('<b>'+e.t.ic+' '+dispName('u','truck',0)+'</b>'+(e.auto?'Harvesting supplies automatically':'⏸ HOLDING — not harvesting')));
+    cardEl.appendChild(mkBtn(e.auto?'⏸':'▶️',e.auto?'Hold position':'Resume harvesting',0,e.auto?'':'confirm',()=>{
+      e.auto=!e.auto;
+      if(!e.auto){e.order=null;e.path=null;e.pile=null;e.anchor={x:e.x,y:e.y}}
+      else e.anchor=null;
+      SFX.click();updateCard();
+    }));
+    return;
+  }
   if(sel.length===1&&e.kind==='u'&&e.hidden&&e.garrisonBuilding&&e.garrisonBuilding.t.tunnel){
     const gb=e.garrisonBuilding;
     cardEl.appendChild(mkInfo('<b>🕳️ '+dispName('u',e.type,0)+'</b>Underground in the tunnel network'));

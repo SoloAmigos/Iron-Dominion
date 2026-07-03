@@ -6,7 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v57) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
+PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v58) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
 
 | File | Owns |
 |---|---|
@@ -77,6 +77,7 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 
 ## Completed Features (all shipped to main)
 
+- [x] BUG-HUNT PASS (98 headless tests across 4 suites in the dev workflow): fixed — arcing weapons (arty/mortar) fired inside their minRng on ordered attacks (now back off + hold fire; idle path disengages huggers); dozers got permanently stuck "repairing" GLA holes (fix aborts on isHole/!built); enemy-owned garrison buildings were enterable via direct order (team gate added; neutrals still capturable); trucks: Hold (H) had no resume path and raw-spawned trucks never harvested — move orders now (re)enable auto-harvest and the truck card shows a ▶ Harvest/⏸ Hold toggle (mobile-accessible)
 - [x] Tunnel UX fixed: entering deselects the unit (taps then reach the tunnel card), card lists EVERY networked occupant with icon/hp (tap a row = surface HERE), EXIT ALL button, hidden units' own card offers "Surface here"; hidden units excluded from enter-orders
 - [x] AI pacing fixed: ⚠️ `SLOT_DIFFS` in config.js is the LIVE per-slot AI table (the old `DIFF` is legacy/labels only — do NOT tune it). Was first:35s/wave:25s/trickle:100 on medium (attacks at ~1-2 min on all difficulties). Now easy 250s first/6-unit probes/no air before 300s, medium 150s/12/200s, hard 95s/horde/120s; sane trickle (8/25/60) and start cash; ai.js reads waveMax + airAt from it (air production AND patrols gated)
 - [x] Version badge: `js/version.js` `GAME_VERSION` single source (SW cache + always-visible main-menu badge, hidden in-game via `hideVerBadge()`)

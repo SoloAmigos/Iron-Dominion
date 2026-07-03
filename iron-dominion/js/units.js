@@ -497,6 +497,7 @@ function issueOrder(u,order){
 function orderMove(u,x,y,kind){
   if(u.cat==='air'){u.loiter={x,y};u.attackTarget=null;u.orbT=0;u.order=kind==='am'?{type:'attack-move'}:null;if(u.ts==='parked')u.ts='engage';return}
   u.attackTarget=null;u.anchor=null;
+  if(u.type==='truck')u.auto=true; // a move order means 'go there, then carry on harvesting'
   issueOrder(u,{type:kind==='am'?'attack-move':'move',x,y});
 }
 function orderAttack(u,tgt){
@@ -534,6 +535,7 @@ function tunnelExitAt(b,team){
 }
 function orderGarrison(u,b){
   if(!b.t||!b.t.garrison)return;
+  if(b.team>=0&&b.team!==u.team){if(u.team===0){SFX.err();toast('🚫 That building isn\'t ours')}return} // neutral (-1) stays capturable
   if(u.cat==='air'){if(u.team===0){SFX.err();toast('✈️ Aircraft can\'t enter')}return}
   if(b.t.tunnel&&tunnelCount(b.team)>=(b.t.garrisonMax||10)){if(u.team===0){SFX.err();toast('🕳️ Tunnel network full')}return}
   if(!b.t.tunnel&&(b.garrison||[]).length>=(b.t.garrisonMax||4)){if(u.team===0){SFX.err();toast('🏠 Building full')}return}
@@ -685,7 +687,15 @@ function updateUnit(u,dt){
       if(!w||!weaponCanHit(w,tgt)){u.order=null;u.attackTarget=null;u.ts='idle';return} // target took off / illegal
       u.attackTarget=tgt;
       const d=Math.hypot(tgt.x-u.x,tgt.y-u.y);
-      if(d<=w.rng*1.05){
+      const minR=w.minRng||0;
+      if(d<minR*.9){ // too close for arcing weapons — back off, hold fire
+        const ang=Math.atan2(u.y-tgt.y,u.x-tgt.x);
+        u.px=u.x;u.py=u.y;
+        u.x+=Math.cos(ang)*(u.spd||u.t.spd)*dt*.8;u.y+=Math.sin(ang)*(u.spd||u.t.spd)*dt*.8;
+        u.a=ang+Math.PI;u.moving=true;u.ts='move';
+        return;
+      }
+      if(d<=w.rng*1.05&&d>=minR){
         u.moving=false;
         if(u.cd<=0){fireFrom(u,u.t.wpn,tgt);u.cd=w.rel}
         return;
@@ -761,6 +771,7 @@ function updateUnit(u,dt){
     if(u.cd<=0){fireFrom(u,u.t.wpn,tgt);u.cd=w.rel}
     return;
   }
+  if(d<(w.minRng||0)*.9){u.attackTarget=null;return} // hugger inside minimum range: disengage, let orders/scan resolve
   if(d>w.rng*1.1){
     if(isAirborne(tgt)){steerDirect(u,tgt.x,tgt.y,dt);u.ts='move';return}
     if(u.repath<=0){u.path=astar(TT(u.x),TT(u.y),TT(tgt.x),TT(tgt.y),blocked);u.wpi=0;u.repath=1.2}
@@ -835,7 +846,7 @@ function updateDozer(u,dt){
   }
   if(u.fix){
     const b=u.fix;
-    if(b.dead||b.hp>=b.maxhp){u.fix=null;u.ts='idle';return}
+    if(b.dead||b.isHole||!b.built||b.hp>=b.maxhp){u.fix=null;u.ts='idle';return}
     const d=Math.hypot(b.x-u.x,b.y-u.y);
     const reach=Math.max(b.t.w,b.t.h)*TILE*0.5+20;
     if(d>reach){

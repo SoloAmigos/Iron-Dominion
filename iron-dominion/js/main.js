@@ -65,8 +65,25 @@ function showMainMenu(){
     _vb.style.cssText='position:fixed;bottom:calc(6px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;font-size:11px;letter-spacing:1px;color:#8a9478;opacity:.75;z-index:60;pointer-events:none;font-family:inherit';
     document.body.appendChild(_vb);
   }
-  _vb.textContent='IRON DOMINION '+(typeof GAME_VERSION!=='undefined'?GAME_VERSION:'dev')+' · build by Claude';
+  const _cur=(typeof GAME_VERSION!=='undefined'?GAME_VERSION:'dev');
+  _vb.textContent='IRON DOMINION '+_cur+' · build by Claude';
   _vb.style.display='block';
+  // live check: ask the server which version is deployed; offer a one-tap update if newer
+  try{
+    fetch('js/version.js?ck='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{
+      const mm=t.match(/GAME_VERSION='(v\d+)'/);
+      if(mm&&mm[1]!==_cur){
+        _vb.textContent='⬆️ '+mm[1]+' AVAILABLE — TAP TO UPDATE (you have '+_cur+')';
+        _vb.style.cssText+=';color:#ffd95e;opacity:1;pointer-events:auto;font-weight:700';
+        _vb.onclick=async()=>{
+          _vb.textContent='UPDATING…';
+          try{if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}
+          try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r2=>r2.update()))}}catch(e){}
+          location.reload();
+        };
+      }
+    }).catch(()=>{});
+  }catch(e){}
   const _si=getSaveInfo();
   const _loadBtn=_si?'<button class="big-btn" id="loadBtn" style="font-size:14px;padding:12px">💾 CONTINUE<br><span style="font-size:11px;font-weight:400;opacity:.75">'+(_si.fac[0]?FACTIONS[_si.fac[0]].name:'')+(numSlots>2?' +more':'')+' · '+_si.map+' · '+_si.time+' · '+_si.ago+'</span></button>':'';
   overlay.innerHTML=panel(

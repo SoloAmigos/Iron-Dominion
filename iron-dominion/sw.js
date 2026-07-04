@@ -1,7 +1,7 @@
 importScripts('js/version.js');
 const CACHE='iron-dominion-'+GAME_VERSION;
 const ASSETS=['.','index.html','css/style.css','manifest.json','icon-192.png','icon-512.png',
-  'js/audio.js','js/config.js','js/state.js','js/helpers.js','js/world.js',
+  'js/version.js','js/audio.js','js/config.js','js/state.js','js/helpers.js','js/world.js',
   'js/units.js','js/buildings.js','js/projectiles.js','js/ai.js',
   'js/render.part1.js','js/render.part2.js','js/render.part3.js','js/render.part4.js',
   'js/render.part5.js','js/render.part6.js','js/render.part7.js','js/render.part8.js',
@@ -14,7 +14,7 @@ self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
   e.respondWith(
-    fetch(e.request).then(r=>{
+    fetch(e.request,{cache:'no-cache'}).then(r=>{ // no-cache = revalidate via ETag, so deploys appear within seconds
       if(r&&r.status===200&&r.type==='basic'){const cp=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cp))}
       return r;
     }).catch(()=>caches.match(e.request))

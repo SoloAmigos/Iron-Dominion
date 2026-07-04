@@ -6,7 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v58) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
+PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v59) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
 
 | File | Owns |
 |---|---|
@@ -76,6 +76,8 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 - BICO icon dict in render.js (drawBuilding, render.part6.js): `{command,power,supply,market,barracks,factory,tech,silo,airfield,samsite,repairbay,watchtower}`
 
 ## Completed Features (all shipped to main)
+
+- [x] Deploy pipeline repaired: removed the custom Pages workflow (built for source=Actions, but Pages deploys from branch — it never succeeded and its concurrency group raced/killed the automatic deploy; v58 died this way). Branch deploy is now the only pipeline; .nojekyll added at repo root. SW fetches with cache:'no-cache' (ETag revalidation beats Pages' 10-min HTTP cache). Menu badge is now a LIVE update checker: fetches deployed version.js, shows "⬆️ vXX AVAILABLE — TAP TO UPDATE" (clears caches + reloads). ALWAYS verify deploy success after push: GET api.github.com/repos/SoloAmigos/ai-projects/actions/runs — a green push is NOT a live deploy.
 
 - [x] BUG-HUNT PASS (98 headless tests across 4 suites in the dev workflow): fixed — arcing weapons (arty/mortar) fired inside their minRng on ordered attacks (now back off + hold fire; idle path disengages huggers); dozers got permanently stuck "repairing" GLA holes (fix aborts on isHole/!built); enemy-owned garrison buildings were enterable via direct order (team gate added; neutrals still capturable); trucks: Hold (H) had no resume path and raw-spawned trucks never harvested — move orders now (re)enable auto-harvest and the truck card shows a ▶ Harvest/⏸ Hold toggle (mobile-accessible)
 - [x] Tunnel UX fixed: entering deselects the unit (taps then reach the tunnel card), card lists EVERY networked occupant with icon/hp (tap a row = surface HERE), EXIT ALL button, hidden units' own card offers "Surface here"; hidden units excluded from enter-orders

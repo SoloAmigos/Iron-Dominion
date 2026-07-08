@@ -113,13 +113,17 @@ function _bassnote(t,hz,v){
   g.gain.exponentialRampToValueAtTime(0.0001,t+0.26);
   o.connect(f); f.connect(g); g.connect(_mxG); o.start(t); o.stop(t+0.3);
 }
-function _chordstab(t){
-  // Am power chord: root + fifth + octave (sawtooth → lowpass)
-  for(const hz of [110,165,220]){
+function _chordstab(t,ch){
+  // power chord on the CURRENT harmony: root + fifth + octave (+ soft third for color)
+  const voices=ch?[ch.r,ch.fifth,ch.oct]:[110,165,220];
+  if(ch)voices.push(ch.third);
+  let vi=0;
+  for(const hz of voices){
+    const soft=(ch&&vi===3)?0.45:1;vi++;
     const o=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();
     o.type='sawtooth'; o.frequency.value=hz;
     f.type='lowpass'; f.frequency.value=1600; f.Q.value=1.8;
-    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.07,t+0.006);
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.07*soft,t+0.006);
     g.gain.exponentialRampToValueAtTime(0.0001,t+0.11);
     o.connect(f); f.connect(g); g.connect(_mxG);
     if(_rv){const rg=AC.createGain();rg.gain.value=0.3;g.connect(rg);rg.connect(_rv)}
@@ -137,6 +141,75 @@ function _pad(t,hz,dur,v){
   if(_rv){const rg=AC.createGain();rg.gain.value=0.5;g.connect(rg);rg.connect(_rv)}
   g.connect(_mxG); o.start(t); o.stop(t+dur+0.05);
 }
+
+// ─── Harmony: chords, faction moods, arp & lead voices ──────────────────
+const _ST=st=>Math.pow(2,st/12);
+/* Each faction gets a musical identity: key root, mode scale (semitones),
+   and a 4-bar chord progression per tier ([semitone-from-root, quality]). */
+const _MOODS={
+  vanguard:{root:110.00,bpmMul:1,   scale:[0,2,3,5,7,8,10],
+    prog:{calm:[[0,'m'],[8,'M'],[3,'M'],[10,'M']],intense:[[0,'m'],[0,'m'],[8,'M'],[10,'M']]}},   // A minor — heroic
+  crimson: {root:98.00, bpmMul:1.05,scale:[0,2,3,5,7,8,10],
+    prog:{calm:[[0,'m'],[10,'M'],[8,'M'],[7,'m']],intense:[[0,'m'],[3,'M'],[10,'M'],[0,'m']]}},   // G minor — march
+  scorpion:{root:103.83,bpmMul:1,   scale:[0,1,4,5,7,8,10],
+    prog:{calm:[[0,'m'],[1,'M'],[0,'m'],[10,'m']],intense:[[0,'m'],[1,'M'],[5,'m'],[0,'m']]}},    // Ab phrygian — desert
+  northwind:{root:87.31,bpmMul:0.9, scale:[0,2,3,5,7,8,10],
+    prog:{calm:[[0,'m'],[5,'m'],[8,'M'],[7,'m']],intense:[[0,'m'],[8,'M'],[5,'m'],[7,'M']]}},     // F minor — cold, slow
+};
+let _MOOD=_MOODS.vanguard;
+function _chordOf(bar,hi){
+  const pr=_MOOD.prog[hi?'intense':'calm'];
+  const c=pr[bar%pr.length],r=_MOOD.root*_ST(c[0]);
+  return {r,third:r*_ST(c[1]==='m'?3:4),fifth:r*_ST(7),oct:r*2};
+}
+const _degHz=(d,octMul)=>_MOOD.root*_ST(_MOOD.scale[((d%7)+7)%7])*Math.pow(2,Math.floor(d/7))*(octMul||1);
+// short plucked arp note — square through a closing filter
+function _pluck(t,hz,v){
+  const o=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();
+  o.type='square';o.frequency.value=hz;
+  f.type='lowpass';f.Q.value=1.2;
+  f.frequency.setValueAtTime(2400,t);f.frequency.exponentialRampToValueAtTime(500,t+0.11);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(v,t+0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+0.13);
+  o.connect(f);f.connect(g);g.connect(_mxG);o.start(t);o.stop(t+0.16);
+}
+// lead voice — two slightly detuned triangles with vibrato, soft lowpass
+function _leadN(t,hz,dur,v){
+  for(const dt2 of[0,3.2]){
+    const o=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();
+    const lfo=AC.createOscillator(),lg=AC.createGain();
+    o.type='triangle';o.frequency.value=hz+dt2;
+    lfo.type='sine';lfo.frequency.value=5.2;lg.gain.value=hz*0.006;
+    lfo.connect(lg);lg.connect(o.frequency);
+    f.type='lowpass';f.frequency.value=2600;
+    g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(v*(dt2?0.55:1),t+0.02);
+    g.gain.setValueAtTime(v*(dt2?0.55:1)*0.8,t+dur*0.65);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(f);f.connect(g);g.connect(_mxG);
+    if(_rv){const rg=AC.createGain();rg.gain.value=0.45;g.connect(rg);rg.connect(_rv)}
+    lfo.start(t);o.start(t);o.stop(t+dur+0.05);lfo.stop(t+dur+0.05);
+  }
+}
+/* Lead phrases: 2-bar (32-step) grids of {s:step, d:scale degree (7=octave), l:length in steps}.
+   Written in-scale so they sing over any chord in the progression. */
+const _PHR={
+  calm:[
+    [{s:0,d:7,l:6},{s:8,d:5,l:4},{s:16,d:4,l:6},{s:24,d:2,l:6}],
+    [{s:0,d:4,l:4},{s:6,d:5,l:2},{s:8,d:7,l:8},{s:20,d:5,l:4},{s:24,d:4,l:8}],
+    [], // silence — let the pad breathe
+    [{s:4,d:2,l:4},{s:12,d:4,l:4},{s:16,d:5,l:12}],
+  ],
+  intense:[
+    [{s:0,d:7,l:2},{s:2,d:8,l:2},{s:4,d:7,l:4},{s:8,d:5,l:4},{s:16,d:4,l:2},{s:18,d:5,l:2},{s:20,d:7,l:8}],
+    [{s:0,d:9,l:3},{s:4,d:8,l:3},{s:8,d:7,l:6},{s:16,d:5,l:2},{s:18,d:4,l:2},{s:20,d:2,l:10}],
+    [],
+    [{s:0,d:7,l:2},{s:4,d:7,l:2},{s:8,d:9,l:6},{s:16,d:8,l:2},{s:20,d:7,l:2},{s:24,d:5,l:6}],
+  ],
+};
+// arp figures (chord tones): index into [r,third,fifth,oct]
+const _ARP={calm:[0,-1,2,-1,3,-1,2,-1,0,-1,2,-1,3,-1,2,-1],
+            intense:[0,2,3,2,0,2,3,5,0,2,3,2,7,3,2,1]};
+const _ARPT=(ch,i)=>[ch.r,ch.third,ch.fifth,ch.oct,ch.fifth,ch.oct*_ST(3),ch.fifth,ch.oct*2][i]||ch.r;
 
 // ─── Music sequencer ─────────────────────────────────────────────────────
 // Key: A minor. Bass notes in Hz (0 = rest).
@@ -220,7 +293,8 @@ const _LOOK=0.12; // schedule this many seconds ahead
 function startMusic(){
   if(SEQ.id||muted)return;
   const c=ac(); if(!c)return;
-  SEQ.step=0; SEQ.bar=0; SEQ.next=c.currentTime+0.08; SEQ.bpm=96;
+  try{_MOOD=(typeof fac!=='undefined'&&_MOODS[fac[0]])||_MOODS.vanguard}catch(e){_MOOD=_MOODS.vanguard}
+  SEQ.step=0; SEQ.bar=0; SEQ.next=c.currentTime+0.08; SEQ.bpm=96*_MOOD.bpmMul;
   SEQ.padNext=c.currentTime;
   SEQ.id=setInterval(_seqTick,22);
 }
@@ -248,23 +322,40 @@ function _seqTick(){
 
   const hi=SEQ.intensity>=0.5;
   const tier=hi?_PAT.intense:_PAT.calm;
-  SEQ.bpm+=(tier[0].bpm-SEQ.bpm)*0.04; // glide BPM (variants share a tempo)
+  SEQ.bpm+=(tier[0].bpm*_MOOD.bpmMul-SEQ.bpm)*0.04; // glide BPM (variants share a tempo)
   const stepDur=60/(SEQ.bpm*4);  // 16th note duration
 
   while(SEQ.next<AC.currentTime+_LOOK){
     const s=SEQ.step,t=SEQ.next,iv=SEQ.intensity;
     const p=tier[SEQ.bar%tier.length]; // cycle bar variations for variety
+    const ch=_chordOf(SEQ.bar>>2,hi);  // chord changes every... bar (see below)
+    const chBar=_chordOf(SEQ.bar,hi);  // per-bar chord for harmony voices
+    const tr=chBar.r/110;              // transpose the written-in-A basslines to the current chord
     if(p.kick[s])  _kick(t, 0.52+iv*0.18);
     if(p.snare[s]) _snare(t,0.34+iv*0.14);
     if(p.hat[s])   _hihat(t,0.12+iv*0.1,false);
     if(p.ohat[s])  _hihat(t,0.18,true);
-    if(p.bass[s])  _bassnote(t,p.bass[s],0.26+iv*0.09);
-    if(p.stab[s])  _chordstab(t);
-    // Ambient pad — fires every two bars (bar start) in calm mode
+    if(p.bass[s])  _bassnote(t,p.bass[s]*tr,0.26+iv*0.09);
+    if(p.stab[s])  _chordstab(t,chBar);
+    // Arpeggio — joins once things warm up
+    if(iv>0.28){
+      const an=_ARP[hi?'intense':'calm'][s];
+      if(an!==-1)_pluck(t,_ARPT(chBar,an)*2,0.035+iv*0.045);
+    }
+    // Lead melody — 2-bar phrases, sits out every 3rd cycle so it never nags
+    if(iv>0.14){
+      const grid=_PHR[hi?'intense':'calm'];
+      const ph=grid[(SEQ.bar>>1)%grid.length];
+      const ls=(SEQ.bar%2)*16+s;
+      for(const n of ph)if(n.s===ls){
+        _leadN(t,_degHz(n.d,4),stepDur*n.l*0.92,0.05+iv*0.05);
+      }
+    }
+    // Ambient pad — follows the chord now; calm mode breathes root+fifth
     if(!hi&&s===0&&t>SEQ.padNext){
       const barDur=stepDur*16;
-      _pad(t,_A1,barDur*2-0.1,0.032);
-      _pad(t,_E2*0.5,barDur*2-0.1,0.018); // octave sub
+      _pad(t,chBar.r/2,barDur*2-0.1,0.032);
+      _pad(t,chBar.fifth/2,barDur*2-0.1,0.016);
       SEQ.padNext=t+barDur*2;
     }
     SEQ.step++;

@@ -283,6 +283,43 @@ function buildGround(){
     g.strokeStyle='rgba(120,130,110,.25)';g.lineWidth=1.4;g.strokeRect(16,16,WW-32,WH-32);
   }
 
+  /* ── universal finishing pass (every theme): macro tonal structure,
+        directional sunlight, ground crunch, vignette ── */
+  {
+    // large soft tonal patches — breaks the flat carpet
+    for(let i=0;i<26;i++){
+      const x=Math.random()*WW,y=Math.random()*WH,r=vrand(220,520);
+      const dark=i%2===0;
+      const gr=g.createRadialGradient(x,y,r*.15,x,y,r);
+      gr.addColorStop(0,dark?'rgba(20,16,8,0.10)':'rgba(255,244,214,0.07)');
+      gr.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,7);g.fill();
+    }
+    // directional sunlight sweep (light from top-left)
+    const sun=g.createLinearGradient(0,0,WW,WH);
+    sun.addColorStop(0,'rgba(255,246,220,0.085)');
+    sun.addColorStop(.45,'rgba(0,0,0,0)');
+    sun.addColorStop(1,'rgba(8,10,16,0.12)');
+    g.fillStyle=sun;g.fillRect(0,0,WW,WH);
+    // hard micro-crunch: pebble clusters + hairline cracks
+    for(let i=0;i<420;i++){
+      const x=Math.random()*WW,y=Math.random()*WH;
+      g.fillStyle=i%3?'rgba(0,0,0,0.16)':'rgba(255,255,255,0.10)';
+      g.fillRect(x,y,vrand(1.5,3.5),vrand(1.5,3));
+    }
+    g.strokeStyle='rgba(0,0,0,0.10)';g.lineWidth=1;
+    for(let i=0;i<70;i++){
+      let x=Math.random()*WW,y=Math.random()*WH;
+      g.beginPath();g.moveTo(x,y);
+      for(let k=0;k<4;k++){x+=vrand(-26,26);y+=vrand(6,22);g.lineTo(x,y)}
+      g.stroke();
+    }
+    // vignette — pulls the eye to the battlefield
+    const vg2=g.createRadialGradient(WW/2,WH/2,Math.min(WW,WH)*.35,WW/2,WH/2,Math.max(WW,WH)*.72);
+    vg2.addColorStop(0,'rgba(0,0,0,0)');vg2.addColorStop(1,'rgba(4,6,10,0.22)');
+    g.fillStyle=vg2;g.fillRect(0,0,WW,WH);
+  }
+
   fogCv=document.createElement('canvas');fogCv.width=MAPW;fogCv.height=MAPH;
   fogImg=fogCv.getContext('2d').createImageData(MAPW,MAPH);
 }

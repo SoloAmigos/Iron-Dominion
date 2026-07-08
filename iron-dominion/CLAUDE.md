@@ -6,7 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v59) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
+PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v60) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
 
 | File | Owns |
 |---|---|
@@ -76,6 +76,8 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 - BICO icon dict in render.js (drawBuilding, render.part6.js): `{command,power,supply,market,barracks,factory,tech,silo,airfield,samsite,repairbay,watchtower}`
 
 ## Completed Features (all shipped to main)
+
+- [x] ART & MUSIC OVERHAUL (v60): music — chord progressions + per-faction moods (_MOODS: key/scale/bpm per faction, Scorpion phrygian, Northwind slow F-minor), chord-following bass/stab/pad, 16th arpeggios (intensity>.28), 2-bar lead melody phrases (_PHR) with detuned vibrato voice; art — universal terrain finishing pass in buildGround (macro tonal patches, directional sun sweep, pebble/crack crunch, vignette), drawApron() worn-earth aprons + access ruts under every built structure, vehicle motion dust. Screenshot harness: test/shotstub.js + shot_build.sh use @napi-rs/canvas for real PNG renders — ALWAYS view before/after shots when changing art.
 
 - [x] Deploy pipeline repaired: removed the custom Pages workflow (built for source=Actions, but Pages deploys from branch — it never succeeded and its concurrency group raced/killed the automatic deploy; v58 died this way). Branch deploy is now the only pipeline; .nojekyll added at repo root. SW fetches with cache:'no-cache' (ETag revalidation beats Pages' 10-min HTTP cache). Menu badge is now a LIVE update checker: fetches deployed version.js, shows "⬆️ vXX AVAILABLE — TAP TO UPDATE" (clears caches + reloads). ALWAYS verify deploy success after push: GET api.github.com/repos/SoloAmigos/ai-projects/actions/runs — a green push is NOT a live deploy.
 

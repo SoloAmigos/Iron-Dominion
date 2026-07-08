@@ -1062,6 +1062,70 @@ function trackPair(g,w,h){
   g.fillStyle='#0f130d';
   for(let i=0;i<w/5;i++){g.fillRect(-w/2+2+i*5,-h/2+1.4,2.4,4.2);g.fillRect(-w/2+2+i*5,h/2-5.6,2.4,4.2)}
 }
+/* ── Building Construction Kit: applied ONCE to every cached building sprite.
+      Gives all structures height (wall extrusion), sun-consistent roof beveling,
+      a bold faction stripe, and seeded roof furniture — coherent across the set. ── */
+const _KIT_FULL=new Set(['command','power','supply','barracks','factory','market','tech','airfield','radar','repairbay']);
+const _KIT_LITE=new Set(['turret','samsite','silo','watchtower']);
+function _bKit(cv,type,fk){
+  const t=BT[type];if(!t)return;
+  const g=cv.getContext('2d');
+  const W=t.w*TILE,H=t.h*TILE,X=BM,Y=BM;
+  const F=FACTIONS[fk]||{c:'#9aa48c'},ac=F.c;
+  const full=_KIT_FULL.has(type);
+  if(!full&&!_KIT_LITE.has(type))return;
+  let sd=0;for(let i=0;i<type.length;i++)sd=(sd*31+type.charCodeAt(i))&1023;
+  const rnd=()=>{sd=(sd*1103515245+12345)&0x3fffffff;return (sd>>8)/4194304%1};
+  if(full){
+    // wall extrusion: the roof is UP, walls fall to bottom+right (sun from top-left)
+    g.fillStyle='rgba(8,10,12,0.5)';
+    g.fillRect(X+3,Y+H-7,W-6,4);g.fillRect(X+W-7,Y+5,4,H-10);
+    g.fillStyle='rgba(0,0,0,0.28)';
+    g.fillRect(X+3,Y+H-3,W-5,2);g.fillRect(X+W-3,Y+4,2,H-6);
+    // roof bevel highlight (top+left)
+    g.fillStyle='rgba(255,248,225,0.22)';
+    g.fillRect(X+3,Y+3,W-6,2);g.fillRect(X+3,Y+3,2,H-6);
+    // roof sheen: sunlit corner → shaded corner
+    const sh=g.createLinearGradient(X,Y,X+W,Y+H);
+    sh.addColorStop(0,'rgba(255,246,220,0.10)');
+    sh.addColorStop(.5,'rgba(0,0,0,0)');
+    sh.addColorStop(1,'rgba(6,8,14,0.16)');
+    g.fillStyle=sh;g.fillRect(X+3,Y+3,W-6,H-6);
+    // roof furniture: seeded vents/AC boxes with drop shadows + a duct line
+    const nf=2+((W*H)>>13);
+    for(let i=0;i<nf;i++){
+      const fw=8+rnd()*8,fh=6+rnd()*6;
+      const fx=X+8+rnd()*(W-24-fw),fy=Y+8+rnd()*(H-26-fh);
+      g.fillStyle='rgba(0,0,0,0.3)';g.fillRect(fx+2,fy+2,fw,fh);
+      g.fillStyle=rnd()<.5?'#4c5450':'#585f56';g.fillRect(fx,fy,fw,fh);
+      g.fillStyle='rgba(255,248,225,0.28)';g.fillRect(fx,fy,fw,1.6);
+      g.strokeStyle='rgba(10,12,10,0.6)';g.lineWidth=1;g.strokeRect(fx,fy,fw,fh);
+      if(rnd()<.5){g.strokeStyle='rgba(20,22,20,0.55)';for(let v=2;v<fw-2;v+=3){g.beginPath();g.moveTo(fx+v,fy+1.5);g.lineTo(fx+v,fy+fh-1.5);g.stroke()}}
+    }
+    g.strokeStyle='rgba(30,34,32,0.55)';g.lineWidth=2.4;
+    const py=Y+6+rnd()*(H-16);
+    g.beginPath();g.moveTo(X+5,py);g.lineTo(X+5+(W-10)*(.4+rnd()*.4),py);g.stroke();
+    g.strokeStyle='rgba(255,248,225,0.14)';g.lineWidth=1;
+    g.beginPath();g.moveTo(X+5,py-1);g.lineTo(X+5+(W-10)*.4,py-1);g.stroke();
+  }
+  // bold faction stripe: left-edge band with hazard notch — ownership pops at a glance
+  g.fillStyle='rgba(0,0,0,0.35)';g.fillRect(X+3,Y+3,7,H-6);
+  g.fillStyle=ac;g.fillRect(X+4,Y+4,5,H-8);
+  g.fillStyle='rgba(0,0,0,0.35)';
+  for(let yy=Y+8;yy<Y+H-8;yy+=11)g.fillRect(X+4,yy,5,4);
+  // corner beacons
+  g.fillStyle=ac;
+  g.beginPath();g.arc(X+W-8,Y+7,2.2,0,7);g.fill();
+  g.beginPath();g.arc(X+W-8,Y+H-8,2.2,0,7);g.fill();
+  g.fillStyle='rgba(255,255,255,0.5)';
+  g.beginPath();g.arc(X+W-8.6,Y+6.4,0.9,0,7);g.fill();
+}
+const _bSprRaw=bSpr;
+bSpr=function(type,fk,gen){
+  const cv=_bSprRaw(type,fk,gen);
+  if(cv&&!cv._kit){cv._kit=true;try{_bKit(cv,type,fk)}catch(e){}}
+  return cv;
+};
 function uSpr(type,fk){
   const F=FACTIONS[fk],ac=F.c,C=facCol(fk);
   switch(type){

@@ -1119,6 +1119,44 @@ function _bKit(cv,type,fk){
   g.beginPath();g.arc(X+W-8,Y+H-8,2.2,0,7);g.fill();
   g.fillStyle='rgba(255,255,255,0.5)';
   g.beginPath();g.arc(X+W-8.6,Y+6.4,0.9,0,7);g.fill();
+  _bFlourish(g,fk,X,Y,W,H,rnd,full);
+}
+/* faction flourishes: every base reads like its owner at a glance */
+function _bFlourish(g,fk,X,Y,W,H,rnd,full){
+  if(fk==='vanguard'){ // solar panel + whip antenna
+    if(full){const pw=Math.min(20,W*.3),ph=Math.min(14,H*.25),px=X+W-pw-12,py=Y+H-ph-12;
+      g.fillStyle='#16324a';g.fillRect(px,py,pw,ph);
+      g.strokeStyle='#4da3ff';g.lineWidth=1;
+      for(let x=px+3;x<px+pw;x+=4){g.beginPath();g.moveTo(x,py);g.lineTo(x,py+ph);g.stroke()}
+      g.beginPath();g.moveTo(px,py+ph/2);g.lineTo(px+pw,py+ph/2);g.stroke();
+      g.fillStyle='rgba(255,255,255,.35)';g.fillRect(px,py,pw*.4,2);}
+    g.strokeStyle='#c8ccc4';g.lineWidth=1.4;
+    g.beginPath();g.moveTo(X+14,Y+10);g.lineTo(X+14,Y-4);g.stroke();
+    g.fillStyle='#4da3ff';g.beginPath();g.arc(X+14,Y-5,1.8,0,7);g.fill();
+  }else if(fk==='crimson'){ // hanging banner + gold star
+    const bx=X+W*.5-5;
+    g.fillStyle='#8e1f1a';g.fillRect(bx,Y+4,10,Math.min(22,H*.4));
+    g.fillStyle='#b3352c';g.fillRect(bx,Y+4,10,4);
+    g.beginPath();g.moveTo(bx,Y+4+Math.min(22,H*.4));g.lineTo(bx+5,Y+Math.min(22,H*.4)-2);g.lineTo(bx+10,Y+4+Math.min(22,H*.4));g.fillStyle='#8e1f1a';g.fill();
+    g.fillStyle='#ffd95e';g.font='bold 8px sans-serif';g.textAlign='center';g.textBaseline='middle';
+    g.fillText('★',bx+5,Y+13);
+  }else if(fk==='scorpion'){ // tarp corner + scrap + cable
+    g.fillStyle='rgba(122,82,16,.75)';
+    g.beginPath();g.moveTo(X+W-4,Y+4);g.lineTo(X+W-4-Math.min(26,W*.4),Y+4);g.lineTo(X+W-4,Y+4+Math.min(20,H*.35));g.closePath();g.fill();
+    g.strokeStyle='rgba(60,40,8,.7)';g.lineWidth=1;g.stroke();
+    g.fillStyle='#6a5a3a';for(let i=0;i<4;i++)g.fillRect(X+8+rnd()*(W-30),Y+H-10-rnd()*6,3+rnd()*4,2+rnd()*3);
+    g.strokeStyle='rgba(30,26,14,.6)';g.lineWidth=1.4;
+    g.beginPath();g.moveTo(X+6,Y+H*.3);g.quadraticCurveTo(X+W*.4,Y+H*.3+8,X+W-8,Y+H*.34);g.stroke();
+  }else if(fk==='northwind'){ // frost crust + brazier glow
+    g.fillStyle='rgba(225,240,245,.34)';
+    g.fillRect(X+3,Y+3,W-6,3);g.fillRect(X+3,Y+3,3,H*.5);
+    for(let i=0;i<5;i++){g.beginPath();g.arc(X+5+rnd()*(W*.5),Y+5+rnd()*4,1.5+rnd()*2,0,7);g.fill()}
+    const gx=X+10,gy=Y+H-12;
+    g.fillStyle='#2a2f2c';g.beginPath();g.arc(gx,gy,3.6,0,7);g.fill();
+    const gl=g.createRadialGradient(gx,gy-1,0,gx,gy-1,6);
+    gl.addColorStop(0,'#ffd28a');gl.addColorStop(1,'rgba(255,120,40,0)');
+    g.fillStyle=gl;g.beginPath();g.arc(gx,gy-1,6,0,7);g.fill();
+  }
 }
 /* ── v63 Building Redesign: distinct silhouettes for the core five.
       Overrides the base painters (kit still applies on top). ── */

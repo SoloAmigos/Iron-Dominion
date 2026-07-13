@@ -1120,9 +1120,122 @@ function _bKit(cv,type,fk){
   g.fillStyle='rgba(255,255,255,0.5)';
   g.beginPath();g.arc(X+W-8.6,Y+6.4,0.9,0,7);g.fill();
 }
+/* ── v63 Building Redesign: distinct silhouettes for the core five.
+      Overrides the base painters (kit still applies on top). ── */
+const _bRedesign={
+  command(g,X,Y,W,H,C,ac){
+    // two-tier stepped HQ + comms spire + helipad
+    pShadow(g,X,Y,W,H);
+    g.fillStyle=C(24);g.fillRect(X+3,Y+3,W-6,H-6);                       // lower tier
+    g.fillStyle=C(32);g.fillRect(X+10,Y+8,W-20,H-30);                    // upper tier
+    g.fillStyle=C(40);g.fillRect(X+10,Y+8,W-20,10);
+    g.strokeStyle=C(12);g.lineWidth=1.6;g.strokeRect(X+3,Y+3,W-6,H-6);g.strokeRect(X+10,Y+8,W-20,H-30);
+    // helipad
+    g.fillStyle='#20242a';g.beginPath();g.arc(X+W*.68,Y+H-26,20,0,7);g.fill();
+    g.strokeStyle='#aeb8c4';g.lineWidth=2;g.beginPath();g.arc(X+W*.68,Y+H-26,16,0,7);g.stroke();
+    g.font='bold 15px sans-serif';g.fillStyle='#aeb8c4';g.textAlign='center';g.textBaseline='middle';
+    g.fillText('H',X+W*.68,Y+H-26);
+    // comms spire + dish
+    g.fillStyle=C(16);g.fillRect(X+18,Y+12,10,14);
+    g.strokeStyle='#c8ccc4';g.lineWidth=2;g.beginPath();g.moveTo(X+23,Y+12);g.lineTo(X+23,Y-6);g.stroke();
+    g.fillStyle='#ff5147';g.beginPath();g.arc(X+23,Y-7,2.4,0,7);g.fill();
+    g.fillStyle='#d4d8d0';g.beginPath();g.ellipse(X+40,Y+16,7,4.6,-.6,0,7);g.fill();
+    g.strokeStyle='#6a7066';g.beginPath();g.ellipse(X+40,Y+16,7,4.6,-.6,0,7);g.stroke();
+    // command glass strip
+    g.fillStyle='#9fd8f0';g.fillRect(X+14,Y+H-26,W*.34,8);
+    g.fillStyle='rgba(255,255,255,.5)';g.fillRect(X+14,Y+H-26,W*.34,2.4);
+    g.fillStyle=ac;g.fillRect(X+12,Y+H-14,W*.4,4);
+  },
+  power(g,X,Y,W,H,C,ac){
+    pShadow(g,X,Y,W,H);
+    g.fillStyle=C(24);g.fillRect(X+3,Y+H*.44,W-6,H*.5);                  // base hall
+    g.strokeStyle=C(12);g.lineWidth=1.4;g.strokeRect(X+3,Y+H*.44,W-6,H*.5);
+    // twin cooling stacks with glow cores
+    for(const cx of[X+W*.32,X+W*.7]){
+      g.fillStyle='#2a2f2c';g.beginPath();g.arc(cx,Y+H*.36,W*.2,0,7);g.fill();
+      g.fillStyle=C(34);g.beginPath();g.arc(cx,Y+H*.36,W*.16,0,7);g.fill();
+      const gl=g.createRadialGradient(cx,Y+H*.36,1,cx,Y+H*.36,W*.11);
+      gl.addColorStop(0,'#ffe9a8');gl.addColorStop(.55,'#ff9b3d');gl.addColorStop(1,'rgba(120,40,10,0)');
+      g.fillStyle=gl;g.beginPath();g.arc(cx,Y+H*.36,W*.11,0,7);g.fill();
+      g.strokeStyle='#14170f';g.lineWidth=1.6;g.beginPath();g.arc(cx,Y+H*.36,W*.2,0,7);g.stroke();
+    }
+    // pipe manifold + transformer fins
+    g.strokeStyle='#565f56';g.lineWidth=4;g.beginPath();g.moveTo(X+W*.32,Y+H*.52);g.lineTo(X+W*.7,Y+H*.52);g.stroke();
+    g.strokeStyle='#20251c';g.lineWidth=1.4;
+    for(let i=0;i<4;i++){g.strokeRect(X+8+i*7,Y+H-18,4,12)}
+    g.fillStyle=ac;g.fillRect(X+W-20,Y+H-16,12,8);
+    g.fillStyle='#ffd95e';g.fillRect(X+W-18,Y+H-14,8,4);
+  },
+  supply(g,X,Y,W,H,C,ac){
+    pShadow(g,X,Y,W,H);
+    g.fillStyle=C(26);g.fillRect(X+3,Y+3,W-6,H-6);
+    // corrugated warehouse roof
+    g.fillStyle=C(34);g.fillRect(X+3,Y+3,W-6,H*.55);
+    g.strokeStyle=C(16);g.lineWidth=1;
+    for(let x=X+8;x<X+W-8;x+=7){g.beginPath();g.moveTo(x,Y+5);g.lineTo(x,Y+H*.55);g.stroke()}
+    g.strokeStyle=C(12);g.lineWidth=1.6;g.strokeRect(X+3,Y+3,W-6,H-6);
+    // loading dock + pallets
+    g.fillStyle='#3a3428';g.fillRect(X+6,Y+H*.6,W-12,H*.32);
+    g.fillStyle='#ffd95e';for(let x=X+10;x<X+W-16;x+=14)g.fillRect(x,Y+H*.6+2,7,3);
+    for(const[px,py]of[[X+10,Y+H*.68],[X+24,Y+H*.72],[X+W-26,Y+H*.66]]){
+      g.fillStyle='#8a6a2e';g.fillRect(px,py,11,9);
+      g.fillStyle='#a8842e';g.fillRect(px,py,11,3.4);
+      g.strokeStyle='#3e2f12';g.lineWidth=1;g.strokeRect(px,py,11,9);
+    }
+    g.fillStyle=ac;g.fillRect(X+6,Y+6,W*.3,5);
+  },
+  barracks(g,X,Y,W,H,C,ac){
+    pShadow(g,X,Y,W,H);
+    g.fillStyle=C(26);g.fillRect(X+3,Y+3,W-6,H-6);
+    // pitched roof with ridge
+    g.fillStyle=C(36);g.beginPath();g.moveTo(X+3,Y+H*.42);g.lineTo(X+W/2,Y+6);g.lineTo(X+W-3,Y+H*.42);g.closePath();g.fill();
+    g.fillStyle=C(22);g.beginPath();g.moveTo(X+W/2,Y+6);g.lineTo(X+W-3,Y+H*.42);g.lineTo(X+W/2,Y+H*.42);g.closePath();g.fill();
+    g.strokeStyle=C(12);g.lineWidth=1.6;
+    g.beginPath();g.moveTo(X+3,Y+H*.42);g.lineTo(X+W/2,Y+6);g.lineTo(X+W-3,Y+H*.42);g.stroke();
+    g.strokeRect(X+3,Y+3,W-6,H-6);
+    // sandbag entrance + door
+    g.fillStyle='#171a14';g.fillRect(X+W/2-8,Y+H-20,16,15);
+    g.fillStyle='#6b5a3a';
+    for(const dx of[-15,-9,9,15]){g.beginPath();g.ellipse(X+W/2+dx,Y+H-8,6,3.6,0,0,7);g.fill()}
+    // bunk windows
+    g.fillStyle='#9fd8f0';for(let i=0;i<3;i++)g.fillRect(X+10+i*((W-30)/2.4),Y+H*.5,10,7);
+    g.fillStyle=ac;g.fillRect(X+W/2-14,Y+H*.42-4,28,4);
+  },
+  factory(g,X,Y,W,H,C,ac){
+    pShadow(g,X,Y,W,H);
+    g.fillStyle=C(24);g.fillRect(X+3,Y+3,W-6,H-6);
+    // sawtooth industrial roof
+    const teeth=4,tw=(W-6)/teeth;
+    for(let i=0;i<teeth;i++){
+      const tx=X+3+i*tw;
+      g.fillStyle=C(34);g.beginPath();g.moveTo(tx,Y+H*.4);g.lineTo(tx,Y+8);g.lineTo(tx+tw,Y+H*.4);g.closePath();g.fill();
+      g.fillStyle='#9fd8f0';g.beginPath();g.moveTo(tx+1.5,Y+H*.4-2);g.lineTo(tx+1.5,Y+12);g.lineTo(tx+tw*.42,Y+H*.4-2);g.closePath();g.fill();
+      g.strokeStyle=C(12);g.lineWidth=1.2;g.beginPath();g.moveTo(tx,Y+H*.4);g.lineTo(tx,Y+8);g.lineTo(tx+tw,Y+H*.4);g.stroke();
+    }
+    g.strokeStyle=C(12);g.lineWidth=1.6;g.strokeRect(X+3,Y+3,W-6,H-6);
+    // big vehicle bay with hazard frame
+    g.fillStyle='#14170f';g.fillRect(X+W*.3,Y+H-26,W*.4,21);
+    g.fillStyle='#ffd95e';g.fillRect(X+W*.3-4,Y+H-26,4,21);g.fillRect(X+W*.7,Y+H-26,4,21);
+    g.strokeStyle='#3a4034';g.lineWidth=1;
+    for(let yy=Y+H-23;yy<Y+H-6;yy+=4){g.beginPath();g.moveTo(X+W*.3,yy);g.lineTo(X+W*.7,yy);g.stroke()}
+    // smokestack + crane arm
+    g.fillStyle='#3a3f3a';g.fillRect(X+W-18,Y+10,9,16);
+    g.fillStyle='#14170f';g.fillRect(X+W-18,Y+8,9,4);
+    g.strokeStyle='#565f56';g.lineWidth=3;g.beginPath();g.moveTo(X+10,Y+H*.46);g.lineTo(X+W*.4,Y+H*.46);g.stroke();
+    g.strokeStyle='#20251c';g.lineWidth=1;g.beginPath();g.moveTo(X+W*.34,Y+H*.46);g.lineTo(X+W*.34,Y+H*.6);g.stroke();
+    g.fillStyle=ac;g.fillRect(X+6,Y+H-10,W*.18,5);
+  },
+};
 const _bSprRaw=bSpr;
 bSpr=function(type,fk,gen){
-  const cv=_bSprRaw(type,fk,gen);
+  let cv;
+  if(_bRedesign[type]){
+    const t=BT[type],W=t.w*TILE,H=t.h*TILE;
+    cv=spr('R63_'+type+'_'+fk,W+BM*2,H+BM*2,g=>{
+      const F=FACTIONS[fk]||{c:'#9aa48c'},ac=F.c,C=facCol(fk);
+      _bRedesign[type](g,BM,BM,W,H,C,ac);
+    });
+  }else cv=_bSprRaw(type,fk,gen);
   if(cv&&!cv._kit){cv._kit=true;try{_bKit(cv,type,fk)}catch(e){}}
   return cv;
 };

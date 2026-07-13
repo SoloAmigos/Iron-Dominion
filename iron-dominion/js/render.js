@@ -2022,6 +2022,12 @@ function drawUnit(u){
     if(u.moving&&state==='play'&&Math.random()<.2)
       addPart({k:'dust',x:u.x-Math.cos(u.a)*14+vrand(-4,4),y:u.y-Math.sin(u.a)*14+vrand(-4,4),vx:vrand(-6,6),vy:vrand(-10,-2),life:.55,max:.55,s:vrand(2.5,5)});
   }
+  { // team-colored ground ring — readability at any zoom
+    const gr=ctx.createRadialGradient(u.x,u.y+2,u.t.r*0.3,u.x,u.y+2,u.t.r*1.5);
+    const tc=TEAMC[u.team]||'#9aa48c';
+    gr.addColorStop(0,tc+'55');gr.addColorStop(.65,tc+'22');gr.addColorStop(1,tc+'00');
+    ctx.fillStyle=gr;ctx.beginPath();ctx.ellipse(u.x,u.y+2,u.t.r*1.5,u.t.r*1.0,0,0,7);ctx.fill();
+  }
   if(state==='play'&&u.moving&&u.cat==='veh'&&(u.zHeight||0)<=0&&Math.random()<.10){
     addPart({k:'dust',x:u.x-Math.cos(u.a)*u.t.r,y:u.y-Math.sin(u.a)*u.t.r+3,vx:vrand(-8,8)-Math.cos(u.a)*12,vy:vrand(-10,-2),life:vrand(.35,.6),max:.6,s:vrand(3,6)});
   }
@@ -2315,7 +2321,9 @@ function render(){
   for(const p of projs)drawProj(p);
   for(const p of parts)if(p.k!=='scorch')drawPart(p);
   for(const p of planes)drawPlane(p);
+    {const _sm=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   ctx.drawImage(fogCv,0,0,MAPW,MAPH,0,0,WW,WH);
+  ctx.imageSmoothingEnabled=_sm;}
   if(placing){
     const t=BT[placing.type],ok=canPlace(placing.type,placing.tx,placing.ty,0);
     placing.ok=ok;

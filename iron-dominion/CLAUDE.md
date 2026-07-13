@@ -6,7 +6,7 @@ Live via GitHub Pages (repo: `SoloAmigos/Iron-Dominion`, deploys from `main`).
 ## Architecture
 
 Multi-file: `index.html` + `css/style.css` + `js/*.js` loaded as plain scripts (shared global scope, no modules/bundler).
-PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v61) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
+PWA: `manifest.json` + `sw.js`. **Versioning: bump `GAME_VERSION` in `js/version.js` ONCE per change batch** (current: v62) — it is the single source of truth: `sw.js` builds its cache name from it via `importScripts('js/version.js')`, and the main menu shows it in the bottom `#verBadge` so a deployed push is verifiable at a glance in the live game. Do NOT hardcode a version anywhere else.
 
 | File | Owns |
 |---|---|
@@ -77,6 +77,7 @@ Sizes: s2 (60×40), s4 (80×54), s6 (100×66). Spawns scale with `numSlots`.
 
 ## Completed Features (all shipped to main)
 
+- [x] Visual polish (v62): fog-of-war edges smooth-scaled (imageSmoothing for the fogCv draw — no more blocky black stair-steps); team-colored radial under-glow beneath every unit for readability at any zoom. Full 5-suite regression green.
 - [x] Building Construction Kit (v61): _bKit post-pass wraps bSpr and upgrades every cached building sprite once — wall extrusion (bottom/right) for height, sun-consistent roof bevels + sheen, seeded roof furniture (vents/ducts with shadows), bold left-edge faction stripe with hazard notches + corner beacons. _KIT_FULL for boxy structures, _KIT_LITE (stripe/beacons only) for turret/samsite/silo/watchtower so circular art stays clean.
 - [x] ART & MUSIC OVERHAUL (v60): music — chord progressions + per-faction moods (_MOODS: key/scale/bpm per faction, Scorpion phrygian, Northwind slow F-minor), chord-following bass/stab/pad, 16th arpeggios (intensity>.28), 2-bar lead melody phrases (_PHR) with detuned vibrato voice; art — universal terrain finishing pass in buildGround (macro tonal patches, directional sun sweep, pebble/crack crunch, vignette), drawApron() worn-earth aprons + access ruts under every built structure, vehicle motion dust. Screenshot harness: test/shotstub.js + shot_build.sh use @napi-rs/canvas for real PNG renders — ALWAYS view before/after shots when changing art.
 

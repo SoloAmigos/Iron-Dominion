@@ -1225,6 +1225,78 @@ const _bRedesign={
     g.strokeStyle='#20251c';g.lineWidth=1;g.beginPath();g.moveTo(X+W*.34,Y+H*.46);g.lineTo(X+W*.34,Y+H*.6);g.stroke();
     g.fillStyle=ac;g.fillRect(X+6,Y+H-10,W*.18,5);
   },
+  market(g,X,Y,W,H,C,ac){
+    pShadow(g,X,Y,W,H);
+    g.fillStyle='#4a3f2a';g.fillRect(X+3,Y+3,W-6,H-6); // bazaar ground
+    g.strokeStyle='#2a2416';g.lineWidth=1.6;g.strokeRect(X+3,Y+3,W-6,H-6);
+    // canopy on poles, striped
+    g.fillStyle='#20251c';for(const[px,py]of[[X+8,Y+8],[X+W-11,Y+8],[X+8,Y+H*.5],[X+W-11,Y+H*.5]])g.fillRect(px,py,3,H*.4);
+    for(let i=0;i<(W-10)/9;i++){g.fillStyle=i%2?ac:'#e8e3d2';g.fillRect(X+5+i*9,Y+5,9,H*.42)}
+    g.strokeStyle='#14170f';g.lineWidth=1.4;g.strokeRect(X+5,Y+5,W-10,H*.42);
+    // goods: crates + barrel + coin sign
+    for(const[cx,cy]of[[X+9,Y+H-19],[X+22,Y+H-15],[X+W-24,Y+H-18]]){
+      g.fillStyle='#8a6a2e';g.fillRect(cx,cy,11,9);g.fillStyle='#a8842e';g.fillRect(cx,cy,11,3.2);
+      g.strokeStyle='#3e2f12';g.lineWidth=1;g.strokeRect(cx,cy,11,9);
+    }
+    g.fillStyle='#9c3a30';g.beginPath();g.arc(X+W*.55,Y+H-14,5.5,0,7);g.fill();
+    g.fillStyle='#191407';g.beginPath();g.arc(X+W*.32,Y+H*.3,8,0,7);g.fill();
+    g.fillStyle='#ffd95e';g.beginPath();g.arc(X+W*.32,Y+H*.3-1,7,0,7);g.fill();
+    g.fillStyle='#a8801e';g.font='bold 10px sans-serif';g.textAlign='center';g.textBaseline='middle';
+    g.fillText('$',X+W*.32,Y+H*.3-1);
+  },
+  tech(g,X,Y,W,H,C,ac){
+    pShadow(g,X,Y,W,H);
+    g.fillStyle=C(24);g.fillRect(X+3,Y+3,W-6,H-6);
+    g.strokeStyle=C(12);g.lineWidth=1.6;g.strokeRect(X+3,Y+3,W-6,H-6);
+    // central reactor ring with glow + orbit nodes
+    const cx=X+W*.38,cy=Y+H*.5,R=Math.min(W,H)*.3;
+    g.strokeStyle='#0c2228';g.lineWidth=6;g.beginPath();g.arc(cx,cy,R,0,7);g.stroke();
+    g.strokeStyle='#2e7d96';g.lineWidth=4;g.beginPath();g.arc(cx,cy,R,0,7);g.stroke();
+    const gl=g.createRadialGradient(cx,cy,1,cx,cy,R*.8);
+    gl.addColorStop(0,'#c9f2ff');gl.addColorStop(.5,'#4fb3d6');gl.addColorStop(1,'rgba(20,60,80,0)');
+    g.fillStyle=gl;g.beginPath();g.arc(cx,cy,R*.8,0,7);g.fill();
+    g.fillStyle='#9fe9ff';for(let i=0;i<4;i++){const a2=i*Math.PI/2+.4;g.beginPath();g.arc(cx+Math.cos(a2)*R,cy+Math.sin(a2)*R,3,0,7);g.fill()}
+    // server racks
+    g.fillStyle=C(16);g.fillRect(X+W*.68,Y+8,W*.24,H-16);
+    g.strokeStyle=C(10);g.lineWidth=1;g.strokeRect(X+W*.68,Y+8,W*.24,H-16);
+    for(let yy=Y+12;yy<Y+H-14;yy+=7){g.fillStyle='#2a3a34';g.fillRect(X+W*.7,yy,W*.2,4);
+      g.fillStyle=Math.random()<.5?'#7dff9a':'#ff5147';g.fillRect(X+W*.7+2,yy+1,2,2)}
+    g.fillStyle=ac;g.fillRect(X+6,Y+6,W*.2,4);
+  },
+  radar(g,X,Y,W,H,C,ac){
+    pShadow(g,X,Y,W,H);
+    g.fillStyle=C(24);g.fillRect(X+3,Y+3,W-6,H-6);
+    g.strokeStyle=C(12);g.lineWidth=1.6;g.strokeRect(X+3,Y+3,W-6,H-6);
+    // sweep pad rings
+    const cx=X+W*.5,cy=Y+H*.52;
+    g.strokeStyle='rgba(125,220,255,.3)';g.lineWidth=1.6;
+    for(const r of[H*.18,H*.3,H*.42]){g.beginPath();g.arc(cx,cy,r,0,7);g.stroke()}
+    // big lattice dish
+    g.fillStyle='#20242a';g.beginPath();g.ellipse(cx,cy,H*.34,H*.2,-.5,0,7);g.fill();
+    g.fillStyle='#d4d8d0';g.beginPath();g.ellipse(cx-2,cy-2,H*.3,H*.17,-.5,0,7);g.fill();
+    g.strokeStyle='#6a7066';g.lineWidth=1;
+    g.beginPath();g.ellipse(cx-2,cy-2,H*.3,H*.17,-.5,0,7);g.stroke();
+    g.beginPath();g.moveTo(cx-H*.26,cy+H*.1);g.lineTo(cx+H*.22,cy-H*.14);g.stroke();
+    g.strokeStyle='#3a3f3a';g.lineWidth=3;g.beginPath();g.moveTo(cx-2,cy-2);g.lineTo(cx+H*.14,cy-H*.18);g.stroke();
+    g.fillStyle='#ff5147';g.beginPath();g.arc(cx+H*.15,cy-H*.19,2.2,0,7);g.fill();
+    g.fillStyle=ac;g.fillRect(X+6,Y+H-11,W*.26,5);
+  },
+  repairbay(g,X,Y,W,H,C,ac){
+    pShadow(g,X,Y,W,H);
+    g.fillStyle=C(24);g.fillRect(X+3,Y+3,W-6,H-6);
+    g.strokeStyle=C(12);g.lineWidth=1.6;g.strokeRect(X+3,Y+3,W-6,H-6);
+    // open service pit with a chassis inside
+    g.fillStyle='#14170f';g.fillRect(X+8,Y+H*.34,W-16,H*.5);
+    g.strokeStyle='#ffd95e';g.lineWidth=2;g.strokeRect(X+8,Y+H*.34,W-16,H*.5);
+    g.fillStyle='#3a4034';g.fillRect(X+W*.3,Y+H*.44,W*.4,H*.28);
+    g.fillStyle='#2a2f2c';g.fillRect(X+W*.36,Y+H*.4,W*.28,H*.1);
+    g.strokeStyle='#565f56';g.lineWidth=2;g.beginPath();g.moveTo(X+W*.5,Y+H*.34);g.lineTo(X+W*.5,Y+H*.2);g.stroke(); // hoist
+    g.fillStyle='#565f56';g.fillRect(X+10,Y+H*.2-2,W-20,4); // gantry rail
+    // tool wall
+    g.fillStyle='#20251c';g.fillRect(X+8,Y+8,W-16,H*.16);
+    g.fillStyle='#8a9478';for(let x=X+12;x<X+W-14;x+=8)g.fillRect(x,Y+11,3,H*.09);
+    g.fillStyle=ac;g.fillRect(X+W-24,Y+H-12,16,5);
+  },
 };
 const _bSprRaw=bSpr;
 bSpr=function(type,fk,gen){
